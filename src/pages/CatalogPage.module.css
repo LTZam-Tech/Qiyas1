@@ -1,0 +1,163 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.heading {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #5c3a73;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.panelButton {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  border: none;
+  border-right: 4px solid #43a047;
+  background: transparent;
+}
+
+.panelButtonPartial {
+  border-right-color: #f57c00;
+}
+
+.panelButtonNon {
+  border-right-color: #d32f2f;
+}
+
+.chevron {
+  transform: rotate(180deg);
+  transition: transform 0.2s;
+  color: #7a6b8a;
+  display: flex;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.panelBody {
+  flex: 1;
+  text-align: right;
+}
+
+.panelTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #5c3a73;
+}
+
+.panelMeta {
+  font-size: 11px;
+  color: #7a6b8a;
+}
+
+.panelProgress {
+  width: 120px;
+}
+
+.panelProgressMobile {
+  width: 80px;
+}
+
+.panelPercent {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5c3a73;
+  width: 40px;
+  text-align: center;
+}
+
+.panelPercentMobile {
+  width: 30px;
+}
+
+.expanded {
+  padding: 0 16px 14px;
+  border-top: 1px solid #e0d4ea;
+}
+
+.expandedList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.standardRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f8f6fb;
+  border-radius: 6px;
+}
+
+.standardBody {
+  flex: 1;
+  text-align: right;
+}
+
+.standardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2d1b3d;
+}
+
+.standardMeta {
+  font-size: 11px;
+  color: #7a6b8a;
+}
+
+.standardProgress {
+  width: 80px;
+}
+
+.standardProgressMobile {
+  width: 60px;
+}
+
+.standardCount {
+  font-size: 11px;
+  color: #7a6b8a;
+  width: 60px;
+  text-align: center;
+}
+
+.standardCountMobile {
+  width: 50px;
+}
+
+.emptyState {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  color: #7a6b8a;
+}
+
+.emptyPerspective {
+  font-size: 12px;
+  color: #7a6b8a;
+  padding: 10px;
+  text-align: center;
+}

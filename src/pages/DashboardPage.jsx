@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { C, cardGradients } from '../utils/theme.js';
+import { cardGradients } from '../utils/theme.js';
 import StatCard from '../components/StatCard.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 import { Icons } from '../utils/icons.jsx';
@@ -41,7 +41,7 @@ const DashboardPage = ({ isMobile }) => {
             {perspectives.length > 0 ? perspectives.map((p) => (
               <div key={p.id} className={styles.row}>
                 <span className={styles.percent}>{p.completion}%</span>
-                <div style={{ flex: 1 }}><ProgressBar value={p.completion} height={8} /></div>
+                <div className={styles.progressWrapper}><ProgressBar value={p.completion} height={8} /></div>
                 <span className={styles.perspectiveLabel}>{p.name}</span>
               </div>
             )) : (
@@ -53,18 +53,22 @@ const DashboardPage = ({ isMobile }) => {
         <div className={styles.panel}>
           <h3 className={styles.panelTitle}>النشاطات الأخيرة — Recent Activity</h3>
           <div className={styles.activityRows}>
-            {activities.length > 0 ? activities.map((a, i) => (
-              <div key={a.id} className={styles.activityRow} style={{ borderBottom: i < activities.length - 1 ? `1px solid ${C.border}` : 'none' }}>
-                <div
-                  className={styles.activityDot}
-                  style={{ background: a.type === 'approve' ? C.green : a.type === 'reject' ? C.red : a.type === 'revision' ? C.orange : C.primary }}
-                />
-                <div className={styles.activityText}>
-                  <div className={styles.activityMain}><strong>{a.user}</strong> — {a.action}</div>
-                  <div className={styles.activityMeta}>المعيار {a.standard} | {a.time}</div>
+            {activities.length > 0 ? activities.map((a, i) => {
+              const dotClass = a.type === 'approve' ? styles.activityDotApprove :
+                               a.type === 'reject' ? styles.activityDotReject :
+                               a.type === 'revision' ? styles.activityDotRevision :
+                               styles.activityDotDefault;
+              const isLast = i === activities.length - 1;
+              return (
+                <div key={a.id} className={`${styles.activityRow} ${isLast ? styles.activityRowLast : ''}`}>
+                  <div className={`${styles.activityDot} ${dotClass}`} />
+                  <div className={styles.activityText}>
+                    <div className={styles.activityMain}><strong>{a.user}</strong> — {a.action}</div>
+                    <div className={styles.activityMeta}>المعيار {a.standard} | {a.time}</div>
+                  </div>
                 </div>
-              </div>
-            )) : (
+              );
+            }) : (
               <p className={styles.emptyState}>لا توجد نشاطات حديثة</p>
             )}
           </div>
@@ -72,7 +76,7 @@ const DashboardPage = ({ isMobile }) => {
       </div>
 
       <div className={styles.alertBox}>
-        <span style={{ color: C.red, flexShrink: 0, marginTop: 2 }}>{Icons.alert}</span>
+        <span className={styles.alertIcon}>{Icons.alert}</span>
         <div className={styles.alertText}>
           <div className={styles.alertTitle}>تنبيهات الاختناقات — Bottleneck Alerts</div>
           <div className={styles.alertBody}>

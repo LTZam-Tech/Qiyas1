@@ -1,5 +1,11 @@
 import { env } from '../config/env.js';
 
+let authTokenGetter = null;
+let unauthorizedHandler = null;
+
+const requestInterceptors = [];
+const responseInterceptors = [];
+
 const createUrl = (path, query = {}) => {
   const base = env.apiBaseUrl.replace(/\/$/, '');
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
@@ -30,24 +36,110 @@ const parseResponse = async (response) => {
   return body;
 };
 
+const applyRequestInterceptors = async (requestConfig) => {
+  let nextConfig = requestConfig;
+  for (const interceptor of requestInterceptors) {
+    nextConfig = (await interceptor(nextConfig)) || nextConfig;
+  }
+  return nextConfig;
+};
+
+const applyResponseInterceptors = async (responseBody) => {
+  let nextBody = responseBody;
+  for (const interceptor of responseInterceptors) {
+    nextBody = (await interceptor(nextBody)) ?? nextBody;
+  }
+  return nextBody;
+};
+
 export async function request(path, options = {}, query = {}) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), env.requestTimeoutMs);
 
   try {
-    const response = await fetch(createUrl(path, query), {
+    const token = authTokenGetter?.();
+    const config = await applyRequestInterceptors({
+      url: createUrl(path, query),
+      options: {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(options.headers || {}),
+        },
+        ...options,
+        signal: controller.signal,
+      },
+    });
+
+    console.log(`📤 HTTP ${options.method || 'GET'} ${config.url}`, {
+      headers: config.options.headers,
+      body: options.body ? 'present' : 'none',
+    });
+
+    const response = await fetch(config.url, {
       headers: {
         'Content-Type': 'application/json',
-        ...(options.headers || {}),
+        ...(config.options?.headers || {}),
       },
-      ...options,
+      ...(config.options || {}),
       signal: controller.signal,
     });
 
-    return await parseResponse(response);
+    console.log(`📥 Response:`, {
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+      ok: response.ok,
+    });
+
+    const parsed = await parseResponse(response);
+    console.log('✅ Parsed response:', parsed);
+    return applyResponseInterceptors(parsed);
+  } catch (error) {
+    console.error('❌ Request error:', error);
+    if (error?.status === 401 && unauthorizedHandler) {
+      unauthorizedHandler(error);
+    }
+    throw error;
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+export function setAuthTokenGetter(getter) {
+  authTokenGetter = typeof getter === 'function' ? getter : null;
+}
+
+export function setUnauthorizedHandler(handler) {
+  unauthorizedHandler = typeof handler === 'function' ? handler : null;
+}
+
+export function addRequestInterceptor(interceptor) {
+  if (typeof interceptor !== 'function') {
+    return () => {};
+  }
+
+  requestInterceptors.push(interceptor);
+  return () => {
+    const index = requestInterceptors.indexOf(interceptor);
+    if (index >= 0) {
+      requestInterceptors.splice(index, 1);
+    }
+  };
+}
+
+export function addResponseInterceptor(interceptor) {
+  if (typeof interceptor !== 'function') {
+    return () => {};
+  }
+
+  responseInterceptors.push(interceptor);
+  return () => {
+    const index = responseInterceptors.indexOf(interceptor);
+    if (index >= 0) {
+      responseInterceptors.splice(index, 1);
+    }
+  };
 }
 
 export const httpClient = {

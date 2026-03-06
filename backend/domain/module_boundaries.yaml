@@ -1,0 +1,37 @@
+modules:
+  - name: identity_access
+    owns: [users, roles, permissions, user_roles, role_permissions, refresh_tokens]
+    can_call: [audit, notification]
+  - name: hierarchy
+    owns: [perspectives, axes, standards]
+    can_call: [audit, dashboard]
+  - name: evidence_requirements
+    owns: [evidence_requirements, file_templates]
+    can_call: [audit, notification]
+  - name: tasks_workflow
+    owns: [tasks, task_comments]
+    can_call: [identity_access, notification, sla_escalation, audit]
+  - name: evidence_submission
+    owns: [evidence_submissions, evidence_files, review_decisions]
+    can_call: [tasks_workflow, storage, notification, completion_engine, audit]
+  - name: notification
+    owns: [notifications]
+    can_call: [identity_access]
+  - name: sla_escalation
+    owns: [sla_policies, escalation_rules, escalation_events]
+    can_call: [tasks_workflow, notification, audit]
+  - name: dashboard
+    owns: [dashboard_snapshots]
+    can_call: [hierarchy, tasks_workflow, evidence_submission]
+  - name: reporting
+    owns: [report_jobs]
+    can_call: [dashboard, evidence_submission, tasks_workflow, storage, notification, audit]
+  - name: audit
+    owns: [audit_logs]
+    can_call: []
+
+rules:
+  - No cross-module table writes outside owned tables.
+  - Cross-module interactions must occur through service interfaces/events.
+  - Audit module is append-only and cannot be mutated.
+  - Storage paths and signed URLs are managed in evidence_submission/reporting modules only.

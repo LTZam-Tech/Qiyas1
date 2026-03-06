@@ -1,0 +1,157 @@
+import { BaseRepository } from '@/db/repository';
+import db from '@/db';
+import { NotFoundError, ForbiddenError } from '@/utils/errors';
+
+interface ReviewDecision {
+  id: number;
+  submission_id: number;
+  reviewer_id: number;
+  decision: string;
+  feedback: string;
+  reviewed_at: Date;
+}
+
+class ReviewsService extends BaseRepository<ReviewDecision> {
+  constructor() {
+    super('review_decisions');
+  }
+
+  async getAllReviews(filters?: { submissionId?: string; decision?: string }) {
+    let query = `
+      SELECT 
+        rd.*,
+        u.full_name as reviewer_name,
+        es.id as submission_id,
+        t.title as task_title
+      FROM review_decisions rd
+      LEFT JOIN users u ON rd.reviewer_id = u.id
+      LEFT JOIN evidence_submissions es ON rd.submission_id = es.id
+      LEFT JOIN tasks t ON es.task_id = t.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let idx = 1;
+
+    if (filters?.submissionId) {
+      query += ` AND rd.submission_id = $${idx}`;
+      params.push(filters.submissionId);
+      idx++;
+    }
+
+    if (filters?.decision) {
+      query += ` AND rd.decision = $${idx}`;
+      params.push(filters.decision);
+      idx++;
+    }
+
+    query += ' ORDER BY rd.reviewed_at DESC';
+
+    const result = await db.query(query, params);
+    return result.rows;
+  }
+
+  async getReviewById(reviewId: string) {
+    const result = await db.query(`
+      SELECT 
+        rd.*,
+        u.full_name as reviewer_name,
+        u.email as reviewer_email,
+        es.id as submission_id,
+        es.submission_notes,
+        t.title as task_title
+      FROM review_decisions rd
+      LEFT JOIN users u ON rd.reviewer_id = u.id
+      LEFT JOIN evidence_submissions es ON rd.submission_id = es.id
+      LEFT JOIN tasks t ON es.task_id = t.id
+      WHERE rd.id = $1
+    `, [reviewId]);
+
+    if (result.rows.length === 0) {
+      throw new NotFoundError('Review not found');
+    }
+
+    return result.rows[0];
+  }
+
+  async createReview(data: { submissionId: string; decision: string; feedback: string }, reviewerId: string) {
+    // Check if submission exists and is pending review
+    const submissionResult = await db.query(
+      'SELECT * FROM evidence_submissions WHERE id = $1',
+      [data.submissionId]
+    );
+
+    if (submissionResult.rows.length === 0) {
+      throw new NotFoundError('Submission not found');
+    }
+
+    const submission = submissionResult.rows[0];
+
+    if (submission.status !== 'pending_review') {
+      throw new ForbiddenError('Submission is not pending review');
+    }
+
+    return db.transaction(async (client) => {
+      // Create review
+      const reviewResult = await client.query(`
+        INSERT INTO review_decisions (submission_id, reviewer_id, decision, feedback, reviewed_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        RETURNING *
+      `, [data.submissionId, reviewerId, data.decision, data.feedback]);
+
+      const review = reviewResult.rows[0];
+
+      // Update submission status
+      let newStatus = 'pending_review';
+      let taskStatus = 'in_progress';
+
+      if (data.decision === 'approved') {
+        newStatus = 'approved';
+        taskStatus = 'completed';
+      } else if (data.decision === 'rejected') {
+        newStatus = 'rejected';
+        taskStatus = 'pending';
+      } else if (data.decision === 'revision_requested') {
+        newStatus = 'revision_requested';
+        taskStatus = 'in_progress';
+      }
+
+      await client.query(
+        'UPDATE evidence_submissions SET status = $1, updated_at = NOW() WHERE id = $2',
+        [newStatus, data.submissionId]
+      );
+
+      // Update task status
+      await client.query(
+        'UPDATE tasks SET status = $1, updated_at = NOW() WHERE id = $2',
+        [taskStatus, submission.task_id]
+      );
+
+      // If approved, trigger completion percentage recalculation
+      if (data.decision === 'approved') {
+        const taskResult = await client.query('SELECT evidence_requirement_id FROM tasks WHERE id = $1', [submission.task_id]);
+        if (taskResult.rows.length > 0) {
+          const evidenceReqId = taskResult.rows[0].evidence_requirement_id;
+          
+          // Get standard_id
+          const reqResult = await client.query('SELECT standard_id FROM evidence_requirements WHERE id = $1', [evidenceReqId]);
+          if (reqResult.rows.length > 0) {
+            const standardId = reqResult.rows[0].standard_id;
+            
+            // Call completion recalculation functions
+            await client.query('SELECT recalc_standard_completion($1)', [standardId]);
+          }
+        }
+      }
+
+      // Audit log
+      await client.query(
+        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata) VALUES ($1, $2, $3, $4, $5)`,
+        [reviewerId, 'create_review', 'review_decision', review.id, JSON.stringify(data)]
+      );
+
+      return review;
+    });
+  }
+}
+
+export default new ReviewsService();

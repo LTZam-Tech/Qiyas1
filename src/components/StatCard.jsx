@@ -48,7 +48,7 @@ const StatCard = ({ label, value, icon, gradient, change }) => {
         </div>
         {change && (
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontFamily: 'Cairo', marginTop: 4 }}>
-            {change > 0 ? '?' : '?'} {Math.abs(change)}%
+            {change > 0 ? '+' : '-'} {Math.abs(change)}%
           </div>
         )}
       </div>

@@ -74,8 +74,18 @@ export default function Sidebar({
           <div className={styles.profileCard}>
             <span aria-hidden="true">👤</span>
             <div>
-              <div>{lang === 'ar' ? user?.nameAr : user?.nameEn}</div>
-              <small>{user?.role || 'user'}</small>
+              <div>{user?.fullName || (lang === 'ar' ? user?.nameAr : user?.nameEn)}</div>
+              <small style={{ 
+                display: 'inline-block',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: '600',
+                background: 'rgba(102, 126, 234, 0.15)',
+                color: '#667eea',
+              }}>
+                {user?.role || 'user'}
+              </small>
             </div>
           </div>
           <button type="button" className={styles.logoutBtn} onClick={onLogout} aria-label="Logout">

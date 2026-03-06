@@ -1,0 +1,96 @@
+task:
+  states:
+    - draft
+    - assigned
+    - in_progress
+    - submitted
+    - under_review
+    - approved
+    - rejected
+    - resubmission_required
+    - closed
+    - cancelled
+  transitions:
+    - from: draft
+      to: assigned
+      event: task.assigned
+    - from: assigned
+      to: in_progress
+      event: task.started
+    - from: in_progress
+      to: submitted
+      event: submission.uploaded
+    - from: submitted
+      to: under_review
+      event: review.opened
+    - from: under_review
+      to: approved
+      event: review.approved
+    - from: under_review
+      to: rejected
+      event: review.rejected
+    - from: under_review
+      to: resubmission_required
+      event: review.resubmission_required
+    - from: rejected
+      to: in_progress
+      event: submission.resubmitted
+    - from: resubmission_required
+      to: in_progress
+      event: submission.resubmitted
+    - from: approved
+      to: closed
+      event: task.closed
+    - from: '*'
+      to: cancelled
+      event: task.cancelled
+
+submission:
+  states:
+    - submitted
+    - under_review
+    - approved
+    - rejected
+    - resubmission_required
+  transitions:
+    - from: submitted
+      to: under_review
+      event: review.opened
+    - from: under_review
+      to: approved
+      event: review.approved
+    - from: under_review
+      to: rejected
+      event: review.rejected
+    - from: under_review
+      to: resubmission_required
+      event: review.resubmission_required
+
+escalation:
+  states:
+    - watching
+    - warning
+    - breached
+    - level_1
+    - level_2
+    - level_3
+    - resolved
+  transitions:
+    - from: watching
+      to: warning
+      event: sla.warning
+    - from: warning
+      to: breached
+      event: sla.breached
+    - from: breached
+      to: level_1
+      event: escalation.level1
+    - from: level_1
+      to: level_2
+      event: escalation.level2
+    - from: level_2
+      to: level_3
+      event: escalation.level3
+    - from: '*'
+      to: resolved
+      event: task.approved_or_closed

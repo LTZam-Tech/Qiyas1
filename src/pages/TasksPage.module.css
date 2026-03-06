@@ -1,0 +1,128 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filterButton {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #e0d4ea;
+  background: #ffffff;
+  color: #7a6b8a;
+  font-size: 12px;
+  font-family: Cairo, sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterButtonActive {
+  border-color: #6b4a86;
+  background: #6b4a86;
+  color: #ffffff;
+}
+
+.heading {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #5c3a73;
+}
+
+.tableContainer {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+  font-family: Cairo, sans-serif;
+}
+
+.tableMobile {
+  min-width: 600px;
+}
+
+.tableHeadRow {
+  background: #6b4a86;
+}
+
+.tableHeaderCell {
+  padding: 10px 12px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.tableRow {
+  border-bottom: 1px solid #e0d4ea;
+}
+
+.tableBody .tableRow:nth-child(even) {
+  background: #f8f6fb;
+}
+
+.centerCell {
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.dueCell {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #2d1b3d;
+  text-align: center;
+  direction: ltr;
+}
+
+.textCell {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #2d1b3d;
+  text-align: right;
+}
+
+.codeCell {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #5c3a73;
+  text-align: center;
+}
+
+.emptyState,
+.loadingState,
+.errorState {
+  padding: 18px;
+  text-align: center;
+}
+
+.emptyState,
+.loadingState {
+  color: #7a6b8a;
+}
+
+.errorState {
+  color: #d32f2f;
+  font-weight: 700;
+}

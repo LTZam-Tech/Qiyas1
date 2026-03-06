@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { C } from './utils/theme.js';
 import { NAV_ITEMS } from './utils/data.js';
+import { filterNavByRole, canAccessPage } from './utils/permissions.js';
 import { BREAKPOINTS, PAGES } from './constants/index.js';
 import useResponsive from './hooks/useResponsive.js';
 import usePageLoad from './hooks/usePageLoad.js';
 import useAuth from './context/useAuth.js';
+import LoginPage from './pages/LoginPage.jsx';
 import Header from './components/layout/Header.jsx';
 import Sidebar from './components/layout/Sidebar.jsx';
 import styles from './components/layout/Layout.module.css';
@@ -29,7 +31,7 @@ const PAGE_COMPONENTS = {
 
 export default function App() {
   const { isMobile, isTablet, vw } = useResponsive();
-  const { user, logout, login } = useAuth();
+  const { user, logout, login, isLoading: authLoading, isAuthenticating } = useAuth();
   const [page, setPage] = useState(PAGES.dashboard);
   const [sideOpen, setSideOpen] = useState(vw > BREAKPOINTS.tablet);
   const [expandedGroups, setExpandedGroups] = useState(new Set(['management']));
@@ -63,6 +65,12 @@ export default function App() {
   };
 
   const navigateTo = (item) => {
+    // Check if user has access to this page
+    if (!canAccessPage(item.key, user?.role)) {
+      console.warn(`Access denied to page: ${item.key}`);
+      return;
+    }
+    
     setPage(item.key);
     if (isMobile) {
       setSideOpen(false);
@@ -70,12 +78,18 @@ export default function App() {
     setShowNotifications(false);
   };
 
+  // Filter navigation based on user role
+  const roleBasedNavItems = useMemo(() => {
+    if (!user?.role) return [];
+    return filterNavByRole(NAV_ITEMS, user.role);
+  }, [user]);
+
   const onSearchSubmit = (event) => {
     event.preventDefault();
     const query = searchQuery.trim().toLowerCase();
     if (!query) return;
 
-    const flattened = NAV_ITEMS.flatMap((item) => [item, ...(item.children || [])]);
+    const flattened = roleBasedNavItems.flatMap((item) => [item, ...(item.children || [])]);
     const match = flattened.find(
       (item) =>
         item.label.toLowerCase().includes(query) || item.labelEn.toLowerCase().includes(query),
@@ -90,7 +104,7 @@ export default function App() {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return [];
 
-    return NAV_ITEMS.filter((item) => {
+    return roleBasedNavItems.filter((item) => {
       const groupMatch =
         item.label.toLowerCase().includes(query) || item.labelEn.toLowerCase().includes(query);
       const childMatch = item.children?.some(
@@ -122,37 +136,12 @@ export default function App() {
 
   const PageComponent = PAGE_COMPONENTS[page] || DashboardPage;
 
+  // Show login page if not authenticated
   if (!user) {
-    return (
-      <section
-        className={styles.app}
-        style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}
-        aria-label="Logged out state"
-      >
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ color: C.primaryDark, marginBottom: 10 }}>
-            {lang === 'ar' ? 'تم تسجيل الخروج' : 'Logged Out'}
-          </h1>
-          <button
-            type="button"
-            onClick={login}
-            style={{
-              border: 'none',
-              borderRadius: 8,
-              padding: '10px 14px',
-              background: C.primary,
-              color: C.white,
-              cursor: 'pointer',
-            }}
-          >
-            {lang === 'ar' ? 'تسجيل الدخول مجددا' : 'Login Again'}
-          </button>
-        </div>
-      </section>
-    );
+    return <LoginPage onLogin={login} isLoading={isAuthenticating} />;
   }
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <section
         className={styles.app}
@@ -199,7 +188,7 @@ export default function App() {
           isTablet={isTablet}
           page={page}
           lang={lang}
-          navItems={NAV_ITEMS}
+          navItems={roleBasedNavItems}
           expandedGroups={expandedGroups}
           onToggleGroup={toggleGroup}
           onNavigate={navigateTo}

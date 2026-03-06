@@ -1,0 +1,399 @@
+openapi: 3.1.0
+info:
+  title: Digital Evidence and Compliance Management API
+  version: 1.0.0
+  description: REST API contract for the modular monolith backend.
+servers:
+  - url: http://localhost:8000/api/v1
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+  - name: Users
+  - name: Perspectives
+  - name: Axes
+  - name: Standards
+  - name: EvidenceRequirements
+  - name: Tasks
+  - name: EvidenceSubmissions
+  - name: Reviews
+  - name: Notifications
+  - name: Dashboard
+  - name: Reports
+  - name: EvidenceVault
+  - name: Settings
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate user and issue access token + refresh cookie
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Problem' }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rotate refresh token and issue new access token
+      security: []
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Problem' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke refresh token session
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user profile with permissions
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+
+  /users:
+    get:
+      tags: [Users]
+      summary: List users with filters and pagination
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'
+        - in: query
+          name: role
+          schema: { type: string }
+        - in: query
+          name: department
+          schema: { type: string }
+        - in: query
+          name: is_active
+          schema: { type: boolean }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+    post:
+      tags: [Users]
+      summary: Create user
+      responses:
+        '201': { $ref: '#/components/responses/Success' }
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user details
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+    patch:
+      tags: [Users]
+      summary: Update user profile
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+    delete:
+      tags: [Users]
+      summary: Soft delete user
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+
+  /perspectives:
+    get:
+      tags: [Perspectives]
+      summary: List perspectives with completion percentages
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+    post:
+      tags: [Perspectives]
+      summary: Create perspective
+      responses:
+        '201': { $ref: '#/components/responses/Success' }
+
+  /perspectives/{id}:
+    get:
+      tags: [Perspectives]
+      summary: Perspective detail
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+    patch:
+      tags: [Perspectives]
+      summary: Update perspective
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+    delete:
+      tags: [Perspectives]
+      summary: Soft delete perspective
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+
+  /axes:
+    get:
+      tags: [Axes]
+      summary: List axes
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+    post:
+      tags: [Axes]
+      summary: Create axis
+      responses: { '201': { $ref: '#/components/responses/Success' } }
+
+  /axes/{id}:
+    get:
+      tags: [Axes]
+      summary: Axis detail
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+    patch:
+      tags: [Axes]
+      summary: Update axis
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+    delete:
+      tags: [Axes]
+      summary: Soft delete axis
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+
+  /standards:
+    get:
+      tags: [Standards]
+      summary: List standards with filters
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+    post:
+      tags: [Standards]
+      summary: Create standard
+      responses: { '201': { $ref: '#/components/responses/Success' } }
+
+  /standards/{id}:
+    get:
+      tags: [Standards]
+      summary: Standard detail with requirements
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+    patch:
+      tags: [Standards]
+      summary: Update standard
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+    delete:
+      tags: [Standards]
+      summary: Soft delete standard
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+
+  /evidence-requirements:
+    get:
+      tags: [EvidenceRequirements]
+      summary: List evidence requirements
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+    post:
+      tags: [EvidenceRequirements]
+      summary: Create evidence requirement
+      responses: { '201': { $ref: '#/components/responses/Success' } }
+
+  /tasks:
+    get:
+      tags: [Tasks]
+      summary: List tasks by role scope
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+    post:
+      tags: [Tasks]
+      summary: Assign task
+      responses: { '201': { $ref: '#/components/responses/Success' } }
+
+  /tasks/{id}:
+    get:
+      tags: [Tasks]
+      summary: Task detail including comments and submission history
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+    patch:
+      tags: [Tasks]
+      summary: Update due date, priority, assignment
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+    delete:
+      tags: [Tasks]
+      summary: Cancel task
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { $ref: '#/components/responses/Success' } }
+
+  /evidence-submissions:
+    post:
+      tags: [EvidenceSubmissions]
+      summary: Create submission and upload files
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                task_id: { type: string, format: uuid }
+                evidence_requirement_id: { type: string, format: uuid }
+                notes: { type: string }
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201': { $ref: '#/components/responses/Success' }
+    get:
+      tags: [EvidenceSubmissions]
+      summary: List submissions with filters
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+
+  /reviews:
+    post:
+      tags: [Reviews]
+      summary: Submit review decision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [submission_id, decision]
+              properties:
+                submission_id: { type: string, format: uuid }
+                decision:
+                  type: string
+                  enum: [approved, rejected, resubmission_required]
+                reason: { type: string }
+      responses:
+        '201': { $ref: '#/components/responses/Success' }
+    get:
+      tags: [Reviews]
+      summary: Review history
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: My notifications (unread first)
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+
+  /dashboard/summary:
+    get:
+      tags: [Dashboard]
+      summary: Global KPI summary
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+
+  /reports/jobs:
+    get:
+      tags: [Reports]
+      summary: List report generation jobs
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+
+  /reports/{type}:
+    post:
+      tags: [Reports]
+      summary: Queue report generation job
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [self-assessment, evidence-register, audit-pack, non-compliance, executive-summary, sla-report]
+      responses:
+        '202': { $ref: '#/components/responses/Success' }
+
+  /evidence-vault:
+    get:
+      tags: [EvidenceVault]
+      summary: Search approved evidence files
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+
+  /settings:
+    get:
+      tags: [Settings]
+      summary: Read system config
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+    patch:
+      tags: [Settings]
+      summary: Bulk update system config
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    id:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    page:
+      in: query
+      name: page
+      schema: { type: integer, minimum: 1, default: 1 }
+    perPage:
+      in: query
+      name: per_page
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+
+  responses:
+    Success:
+      description: Successful response envelope
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean, const: true }
+              data: { type: object, additionalProperties: true }
+              meta: { type: object, additionalProperties: true }
+    Problem:
+      description: RFC7807-compatible error envelope
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean, const: false }
+              error:
+                type: object
+                properties:
+                  type: { type: string, format: uri }
+                  title: { type: string }
+                  status: { type: integer }
+                  detail: { type: string }
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field: { type: string }
+                        message: { type: string }

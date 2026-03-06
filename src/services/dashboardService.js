@@ -23,5 +23,10 @@ export async function getDashboardSummary() {
     return getMockDashboard();
   }
 
-  return httpClient.get('/dashboard/summary');
+  try {
+    return await httpClient.get('/dashboard/summary');
+  } catch (err) {
+    console.warn('Dashboard API failed, using mock data:', err);
+    return getMockDashboard();
+  }
 }

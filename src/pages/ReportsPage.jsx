@@ -1,96 +1,56 @@
-import PropTypes from 'prop-types';
-import { C } from '../utils/theme.js';
+﻿import PropTypes from 'prop-types';
+import styles from './ReportsPage.module.css';
 
 const REPORT_ITEMS = [
-  { title: '????? ??????? ??????', titleEn: 'Self-Assessment Report', desc: '????? ???? ?? ???? ?? ????? ?? ???? ??????? ????????' },
-  { title: '??? ???????', titleEn: 'Evidence Register', desc: '????? ????? ????? ??????? ???????? ?? ???????? ??????? ????? ????????' },
-  { title: '???? ??????? ???????', titleEn: 'Full Audit Pack (ZIP)', desc: '????? ??????? ???????? + ????? + ???? ????????? + ???? ???????' },
-  { title: '????? ??? ????????', titleEn: 'Non-Compliance Report', desc: '???????? ??? ????????? ?? ??? ???????? ????????? ??????????' },
-  { title: '???? ??????', titleEn: 'Executive Summary', desc: '???? ??????? ??????: ??? ???????? ??????????? ????????' },
-  { title: '????? ???? ?????????', titleEn: 'Reviewer SLA Report', desc: '????? ??? ????????? ???? ?????? ????? ????? ?????? ??????' },
+  {
+    title: 'تقرير التقييم الذاتي',
+    titleEn: 'Self-Assessment Report',
+    desc: 'تقرير شامل عن مستوى الالتزام في جميع المناظير والمعايير',
+  },
+  {
+    title: 'سجل الأدلة',
+    titleEn: 'Evidence Register',
+    desc: 'قائمة بجميع الأدلة المرفوعة مع تفاصيل المراجعة وحالة الاعتماد',
+  },
+  {
+    title: 'حزمة التدقيق الكاملة',
+    titleEn: 'Full Audit Pack (ZIP)',
+    desc: 'جميع الوثائق الرسمية مع الأدلة ونتائج المراجعة في ملف واحد',
+  },
+  {
+    title: 'تقرير عدم الالتزام',
+    titleEn: 'Non-Compliance Report',
+    desc: 'ملخص بالمعايير غير الملتزمة مع خطط المعالجة والإجراءات المقترحة',
+  },
+  {
+    title: 'الملخص التنفيذي',
+    titleEn: 'Executive Summary',
+    desc: 'عرض مختصر للإنجازات الحالية ومؤشرات الأداء الرئيسية',
+  },
+  {
+    title: 'تقرير زمن المراجعة',
+    titleEn: 'Reviewer SLA Report',
+    desc: 'تحليل دورة المراجعة حسب فرق العمل ومعدل وقت الاعتماد',
+  },
 ];
 
 const ReportsPage = ({ isMobile }) => {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: C.primaryDark, fontFamily: 'Cairo' }}>
-        ???????? ???? ??????? � Reports & Audit Packs
-      </h2>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(332px, 383px))',
-          gap: 20,
-          justifyContent: 'center',
-        }}
-      >
+    <div className={styles.page}>
+      <h2 className={styles.heading}>التقارير وحزم التدقيق - Reports & Audit Packs</h2>
+      <div className={`${styles.grid} ${isMobile ? styles.gridMobile : styles.gridDesktop}`}>
         {REPORT_ITEMS.length > 0 ? (
-          REPORT_ITEMS.map((r) => (
-            <div
-              key={r.titleEn}
-              style={{
-                background: C.cardBg,
-                borderRadius: 10,
-                padding: '25.6px',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-                width: '100%',
-                maxWidth: 383,
-                minHeight: 143,
-                justifyContent: 'space-between',
-                direction: 'rtl',
-              }}
-            >
-              <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: C.primaryDark,
-                    fontFamily: 'Cairo',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {r.title}
-                </div>
-                <div
-                  style={{
-                    fontSize: 9,
-                    color: C.accent,
-                    fontFamily: 'Cairo',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {r.titleEn}
-                </div>
-                <div
-                  style={{
-                    fontSize: 10,
-                    color: C.textLight,
-                    fontFamily: 'Cairo',
-                    marginTop: 3,
-                    overflow: 'hidden',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    lineHeight: '1.3',
-                  }}
-                >
-                  {r.desc}
-                </div>
+          REPORT_ITEMS.map((report) => (
+            <article key={report.titleEn} className={styles.card}>
+              <div className={styles.cardBody}>
+                <div className={styles.title}>{report.title}</div>
+                <div className={styles.titleEn}>{report.titleEn}</div>
+                <div className={styles.desc}>{report.desc}</div>
               </div>
-            </div>
+            </article>
           ))
         ) : (
-          <div style={{ background: C.cardBg, borderRadius: 10, padding: 16, color: C.textLight, textAlign: 'center' }}>
-            ?? ???? ?????? ????? ?????
-          </div>
+          <div className={styles.emptyState}>لا توجد تقارير جاهزة حاليا</div>
         )}
       </div>
     </div>

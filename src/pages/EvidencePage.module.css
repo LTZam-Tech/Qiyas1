@@ -1,0 +1,144 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.heading {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #5c3a73;
+}
+
+.grid {
+  display: grid;
+  gap: 20px;
+  justify-content: center;
+}
+
+.gridDesktop {
+  grid-template-columns: repeat(auto-fit, minmax(332px, 383px));
+}
+
+.gridMobile {
+  grid-template-columns: 1fr;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 25.6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  max-width: 383px;
+  min-height: 143px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  direction: rtl;
+  border-top: 3px solid #43a047;
+}
+
+.cardNon {
+  border-top-color: #d32f2f;
+}
+
+.cardPartial {
+  border-top-color: #f57c00;
+}
+
+.cardFull {
+  border-top-color: #43a047;
+}
+
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.code {
+  font-size: 15px;
+  font-weight: 800;
+  color: #5c3a73;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2d1b3d;
+  text-align: right;
+  margin-bottom: 4px;
+}
+
+.titleEn {
+  font-size: 11px;
+  color: #7a6b8a;
+  text-align: right;
+  margin-bottom: 10px;
+}
+
+.meta {
+  font-size: 11px;
+  color: #7a6b8a;
+  text-align: center;
+  margin-top: 6px;
+}
+
+.uploader {
+  border: 2px dashed #e0d4ea;
+  border-radius: 10px;
+  padding: 40px;
+  text-align: center;
+  background: #f4eff9;
+  cursor: pointer;
+  width: 100%;
+  font-family: inherit;
+}
+
+.uploaderIcon {
+  color: #6b4a86;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.uploaderTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #5c3a73;
+}
+
+.uploaderHint {
+  font-size: 12px;
+  color: #7a6b8a;
+  margin-top: 4px;
+}
+
+.uploaderPattern {
+  font-size: 11px;
+  color: #8a5bb0;
+  margin-top: 8px;
+}
+
+.emptyState,
+.loadingState,
+.errorState {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+}
+
+.emptyState,
+.loadingState {
+  color: #7a6b8a;
+}
+
+.errorState {
+  color: #d32f2f;
+  font-weight: 700;
+}

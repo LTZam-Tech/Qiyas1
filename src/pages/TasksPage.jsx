@@ -1,42 +1,94 @@
-import { useState, useMemo } from "react";
+﻿import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { C } from '../utils/theme.js';
-import { TASKS_DATA } from '../utils/data.js';
 import Badge from '../components/Badge.jsx';
+import useTasksData from '../hooks/useTasksData.js';
+import styles from './TasksPage.module.css';
+
+const FILTERS = [
+  ['all', 'الكل'],
+  ['active', 'نشط'],
+  ['submitted', 'مقدم'],
+  ['revision', 'مراجعة'],
+  ['approved', 'معتمد'],
+];
+
+const TABLE_HEADERS = ['الأولوية', 'الحالة', 'الموعد النهائي', 'المسؤول', 'الشاهد المطلوب', 'المعيار'];
 
 const TasksPage = ({ isMobile }) => {
-  const [filter, setFilter] = useState("all");
-  const filtered = useMemo(() => (filter === "all" ? TASKS_DATA : TASKS_DATA.filter((t) => t.status === filter)), [filter]);
+  const [filter, setFilter] = useState('all');
+  const { data: tasks, isLoading, error } = useTasksData(filter);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {[["all", "الكل"], ["active", "نشط"], ["submitted", "مُقدَّم"], ["revision", "مراجعة"], ["approved", "معتمد"]].map(([k, l]) => (
-            <button type="button" aria-label={`فلترة المهام: ${l}`} key={k} onClick={() => setFilter(k)} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${filter === k ? C.primary : C.border}`, background: filter === k ? C.primary : C.cardBg, color: filter === k ? C.white : C.textMid, fontSize: 12, fontFamily: "Cairo", fontWeight: 600, cursor: "pointer" }}>{l}</button>
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <div className={styles.filters}>
+          {FILTERS.map(([key, label]) => (
+            <button
+              type="button"
+              key={key}
+              aria-label={`فلترة المهام: ${label}`}
+              className={`${styles.filterButton} ${filter === key ? styles.filterButtonActive : ''}`}
+              onClick={() => setFilter(key)}
+            >
+              {label}
+            </button>
           ))}
         </div>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: C.primaryDark, fontFamily: "Cairo" }}>إدارة المهام — Task Management</h2>
+        <h2 className={styles.heading}>إدارة المهام - Task Management</h2>
       </div>
-      <div style={{ background: C.cardBg, borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", overflowX: "auto" }}>
-        <table style={{ width: "100%", minWidth: isMobile ? 600 : 820, borderCollapse: "collapse", fontFamily: "Cairo" }}>
-          <thead><tr style={{ background: C.primary }}>{["الأولوية", "الحالة", "الموعد النهائي", "المسؤول", "الشاهد المطلوب", "المعيار"].map((h) => <th key={h} style={{ padding: "10px 12px", color: C.white, fontSize: 12, fontWeight: 700, textAlign: "right", fontFamily: "Cairo" }}>{h}</th>)}</tr></thead>
-          <tbody>
-            {filtered.length > 0 ? filtered.map((t, i) => (
-              <tr key={t.id} style={{ background: i % 2 === 0 ? C.white : C.bg, borderBottom: `1px solid ${C.border}` }}>
-                <td style={{ padding: "10px 12px", textAlign: "center" }}><Badge status={t.priority} /></td>
-                <td style={{ padding: "10px 12px", textAlign: "center" }}><Badge status={t.status} /></td>
-                <td style={{ padding: "10px 12px", fontSize: 12, color: C.textDark, textAlign: "center", direction: "ltr" }}>{t.due}</td>
-                <td style={{ padding: "10px 12px", fontSize: 12, color: C.textDark, textAlign: "right" }}>{t.assignee}</td>
-                <td style={{ padding: "10px 12px", fontSize: 12, color: C.textDark, textAlign: "right" }}>{t.req}</td>
-                <td style={{ padding: "10px 12px", fontSize: 13, fontWeight: 700, color: C.primaryDark, textAlign: "center" }}>{t.code}</td>
-              </tr>
-            )) : (
+
+      <div className={styles.tableContainer}>
+        <table className={`${styles.table} ${isMobile ? styles.tableMobile : ''}`}>
+          <thead>
+            <tr className={styles.tableHeadRow}>
+              {TABLE_HEADERS.map((header) => (
+                <th key={header} className={styles.tableHeaderCell}>
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className={styles.tableBody}>
+            {isLoading ? (
               <tr>
-                <td colSpan={6} style={{ padding: 18, textAlign: 'center', color: C.textLight }}>
+                <td colSpan={6} className={styles.loadingState}>
+                  جاري تحميل المهام...
+                </td>
+              </tr>
+            ) : null}
+
+            {!isLoading && error ? (
+              <tr>
+                <td colSpan={6} className={styles.errorState}>
+                  {error}
+                </td>
+              </tr>
+            ) : null}
+
+            {!isLoading && !error && tasks.length === 0 ? (
+              <tr>
+                <td colSpan={6} className={styles.emptyState}>
                   لا توجد مهام لهذه الفلترة
                 </td>
               </tr>
-            )}
+            ) : null}
+
+            {!isLoading && !error
+              ? tasks.map((task) => (
+                  <tr key={task.id} className={styles.tableRow}>
+                    <td className={styles.centerCell}>
+                      <Badge status={task.priority} />
+                    </td>
+                    <td className={styles.centerCell}>
+                      <Badge status={task.status} />
+                    </td>
+                    <td className={styles.dueCell}>{task.due}</td>
+                    <td className={styles.textCell}>{task.assignee}</td>
+                    <td className={styles.textCell}>{task.req}</td>
+                    <td className={styles.codeCell}>{task.code}</td>
+                  </tr>
+                ))
+              : null}
           </tbody>
         </table>
       </div>

@@ -1,0 +1,60 @@
+events:
+  - type: task.assigned
+    trigger: Consultant assigns task
+    recipients: [employee]
+    async: true
+  - type: task.deadline_warning
+    trigger: SLA warning threshold reached
+    recipients: [employee, consultant]
+    async: true
+  - type: task.overdue
+    trigger: due date passed without submission
+    recipients: [employee, consultant, dean]
+    async: true
+  - type: task.reassigned
+    trigger: task assignee changed
+    recipients: [old_assignee, new_assignee]
+    async: true
+  - type: submission.uploaded
+    trigger: employee submits evidence
+    recipients: [consultant, reviewer]
+    async: true
+  - type: submission.approved
+    trigger: reviewer approves submission
+    recipients: [employee, dean]
+    async: true
+  - type: submission.rejected
+    trigger: reviewer rejects submission
+    recipients: [employee]
+    async: true
+  - type: submission.resubmission_required
+    trigger: reviewer requests corrections
+    recipients: [employee]
+    async: true
+  - type: escalation.level1
+    trigger: SLA breach level 1
+    recipients: [consultant, manager]
+    async: true
+  - type: escalation.level2
+    trigger: SLA breach level 2
+    recipients: [dean, vice_dean]
+    async: true
+  - type: escalation.level3
+    trigger: SLA breach level 3
+    recipients: [admin]
+    async: true
+  - type: report.completed
+    trigger: report generation job completed
+    recipients: [requester]
+    async: true
+  - type: report.failed
+    trigger: report generation job failed
+    recipients: [requester, admin]
+    async: true
+
+retry_policy:
+  max_attempts: 3
+  backoff_seconds: [30, 120, 600]
+  deduplication:
+    enabled: true
+    threshold_per_user_per_hour: 5
