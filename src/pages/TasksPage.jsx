@@ -3,7 +3,7 @@ import { C } from '../utils/theme.js';
 import { TASKS_DATA } from '../utils/data.js';
 import Badge from '../components/Badge.jsx';
 
-const TasksPage = ({ isMobile, isTablet }) => {
+const TasksPage = ({ isMobile }) => {
   const [filter, setFilter] = useState("all");
   const filtered = useMemo(() => (filter === "all" ? TASKS_DATA : TASKS_DATA.filter((t) => t.status === filter)), [filter]);
   return (

@@ -4,7 +4,7 @@ import { TASKS_DATA } from '../utils/data.js';
 import Badge from '../components/Badge.jsx';
 import StatCard from '../components/StatCard.jsx';
 
-const ReviewPage = ({ isMobile, isTablet }) => (
+const ReviewPage = ({ isMobile }) => (
   <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
     <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: C.primaryDark, fontFamily: "Cairo" }}>المراجعة والاعتماد — Review & Approval</h2>
     <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(332px, 383px))", gap: 20, justifyContent: "center" }}>

@@ -5,7 +5,7 @@ import { PERSPECTIVES, STANDARDS_SAMPLE } from '../utils/data.js';
 import Badge from '../components/Badge.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 
-const CatalogPage = ({ isMobile, isTablet }) => {
+const CatalogPage = ({ isMobile }) => {
   const [expanded, setExpanded] = useState(null);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>

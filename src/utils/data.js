@@ -43,7 +43,7 @@ export const TASKS_DATA = [
   { id: 4, code: "5.10.3", req: "لقطات نظام الأرشفة — DMS Screenshots", assignee: "فهد العنزي", due: "2025-04-22", status: "active", priority: "critical" },
   { id: 5, code: "5.10.4", req: "وثيقة تكامل CRM-ITSM — Integration Document", assignee: "سارة القحطاني", due: "2025-04-18", status: "approved", priority: "medium" },
   { id: 6, code: "5.13.5", req: "تسجيل المنصات في رقمي — Raqmi Registration", assignee: "خالد المطيري", due: "2025-04-25", status: "active", priority: "critical" },
-  { id: 7, code: "5.22.2", req: "وثيقق ورش Design Thinking", assignee: "نورة العتيبي", due: "2025-05-01", status: "active", priority: "high" },
+  { id: 7, code: "5.22.2", req: "وثيقة ورش Design Thinking", assignee: "نورة العتيبي", due: "2025-05-01", status: "active", priority: "high" },
   { id: 8, code: "5.9.1", req: "ميثاق لجنة BCM — BCM Charter", assignee: "محمد الدوسري", due: "2025-04-10", status: "approved", priority: "medium" },
 ];
 

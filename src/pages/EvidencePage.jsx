@@ -4,7 +4,7 @@ import { STANDARDS_SAMPLE } from '../utils/data.js';
 import Badge from '../components/Badge.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 
-const EvidencePage = ({ isMobile, isTablet }) => {
+const EvidencePage = ({ isMobile }) => {
   return (
   <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
     <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: C.primaryDark, fontFamily: "Cairo" }}>خزنة الأدلة — Evidence Locker</h2>
@@ -22,12 +22,12 @@ const EvidencePage = ({ isMobile, isTablet }) => {
         );
       })}
     </div>
-    <div style={{ border: `2px dashed ${C.border}`, borderRadius: 10, padding: 40, textAlign: "center", background: C.light, cursor: "pointer" }}>
+    <button type="button" aria-label="رفع شاهد جديد" style={{ border: `2px dashed ${C.border}`, borderRadius: 10, padding: 40, textAlign: "center", background: C.light, cursor: "pointer", width: "100%", fontFamily: "inherit" }}>
       <div style={{ color: C.primary, marginBottom: 10, display: "flex", justifyContent: "center" }}>{Icons.upload}</div>
       <div style={{ fontSize: 14, fontWeight: 700, color: C.primaryDark, fontFamily: "Cairo" }}>رفع شاهد جديد — Upload New Evidence</div>
       <div style={{ fontSize: 12, color: C.textLight, fontFamily: "Cairo", marginTop: 4 }}>اسحب الملفات هنا أو اضغط للاختيار — PDF, PNG, XLSX, DOCX</div>
       <div style={{ fontSize: 11, color: C.accent, fontFamily: "Cairo", marginTop: 8 }}>تسمية الملف: [StandardCode]_[SystemName]_[ScreenName]_[YYYYMMDD].ext</div>
-    </div>
+    </button>
   </div>
   );
 };

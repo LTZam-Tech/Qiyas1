@@ -27,7 +27,6 @@ export default function App() {
   const [vw, setVw] = useState(getWidth());
   const [sideOpen, setSideOpen] = useState(getWidth() > 1024);
   const [expandedGroups, setExpandedGroups] = useState(new Set(["management"]));
-  const [mobileMenu, setMobileMenu] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const onResize = useCallback(() => {
@@ -57,7 +56,6 @@ export default function App() {
     setPage(item.key);
     if (isMobile) {
       setSideOpen(false);
-      setMobileMenu(null);
     }
   };
 
@@ -69,7 +67,7 @@ export default function App() {
 
       <header style={{ background: C.deep, padding: isMobile ? "10px 12px" : "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, gap: 12, minHeight: isMobile ? 60 : 72, width: "100%", zIndex: 5, borderBottom: `2px solid ${C.primaryDark}`, borderBottomLeftRadius: isTablet ? 0 : 20, borderBottomRightRadius: 0, marginRight: !isTablet ? (sideOpen ? 200 : 70) : 0, transition: isTablet ? "none" : "margin-right 0.3s ease" }}>
         <div style={{ display: "flex", alignItems: "center", minWidth: 0 }}>
-          {isTablet && <button type="button" onClick={() => setSideOpen((v) => !v)} style={{ border: "none", background: "transparent", borderRadius: 6, padding: "6px 8px", cursor: "pointer", color: C.white, fontSize: 20 }}>☰</button>}
+          {isTablet && <button type="button" aria-label="فتح القائمة الجانبية" onClick={() => setSideOpen((v) => !v)} style={{ border: "none", background: "transparent", borderRadius: 6, padding: "6px 8px", cursor: "pointer", color: C.white, fontSize: 20 }}>☰</button>}
           <div style={{ fontSize: 16, fontWeight: 800, color: C.white, fontFamily: "Cairo" }}>📘</div>
         </div>
 
@@ -98,7 +96,6 @@ export default function App() {
         <aside style={{ width: isTablet ? (sideOpen ? 200 : 0) : sideOpen ? 200 : 70, background: C.deep, transition: "width 0.3s ease", overflow: "visible", flexShrink: 0, display: "flex", flexDirection: "column", position: isTablet ? "fixed" : "relative", right: 0, top: isTablet ? (isMobile ? 68 : 82) : 0, marginTop: !isTablet ? 10 : 0, bottom: 0, zIndex: 10, borderTopLeftRadius: 22, borderBottomLeftRadius: 22, borderTopRightRadius: 0, borderBottomRightRadius: 16, borderLeft: `1px solid ${C.primaryDark}`, height: isTablet ? `calc(100vh - ${isMobile ? 68 : 82}px)` : "auto", marginRight: 0 }}>
 
         {sideOpen && !isMobile && (<div style={{ position: "absolute", top: `-100px`, right: 0, width: 116, height: 100, background: C.deep, borderRadius: "22px 0 0 18px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 50, zIndex: 20 }}>
-          {/* University logo - replace with actual logo */}
         </div>)}
 
 
@@ -146,7 +143,7 @@ export default function App() {
               <div style={{ fontSize: 14, lineHeight: "24px", opacity: 0.7 }}>Admin User</div>
             </div>)}
           </div>
-          <button type="button" onClick={() => alert("Logout")} style={{ display: "flex", alignItems: "center", justifyContent: sideOpen ? "flex-start" : "center", gap: sideOpen ? 8 : 0, padding: "8px", borderRadius: 6, background: "transparent", border: `1px solid ${C.red}`, color: C.red, cursor: "pointer", fontSize: 11, fontFamily: "Cairo" }}>
+          <button type="button" onClick={() => console.warn("Logout not yet implemented")} style={{ display: "flex", alignItems: "center", justifyContent: sideOpen ? "flex-start" : "center", gap: sideOpen ? 8 : 0, padding: "8px", borderRadius: 6, background: "transparent", border: `1px solid ${C.red}`, color: C.red, cursor: "pointer", fontSize: 11, fontFamily: "Cairo" }}>
             <span style={{ fontSize: 18 }}>🚪</span>
             {sideOpen && <span>تسجيل الخروج</span>}
           </button>
@@ -154,22 +151,6 @@ export default function App() {
       </aside>
 
       <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-
-        {isMobile && mobileMenu && (<>
-          <div onClick={() => setMobileMenu(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 15 }} />
-          <div style={{ position: "fixed", top: 120, right: 20, background: C.deep, borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.3)", zIndex: 20, minWidth: 200, border: `1px solid ${C.primaryDark}` }}>
-            <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.primaryDark}`, display: "flex", alignItems: "center", gap: 8, color: C.white, fontFamily: "Cairo", fontWeight: 600 }}>
-              <span style={{ fontSize: 18 }}>{Icons[mobileMenu.iconKey]}</span>
-              {mobileMenu.label}
-            </div>
-            {mobileMenu.children?.map((child) => (
-              <button key={child.key} onClick={() => navigateTo(child)} style={{ display: "flex", width: "100%", alignItems: "center", gap: 8, padding: "10px 16px", cursor: "pointer", color: page === child.key ? C.white : C.soft, background: page === child.key ? `${C.primary}40` : "transparent", border: "none", fontSize: 12, fontFamily: "Cairo", borderBottom: `1px solid ${C.primaryDark}` }}>
-                <span style={{ fontSize: 16 }}>{Icons[child.iconKey]}</span>
-                {child.label}
-              </button>
-            ))}
-          </div>
-        </>)}
 
         <div style={{ flex: 1, overflow: "auto", padding: isMobile ? 10 : isTablet ? 14 : 18, width: "100%", boxSizing: "border-box" }}>
           <PageComponent isMobile={isMobile} isTablet={isTablet} />
