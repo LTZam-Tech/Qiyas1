@@ -1,9 +1,7 @@
-import { useState } from 'react';
-import { C, cardGradients } from '../utils/theme.js';
+import { C } from '../utils/theme.js';
 import { Icons } from '../utils/icons.jsx';
 
-const StatCard = ({ label, value, sub, icon, color, isMobile, gradient, change }) => {
-  const [flipped, setFlipped] = useState(false);
+const StatCard = ({ label, value, icon, gradient, change }) => {
   const gradientBg = gradient || "linear-gradient(135deg, #667EEA 0%, #764BA2 100%)";
   
   return (
@@ -25,8 +23,7 @@ const StatCard = ({ label, value, sub, icon, color, isMobile, gradient, change }
         justifyContent: 'space-between',
         direction: 'rtl'
       }}
-      onMouseEnter={() => setFlipped(true)} 
-      onMouseLeave={() => setFlipped(false)}
+
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ fontSize: 45, color: C.white, opacity: 0.9 }}>{Icons[icon]}</div>

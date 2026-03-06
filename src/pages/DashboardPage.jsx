@@ -4,10 +4,9 @@ import StatCard from '../components/StatCard.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 import { Icons } from '../utils/icons.jsx';
 
-const DashboardPage = ({ isMobile, isTablet }) => {
+const DashboardPage = ({ isMobile }) => {
   const totalStd = 95;
   const full = 55, partial = 27, non = 13;
-  const readiness = Math.round((full / totalStd) * 100);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -16,7 +15,7 @@ const DashboardPage = ({ isMobile, isTablet }) => {
         <StatCard label="إجمالي المعايير" value={totalStd} sub="Total Standards" gradient={cardGradients.purple} icon="catalog" isMobile={isMobile} change={0} />
         <StatCard label="التزام كلي" value={full} sub="Full Compliance" gradient={cardGradients.green} icon="check" isMobile={isMobile} change={12.3} />
         <StatCard label="التزام جزئي" value={partial} sub="Partial" gradient={cardGradients.accent} icon="clock" isMobile={isMobile} change={8.5} />
-        <StatCard label="إجمالي الزيارات" value={`${non}`} sub="Total Visits" gradient={cardGradients.teal} icon="x" isMobile={isMobile} change={5.2} />
+        <StatCard label="عدم الالتزام" value={`${non}`} sub="Non Compliance" gradient={cardGradients.teal} icon="x" isMobile={isMobile} change={5.2} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
