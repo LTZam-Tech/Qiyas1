@@ -1,5 +1,5 @@
+import PropTypes from 'prop-types';
 import { C, cardGradients } from '../utils/theme.js';
-import { Icons } from '../utils/icons.jsx';
 import { TASKS_DATA } from '../utils/data.js';
 import Badge from '../components/Badge.jsx';
 import StatCard from '../components/StatCard.jsx';
@@ -15,7 +15,7 @@ const ReviewPage = ({ isMobile }) => (
     </div>
     <div style={{ background: C.cardBg, borderRadius: 10, padding: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
       <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700, color: C.primaryDark, fontFamily: "Cairo" }}>قائمة المراجعات المعلقة — Pending Reviews Queue</h3>
-      {TASKS_DATA.filter((t) => t.status === "submitted" || t.status === "revision").map((t) => (
+      {TASKS_DATA.filter((t) => t.status === "submitted" || t.status === "revision").length > 0 ? TASKS_DATA.filter((t) => t.status === "submitted" || t.status === "revision").map((t) => (
         <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: `1px solid ${C.border}`, flexWrap: "wrap" }}>
           <div style={{ display: "flex", gap: 6 }}>
             <button type="button" aria-label={`اعتماد ${t.req}`} style={{ padding: "4px 12px", borderRadius: 4, border: "none", background: C.green, color: C.white, fontSize: 11, fontFamily: "Cairo", cursor: "pointer", fontWeight: 600 }}>اعتماد</button>
@@ -28,9 +28,15 @@ const ReviewPage = ({ isMobile }) => (
           </div>
           <Badge status={t.status} />
         </div>
-      ))}
+      )) : (
+        <div style={{ textAlign: 'center', color: C.textLight, padding: 14 }}>لا توجد مراجعات معلقة</div>
+      )}
     </div>
   </div>
 );
+
+ReviewPage.propTypes = {
+  isMobile: PropTypes.bool.isRequired,
+};
 
 export default ReviewPage;

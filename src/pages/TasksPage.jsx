@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import PropTypes from 'prop-types';
 import { C } from '../utils/theme.js';
 import { TASKS_DATA } from '../utils/data.js';
 import Badge from '../components/Badge.jsx';
@@ -20,7 +21,7 @@ const TasksPage = ({ isMobile }) => {
         <table style={{ width: "100%", minWidth: isMobile ? 600 : 820, borderCollapse: "collapse", fontFamily: "Cairo" }}>
           <thead><tr style={{ background: C.primary }}>{["الأولوية", "الحالة", "الموعد النهائي", "المسؤول", "الشاهد المطلوب", "المعيار"].map((h) => <th key={h} style={{ padding: "10px 12px", color: C.white, fontSize: 12, fontWeight: 700, textAlign: "right", fontFamily: "Cairo" }}>{h}</th>)}</tr></thead>
           <tbody>
-            {filtered.map((t, i) => (
+            {filtered.length > 0 ? filtered.map((t, i) => (
               <tr key={t.id} style={{ background: i % 2 === 0 ? C.white : C.bg, borderBottom: `1px solid ${C.border}` }}>
                 <td style={{ padding: "10px 12px", textAlign: "center" }}><Badge status={t.priority} /></td>
                 <td style={{ padding: "10px 12px", textAlign: "center" }}><Badge status={t.status} /></td>
@@ -29,12 +30,22 @@ const TasksPage = ({ isMobile }) => {
                 <td style={{ padding: "10px 12px", fontSize: 12, color: C.textDark, textAlign: "right" }}>{t.req}</td>
                 <td style={{ padding: "10px 12px", fontSize: 13, fontWeight: 700, color: C.primaryDark, textAlign: "center" }}>{t.code}</td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan={6} style={{ padding: 18, textAlign: 'center', color: C.textLight }}>
+                  لا توجد مهام لهذه الفلترة
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
+};
+
+TasksPage.propTypes = {
+  isMobile: PropTypes.bool.isRequired,
 };
 
 export default TasksPage;

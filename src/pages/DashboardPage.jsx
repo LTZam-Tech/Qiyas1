@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { C, cardGradients } from '../utils/theme.js';
 import { PERSPECTIVES, RECENT_ACTIVITIES } from '../utils/data.js';
 import StatCard from '../components/StatCard.jsx';
@@ -22,20 +23,22 @@ const DashboardPage = ({ isMobile }) => {
         <div style={{ background: C.cardBg, borderRadius: 10, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700, color: C.primaryDark, fontFamily: "Cairo" }}>نسبة الإنجاز حسب المنظور — Completion by Perspective</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {PERSPECTIVES.map((p) => (
+            {PERSPECTIVES.length > 0 ? PERSPECTIVES.map((p) => (
               <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 11, color: C.textLight, width: 28, textAlign: "center", fontFamily: "Cairo", fontWeight: 700 }}>{p.completion}%</span>
                 <div style={{ flex: 1 }}><ProgressBar value={p.completion} height={8} /></div>
                 <span style={{ fontSize: 12, color: C.textDark, minWidth: 140, textAlign: "right", fontFamily: "Cairo" }}>{p.name}</span>
               </div>
-            ))}
+            )) : (
+              <p style={{ color: C.textLight, textAlign: 'center' }}>لا توجد بيانات للمناظير حاليا</p>
+            )}
           </div>
         </div>
 
         <div style={{ background: C.cardBg, borderRadius: 10, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700, color: C.primaryDark, fontFamily: "Cairo" }}>النشاطات الأخيرة — Recent Activity</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            {RECENT_ACTIVITIES.map((a, i) => (
+            {RECENT_ACTIVITIES.length > 0 ? RECENT_ACTIVITIES.map((a, i) => (
               <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < RECENT_ACTIVITIES.length - 1 ? `1px solid ${C.border}` : "none" }}>
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: a.type === "approve" ? C.green : a.type === "reject" ? C.red : a.type === "revision" ? C.orange : C.primary, flexShrink: 0 }} />
                 <div style={{ flex: 1, textAlign: "right" }}>
@@ -43,7 +46,9 @@ const DashboardPage = ({ isMobile }) => {
                   <div style={{ fontSize: 11, color: C.textLight, fontFamily: "Cairo" }}>المعيار {a.standard} | {a.time}</div>
                 </div>
               </div>
-            ))}
+            )) : (
+              <p style={{ color: C.textLight, textAlign: 'center' }}>لا توجد نشاطات حديثة</p>
+            )}
           </div>
         </div>
       </div>
@@ -57,6 +62,10 @@ const DashboardPage = ({ isMobile }) => {
       </div>
     </div>
   );
+};
+
+DashboardPage.propTypes = {
+  isMobile: PropTypes.bool.isRequired,
 };
 
 export default DashboardPage;
