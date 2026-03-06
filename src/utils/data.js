@@ -111,4 +111,6 @@ export const NAV_ITEMS = [
       { key: "analytics", label: "التحليلات", labelEn: "Analytics", iconKey: "chart", isGroup: false },
     ]
   },
+
+  { key: "error-logs", label: "سجل الأخطاء", labelEn: "Error Logs", iconKey: "error", isGroup: false },
 ];

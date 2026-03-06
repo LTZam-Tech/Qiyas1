@@ -1,5 +1,4 @@
-import { env } from '../config/env.js';
-import { httpClient } from '../lib/httpClient.js';
+import { request } from '../lib/httpClient.js';
 import { PERSPECTIVES, RECENT_ACTIVITIES } from '../utils/data.js';
 
 const getMockDashboard = () => ({
@@ -19,12 +18,15 @@ const getMockDashboard = () => ({
 });
 
 export async function getDashboardSummary() {
-  if (env.useMockApi) {
-    return getMockDashboard();
-  }
-
   try {
-    return await httpClient.get('/dashboard/summary');
+    const response = await request('/dashboard/summary', { method: 'GET' });
+    
+    if (response.success && response.data) {
+      return response.data;
+    }
+    
+    console.warn('Invalid response structure, using mock data');
+    return getMockDashboard();
   } catch (err) {
     console.warn('Dashboard API failed, using mock data:', err);
     return getMockDashboard();

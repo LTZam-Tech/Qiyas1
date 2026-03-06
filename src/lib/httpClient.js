@@ -1,4 +1,5 @@
 import { env } from '../config/env.js';
+import errorLogger from '../services/errorLogger.js';
 
 let authTokenGetter = null;
 let unauthorizedHandler = null;
@@ -71,10 +72,12 @@ export async function request(path, options = {}, query = {}) {
       },
     });
 
-    console.log(`📤 HTTP ${options.method || 'GET'} ${config.url}`, {
-      headers: config.options.headers,
-      body: options.body ? 'present' : 'none',
-    });
+    console.group(`📤 HTTP ${options.method || 'GET'} ${path}`);
+    console.log('Full URL:', config.url);
+    console.log('API Base:', env.apiBaseUrl);
+    console.log('Headers:', config.options.headers);
+    console.log('Body:', options.body || 'none');
+    console.log('Timeout:', env.requestTimeoutMs, 'ms');
 
     const response = await fetch(config.url, {
       headers: {
@@ -85,18 +88,37 @@ export async function request(path, options = {}, query = {}) {
       signal: controller.signal,
     });
 
-    console.log(`📥 Response:`, {
-      status: response.status,
-      statusText: response.statusText,
+    console.log(`📥 Response Status: ${response.status} ${response.statusText}`);
+    console.log('Response Headers:', {
       contentType: response.headers.get('content-type'),
-      ok: response.ok,
+      contentLength: response.headers.get('content-length'),
     });
+    console.log('Response OK:', response.ok);
 
     const parsed = await parseResponse(response);
-    console.log('✅ Parsed response:', parsed);
+    console.log('✅ Parsed Response:', parsed);
+    console.groupEnd();
+    
     return applyResponseInterceptors(parsed);
   } catch (error) {
-    console.error('❌ Request error:', error);
+    console.error('❌ Request Failed');
+    console.error('Error Name:', error.name);
+    console.error('Error Message:', error.message);
+    console.error('Error Status:', error.status);
+    console.error('Error Body:', error.body);
+    console.groupEnd();
+    
+    // Log to error logger
+    errorLogger.logBackendError(
+      error.message || 'Request failed',
+      {
+        status: error.status,
+        url: path,
+        method: options.method || 'GET',
+        body: error.body,
+      }
+    );
+    
     if (error?.status === 401 && unauthorizedHandler) {
       unauthorizedHandler(error);
     }

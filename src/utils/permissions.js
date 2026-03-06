@@ -10,6 +10,7 @@ export const ROLE_PERMISSIONS = {
     'approvals',
     'reports',
     'analytics',
+    'error-logs',
   ],
   dean: [
     'dashboard',
@@ -21,6 +22,7 @@ export const ROLE_PERMISSIONS = {
     'approvals',
     'reports',
     'analytics',
+    'error-logs',
   ],
   consultant: [
     'dashboard',
@@ -28,12 +30,14 @@ export const ROLE_PERMISSIONS = {
     'review',
     'approvals',
     'reports',
+    'error-logs',
   ],
   user: [
     'dashboard',
     'tasks',
     'evidence',
     'evidence-list',
+    'error-logs',
   ],
 };
 

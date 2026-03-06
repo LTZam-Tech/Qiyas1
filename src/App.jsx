@@ -16,6 +16,7 @@ import TasksPage from './pages/TasksPage.jsx';
 import EvidencePage from './pages/EvidencePage.jsx';
 import ReviewPage from './pages/ReviewPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
+import ErrorLogPage from './pages/ErrorLogPage.jsx';
 
 const PAGE_COMPONENTS = {
   dashboard: DashboardPage,
@@ -27,6 +28,7 @@ const PAGE_COMPONENTS = {
   'evidence-list': EvidencePage,
   approvals: ReviewPage,
   analytics: ReportsPage,
+  'error-logs': ErrorLogPage,
 };
 
 export default function App() {

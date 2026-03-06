@@ -20,12 +20,38 @@ const LoginPage = ({ onLogin, isLoading }) => {
     }
 
     try {
-      console.log('🔐 Submitting login:', credentials.email);
+      console.group('🔐 LoginPage: Submitting login');
+      console.log('Email:', credentials.email);
+      console.log('Calling onLogin...');
       await onLogin(credentials);
-      console.log('✅ Login successful');
+      console.log('✅ onLogin completed successfully');
+      console.groupEnd();
     } catch (err) {
-      console.error('❌ Login error:', err);
-      setError(err.message || 'Login failed. Please try again.');
+      console.error('❌ LoginPage: Login error:', err);
+      console.error('Error details:', {
+        name: err.name,
+        message: err.message,
+        status: err.status,
+        body: err.body,
+      });
+      console.groupEnd();
+      
+      // More user-friendly error messages
+      let userMessage = 'Login failed. Please try again.';
+      
+      if (err.name === 'AbortError' || err.message.includes('timeout')) {
+        userMessage = '⏱️ Connection timeout. Please check if backend server is running.';
+      } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        userMessage = '🌐 Cannot connect to server. Please ensure backend is running on port 8000.';
+      } else if (err.status === 401) {
+        userMessage = '🔒 Invalid email or password.';
+      } else if (err.status === 404) {
+        userMessage = '❌ Login endpoint not found. Check backend configuration.';
+      } else if (err.message) {
+        userMessage = err.message;
+      }
+      
+      setError(userMessage);
     }
   };
 

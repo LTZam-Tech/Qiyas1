@@ -5,6 +5,9 @@ import dashboardController from './dashboard.controller';
 const router = Router();
 router.use(authenticate);
 
+// GET /api/v1/dashboard/summary - Complete dashboard summary (combines all data)
+router.get('/summary', dashboardController.getSummary);
+
 // GET /api/v1/dashboard/overview - Get dashboard overview with completion stats
 router.get('/overview', dashboardController.getOverview);
 
