@@ -115,9 +115,9 @@ export default function App() {
     NAV_ITEMS[0];
 
   const notifications = [
-    lang === 'ar' ? '?? ??? ???? ???? ??????? 5.10.3' : 'New evidence uploaded for standard 5.10.3',
-    lang === 'ar' ? '3 ???? ????? ?? ?????? ???????' : '3 tasks are close to deadline',
-    lang === 'ar' ? '?? ?????? ???? ?? ??? ???????' : 'Evidence approved by reviewer',
+    lang === 'ar' ? 'تم رفع شاهد جديد للمعيار 5.10.3' : 'New evidence uploaded for standard 5.10.3',
+    lang === 'ar' ? '3 مهام تقترب من الموعد النهائي' : '3 tasks are close to deadline',
+    lang === 'ar' ? 'تم اعتماد شاهد من قبل المراجع' : 'Evidence approved by reviewer',
   ];
 
   const PageComponent = PAGE_COMPONENTS[page] || DashboardPage;
@@ -131,7 +131,7 @@ export default function App() {
       >
         <div style={{ textAlign: 'center' }}>
           <h1 style={{ color: C.primaryDark, marginBottom: 10 }}>
-            {lang === 'ar' ? '?? ????? ??????' : 'Logged Out'}
+            {lang === 'ar' ? 'تم تسجيل الخروج' : 'Logged Out'}
           </h1>
           <button
             type="button"
@@ -145,7 +145,7 @@ export default function App() {
               cursor: 'pointer',
             }}
           >
-            {lang === 'ar' ? '????? ?????? ?????' : 'Login Again'}
+            {lang === 'ar' ? 'تسجيل الدخول مجددا' : 'Login Again'}
           </button>
         </div>
       </section>
@@ -159,7 +159,7 @@ export default function App() {
         style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}
         aria-label="Loading application"
       >
-        <p style={{ color: C.textLight }}>{lang === 'ar' ? '???? ???????...' : 'Loading...'}</p>
+        <p style={{ color: C.textLight }}>{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
       </section>
     );
   }
@@ -184,7 +184,7 @@ export default function App() {
 
       {showNotifications && (
         <div className={styles.notifications} role="status" aria-live="polite">
-          <h4>{lang === 'ar' ? '?????????' : 'Notifications'}</h4>
+          <h4>{lang === 'ar' ? 'التنبيهات' : 'Notifications'}</h4>
           {notifications.map((note) => (
             <div key={note} className={styles.notificationItem}>
               {note}

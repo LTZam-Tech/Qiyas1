@@ -1,0 +1,153 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.heading {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #5c3a73;
+}
+
+.kpiGrid {
+  display: grid;
+  gap: 20px;
+  justify-content: center;
+}
+
+.kpiGridDesktop {
+  grid-template-columns: repeat(auto-fit, minmax(332px, 383px));
+}
+
+.kpiGridMobile {
+  grid-template-columns: 1fr;
+}
+
+.panelGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.panelGridDesktop {
+  grid-template-columns: 1fr 1fr;
+}
+
+.panelGridMobile {
+  grid-template-columns: 1fr;
+}
+
+.panel {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.panelTitle {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #5c3a73;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.percent {
+  font-size: 11px;
+  color: #7a6b8a;
+  width: 28px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.perspectiveLabel {
+  font-size: 12px;
+  color: #2d1b3d;
+  min-width: 140px;
+  text-align: right;
+}
+
+.activityRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.activityRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e0d4ea;
+}
+
+.activityDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.activityText {
+  flex: 1;
+  text-align: right;
+}
+
+.activityMain {
+  font-size: 13px;
+  color: #2d1b3d;
+}
+
+.activityMeta {
+  font-size: 11px;
+  color: #7a6b8a;
+}
+
+.alertBox {
+  background: #ffebee;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid rgba(211, 47, 47, 0.2);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.alertText {
+  text-align: right;
+}
+
+.alertTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #d32f2f;
+}
+
+.alertBody {
+  font-size: 12px;
+  color: #2d1b3d;
+  margin-top: 4px;
+}
+
+.emptyState {
+  color: #7a6b8a;
+  text-align: center;
+}
+
+.errorState {
+  color: #d32f2f;
+  text-align: center;
+  font-weight: 700;
+}
