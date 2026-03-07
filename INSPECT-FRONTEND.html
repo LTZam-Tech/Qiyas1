@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>INSPECT FRONTEND NOW</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #dc3545;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .box {
+            background: white;
+            color: #333;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 600px;
+        }
+        h1 { color: #dc3545; font-size: 32px; margin-top: 0; }
+        .step {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            border-left: 4px solid #dc3545;
+            text-align: left;
+        }
+        .code {
+            background: #2d2d2d;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>⚠️ CRITICAL: CHECK FRONTEND CONFIG</h1>
+        
+        <div class="step">
+            <h3>Step 1: Open Frontend</h3>
+            <button onclick="window.open('http://localhost:5173', '_blank')">Open http://localhost:5173</button>
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Open Browser Console</h3>
+            <p>Press <strong>F12</strong> or <strong>Ctrl+Shift+I</strong></p>
+            <p>Click the <strong>Console</strong> tab</p>
+        </div>
+        
+        <div class="step">
+            <h3>Step 3: Look for this log:</h3>
+            <div class="code">
+                📋 Environment Configuration:<br>
+                apiBaseUrl: "http://localhost:3001/api/v1"<br>
+                useMockApi: <strong style="color: #f00;">??? (CHECK THIS)</strong>
+            </div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 4: Tell me what you see</h3>
+            <p><strong>If useMockApi: true</strong> → Frontend is in MOCK MODE (not calling backend!)</p>
+            <p><strong>If useMockApi: false</strong> → Should work (cache issue)</p>
+        </div>
+        
+        <div class="step">
+            <h3>Quick Fix if Mock Mode:</h3>
+            <p>In the console, type:</p>
+            <div class="code">
+                localStorage.clear();<br>
+                location.reload();
+            </div>
+        </div>
+    </div>
+</body>
+</html>

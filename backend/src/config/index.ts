@@ -77,12 +77,12 @@ interface Config {
 
 const config: Config = {
   env: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT || '8000', 10),
+  port: parseInt(process.env.PORT || '8080', 10),
   apiPrefix: process.env.API_PREFIX || '/api/v1',
   
   database: {
     host: process.env.POSTGRES_HOST || 'localhost',
-    port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
+    port: parseInt(process.env.POSTGRES_PORT || '5433', 10),
     database: process.env.POSTGRES_DB || 'qiyas_platform',
     user: process.env.POSTGRES_USER || 'qiyas_user',
     password: process.env.POSTGRES_PASSWORD || 'change_me',
@@ -93,14 +93,14 @@ const config: Config = {
   
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    port: parseInt(process.env.REDIS_PORT || '6380', 10),
     password: process.env.REDIS_PASSWORD,
     db: parseInt(process.env.REDIS_DB || '0', 10),
   },
   
   storage: {
     endpoint: process.env.MINIO_ENDPOINT || 'localhost',
-    port: parseInt(process.env.MINIO_PORT || '9000', 10),
+    port: parseInt(process.env.MINIO_PORT || '9100', 10),
     useSSL: process.env.MINIO_USE_SSL === 'true',
     accessKey: process.env.MINIO_ROOT_USER || 'minioadmin',
     secretKey: process.env.MINIO_ROOT_PASSWORD || 'minioadmin',
@@ -144,12 +144,8 @@ const config: Config = {
   
   cors: {
     origin: process.env.CORS_ORIGIN?.split(',') || [
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-      'http://localhost:5174',
-      'http://127.0.0.1:5174',
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
+      'http://localhost:4200',
+      'http://127.0.0.1:4200',
     ],
     credentials: true,
   },
