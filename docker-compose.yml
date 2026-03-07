@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: qiyas_db
+    environment:
+      POSTGRES_DB: qiyas_platform
+      POSTGRES_USER: qiyas_user
+      POSTGRES_PASSWORD: qiyas_secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - qiyas_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: qiyas_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - qiyas_network
+
+  minio:
+    image: minio/minio:latest
+    container_name: qiyas_minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: qiyas_secure_minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001" # MinIO Admin Console
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    networks:
+      - qiyas_network
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: qiyas_backend
+    environment:
+      - NODE_ENV=production
+      - PORT=8000
+      - APP_URL=https://qiyas.iltizamtech.com
+      - API_PREFIX=/api/v1
+      
+      # Database
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=qiyas_platform
+      - POSTGRES_USER=qiyas_user
+      - POSTGRES_PASSWORD=qiyas_secure_password
+      - POSTGRES_SSL=false
+      
+      # Redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QUEUE_CONNECTION=redis
+      - CACHE_CONNECTION=redis
+      
+      # MinIO Object Storage
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_USE_SSL=false
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=qiyas_secure_minio
+      
+      # Security (JWT)
+      - JWT_ACCESS_SECRET=qiyas_secure_access_secret_change_me_in_prod
+      - JWT_REFRESH_SECRET=qiyas_secure_refresh_secret_change_me_in_prod
+      
+      # General settings
+      - CORS_ORIGIN=https://qiyas.iltizamtech.com
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      - db
+      - redis
+      - minio
+    restart: unless-stopped
+    networks:
+      - qiyas_network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Nginx config proxies /api/ frontend calls to the backend container
+        - VITE_API_BASE_URL=/api/v1
+    container_name: qiyas_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - qiyas_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  backend_uploads:
+
+networks:
+  qiyas_network:
+    driver: bridge
