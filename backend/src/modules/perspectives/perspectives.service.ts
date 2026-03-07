@@ -3,13 +3,15 @@ import db from '@/db';
 import { NotFoundError } from '@/utils/errors';
 
 interface Perspective {
-  id: number;
-  name: string;
+  id: string;
+  name_ar: string;
+  name_en: string;
   code: string;
-  description: string;
+  description_ar: string;
+  description_en: string;
   weight: number;
-  display_order: number;
-  completion_percentage: number;
+  sort_order: number;
+  completion_pct: number;
   created_at: Date;
   updated_at: Date;
 }
@@ -44,8 +46,9 @@ class PerspectivesService extends BaseRepository<Perspective> {
       FROM perspectives p
       LEFT JOIN axes a ON p.id = a.perspective_id
       LEFT JOIN standards s ON a.id = s.axis_id
+      WHERE p.deleted_at IS NULL
       GROUP BY p.id
-      ORDER BY p.display_order
+      ORDER BY p.sort_order
     `);
 
     return result.rows;
@@ -61,6 +64,7 @@ class PerspectivesService extends BaseRepository<Perspective> {
       LEFT JOIN axes a ON p.id = a.perspective_id
       LEFT JOIN standards s ON a.id = s.axis_id
       WHERE p.id = $1
+        AND p.deleted_at IS NULL
       GROUP BY p.id
     `, [perspectiveId]);
 
@@ -76,8 +80,9 @@ class PerspectivesService extends BaseRepository<Perspective> {
       FROM axes a
       LEFT JOIN standards s ON a.id = s.axis_id
       WHERE a.perspective_id = $1
+        AND a.deleted_at IS NULL
       GROUP BY a.id
-      ORDER BY a.display_order
+      ORDER BY a.sort_order
     `, [perspectiveId]);
 
     return {
@@ -88,10 +93,10 @@ class PerspectivesService extends BaseRepository<Perspective> {
 
   async createPerspective(data: CreatePerspectiveDto, createdBy: string) {
     const result = await db.query(`
-      INSERT INTO perspectives (name, code, description, weight, display_order)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO perspectives (name_ar, name_en, code, description_ar, description_en, weight, sort_order)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
-    `, [data.name, data.code, data.description, data.weight, data.displayOrder]);
+    `, [data.name, data.name, data.code, data.description, data.description, data.weight, data.displayOrder]);
 
     const perspective = result.rows[0];
 
@@ -109,7 +114,11 @@ class PerspectivesService extends BaseRepository<Perspective> {
     let paramIndex = 1;
 
     if (data.name) {
-      updates.push(`name = $${paramIndex}`);
+      updates.push(`name_ar = $${paramIndex}`);
+      values.push(data.name);
+      paramIndex++;
+
+      updates.push(`name_en = $${paramIndex}`);
       values.push(data.name);
       paramIndex++;
     }
@@ -121,7 +130,11 @@ class PerspectivesService extends BaseRepository<Perspective> {
     }
 
     if (data.description) {
-      updates.push(`description = $${paramIndex}`);
+      updates.push(`description_ar = $${paramIndex}`);
+      values.push(data.description);
+      paramIndex++;
+
+      updates.push(`description_en = $${paramIndex}`);
       values.push(data.description);
       paramIndex++;
     }
@@ -133,7 +146,7 @@ class PerspectivesService extends BaseRepository<Perspective> {
     }
 
     if (data.displayOrder !== undefined) {
-      updates.push(`display_order = $${paramIndex}`);
+      updates.push(`sort_order = $${paramIndex}`);
       values.push(data.displayOrder);
       paramIndex++;
     }

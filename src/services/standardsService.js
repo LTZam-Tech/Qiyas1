@@ -7,14 +7,17 @@ const standardsService = {
   async getStandards(axisId) {
         if (env.useMockApi) {
           // Return mock data
-          return STANDARDS_HIERARCHY.map((std, idx) => ({
+          return STANDARDS_HIERARCHY
+            .filter((std) => !axisId || String(std.axisId) === String(axisId))
+            .map((std, idx) => ({
             id: `std-${idx + 1}`,
             code: std.code,
-            name: std.name,
-            axis_id: std.axisId || 'axis-1',
+            title: std.title,
+            name_ar: std.title,
+            axis_id: String(std.axisId || 'axis-1'),
             evidence_requirements: [
-              { id: `er-${idx + 1}-1`, title: `${std.name} - متطلب 1` },
-              { id: `er-${idx + 1}-2`, title: `${std.name} - متطلب 2` },
+              { id: `er-${idx + 1}-1`, title: `${std.title} - متطلب 1` },
+              { id: `er-${idx + 1}-2`, title: `${std.title} - متطلب 2` },
             ],
           }));
         }

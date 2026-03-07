@@ -1,19 +1,48 @@
 import { BaseRepository } from '@/db/repository';
 import db from '@/db';
-import { NotFoundError } from '@/utils/errors';
+import { BusinessLogicError, NotFoundError } from '@/utils/errors';
 
 interface Task {
   id: string;
-  evidence_requirement_id: string;
+  evidence_requirement_id: string | null;
+  perspective_id: string;
+  axis_id: string;
+  standard_id: string;
+  evidence_type: 'file' | 'screenshot';
   assigned_to: string;
-  created_by: string;
+  assigned_by: string;
+  target_type: 'department' | 'unit';
+  target_department_id: string | null;
+  target_unit_id: string | null;
   title: string;
-  description: string;
+  instructions: string | null;
   due_date: Date;
   priority: string;
   status: string;
-  completion_notes: string | null;
 }
+
+type CreateTaskInput = {
+  title: string;
+  perspectiveId: string;
+  axisId: string;
+  standardId: string;
+  evidenceType: 'file' | 'screenshot';
+  assignedTo: string;
+  targetType: 'department' | 'unit';
+  targetId: string;
+  dueDate: string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  description?: string;
+};
+
+type UpdateTaskInput = {
+  title?: string;
+  description?: string;
+  dueDate?: string;
+  priority?: 'critical' | 'high' | 'medium' | 'low';
+  status?: string;
+  completionNotes?: string;
+};
 
 class TasksService extends BaseRepository<Task> {
   constructor() {
@@ -25,14 +54,21 @@ class TasksService extends BaseRepository<Task> {
       SELECT 
         t.*,
         u.name as assigned_to_name,
-        c.name as created_by_name,
-        er.title as requirement_title,
-        s.name as standard_name
+        c.name as assigned_by_name,
+        s.name_ar as standard_name,
+        a.name_ar as axis_name,
+        p.name_ar as perspective_name,
+        d.name_ar as target_department_name,
+        un.name_ar as target_unit_name
       FROM tasks t
       LEFT JOIN users u ON t.assigned_to = u.id
-      LEFT JOIN users c ON t.created_by = c.id
+      LEFT JOIN users c ON t.assigned_by = c.id
       LEFT JOIN evidence_requirements er ON t.evidence_requirement_id = er.id
-      LEFT JOIN standards s ON er.standard_id = s.id
+      LEFT JOIN standards s ON t.standard_id = s.id
+      LEFT JOIN axes a ON t.axis_id = a.id
+      LEFT JOIN perspectives p ON t.perspective_id = p.id
+      LEFT JOIN departments d ON t.target_department_id = d.id
+      LEFT JOIN units un ON t.target_unit_id = un.id
       WHERE 1=1
     `;
     const params: any[] = [];
@@ -75,19 +111,23 @@ class TasksService extends BaseRepository<Task> {
         t.*,
         u.name as assigned_to_name,
         u.email as assigned_to_email,
-        c.name as created_by_name,
+        c.name as assigned_by_name,
         er.title as requirement_title,
-        er.description as requirement_description,
-        s.name as standard_name,
-        a.name as axis_name,
-        p.name as perspective_name
+        er.description_ar as requirement_description,
+        s.name_ar as standard_name,
+        a.name_ar as axis_name,
+        p.name_ar as perspective_name,
+        d.name_ar as target_department_name,
+        un.name_ar as target_unit_name
       FROM tasks t
       LEFT JOIN users u ON t.assigned_to = u.id
-      LEFT JOIN users c ON t.created_by = c.id
+      LEFT JOIN users c ON t.assigned_by = c.id
       LEFT JOIN evidence_requirements er ON t.evidence_requirement_id = er.id
-      LEFT JOIN standards s ON er.standard_id = s.id
-      LEFT JOIN axes a ON s.axis_id = a.id
-      LEFT JOIN perspectives p ON a.perspective_id = p.id
+      LEFT JOIN standards s ON t.standard_id = s.id
+      LEFT JOIN axes a ON t.axis_id = a.id
+      LEFT JOIN perspectives p ON t.perspective_id = p.id
+      LEFT JOIN departments d ON t.target_department_id = d.id
+      LEFT JOIN units un ON t.target_unit_id = un.id
       WHERE t.id = $1
     `, [taskId]);
 
@@ -98,20 +138,78 @@ class TasksService extends BaseRepository<Task> {
     return result.rows[0];
   }
 
-  async createTask(data: any, createdBy: string) {
+  async createTask(data: CreateTaskInput, createdBy: string) {
+    const mappingResult = await db.query(
+      `SELECT s.id AS standard_id, a.id AS axis_id, p.id AS perspective_id
+       FROM standards s
+       JOIN axes a ON a.id = s.axis_id
+       JOIN perspectives p ON p.id = a.perspective_id
+       WHERE s.id = $1 AND a.id = $2 AND p.id = $3
+       LIMIT 1`,
+      [data.standardId, data.axisId, data.perspectiveId]
+    );
+
+    if (mappingResult.rows.length === 0) {
+      throw new BusinessLogicError('Invalid domain-axis-standard mapping');
+    }
+
+    const assigneeResult = await db.query('SELECT id FROM users WHERE id = $1 AND deleted_at IS NULL', [data.assignedTo]);
+    if (assigneeResult.rows.length === 0) {
+      throw new BusinessLogicError('Assigned user does not exist');
+    }
+
+    if (data.targetType === 'department') {
+      const targetResult = await db.query('SELECT id FROM departments WHERE id = $1 AND deleted_at IS NULL', [data.targetId]);
+      if (targetResult.rows.length === 0) {
+        throw new BusinessLogicError('Selected department does not exist');
+      }
+    }
+
+    if (data.targetType === 'unit') {
+      const targetResult = await db.query('SELECT id FROM units WHERE id = $1 AND deleted_at IS NULL', [data.targetId]);
+      if (targetResult.rows.length === 0) {
+        throw new BusinessLogicError('Selected unit does not exist');
+      }
+    }
+
+    const targetDepartmentId = data.targetType === 'department' ? data.targetId : null;
+    const targetUnitId = data.targetType === 'unit' ? data.targetId : null;
+
     const result = await db.query(`
-      INSERT INTO tasks (evidence_requirement_id, standard_id, assigned_to, assigned_by, title, instructions, due_date, priority, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'assigned')
+      INSERT INTO tasks (
+        evidence_requirement_id,
+        perspective_id,
+        axis_id,
+        standard_id,
+        evidence_type,
+        assigned_to,
+        assigned_by,
+        target_type,
+        target_department_id,
+        target_unit_id,
+        title,
+        instructions,
+        due_date,
+        priority,
+        status
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'assigned')
       RETURNING *
     `, [
-      data.evidenceRequirementId,
+      null,
+      data.perspectiveId,
+      data.axisId,
       data.standardId,
+      data.evidenceType,
       data.assignedTo,
       createdBy,
+      data.targetType,
+      targetDepartmentId,
+      targetUnitId,
       data.title,
-      data.description || data.instructions,
+      data.description || null,
       data.dueDate,
-      data.priority || 'normal'
+      data.priority || 'medium'
     ]);
 
     const task = result.rows[0];
@@ -122,7 +220,7 @@ class TasksService extends BaseRepository<Task> {
     return task;
   }
 
-  async updateTask(taskId: string, data: any, updatedBy: string) {
+  async updateTask(taskId: string, data: UpdateTaskInput, updatedBy: string) {
     await this.getTaskById(taskId);
 
     const updates: string[] = [];
@@ -130,7 +228,7 @@ class TasksService extends BaseRepository<Task> {
     let idx = 1;
 
     if (data.title) { updates.push(`title = $${idx}`); values.push(data.title); idx++; }
-    if (data.description) { updates.push(`description = $${idx}`); values.push(data.description); idx++; }
+    if (data.description) { updates.push(`instructions = $${idx}`); values.push(data.description); idx++; }
     if (data.dueDate) { updates.push(`due_date = $${idx}`); values.push(data.dueDate); idx++; }
     if (data.priority) { updates.push(`priority = $${idx}`); values.push(data.priority); idx++; }
     if (data.status) { updates.push(`status = $${idx}`); values.push(data.status); idx++; }
@@ -164,7 +262,7 @@ class TasksService extends BaseRepository<Task> {
         s.name as standard_name
       FROM tasks t
       LEFT JOIN evidence_requirements er ON t.evidence_requirement_id = er.id
-      LEFT JOIN standards s ON er.standard_id = s.id
+      LEFT JOIN standards s ON t.standard_id = s.id
       WHERE t.assigned_to = $1
       ORDER BY t.due_date ASC
     `, [userId]);

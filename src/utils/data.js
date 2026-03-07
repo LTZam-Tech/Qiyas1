@@ -97,6 +97,27 @@ export const AXES = [
   { id: 23, code: "A10.2", name: "الحلول البتكارية", nameEn: "Innovative Solutions", perspId: 10 },
 ];
 
+// Detailed standard content (goal, requirements, evidence)
+export const STANDARD_DETAILS = {
+  1: { // التخطيط للتحول الرقمي
+    goal: "تطوير خطة استراتيجية للتحول الرقمي متوائمة مع استراتيجية الجهة ومستهدفات رؤية السعودية 2030.",
+    requirements: [
+      {
+        title: "إعداد استراتيجية للتحول الرقمي/ للتحول للتعاملات الإلكترونية الحكومية، بحيث تشمل ما يأتي:",
+        items: [
+          "رؤية ورسالة وركائز وأهداف استراتيجية وربطها باستراتيجية الجهة.",
+          "المبادرات والمشاريع الاستراتيجية ومؤشرات الأداء الاستراتيجية.",
+          "نموذج تحقيق التكامل مع الجهات الخارجية ذات العلاقة، لتحقيق المستهدفات.",
+          "الكفاءات والقدرات والمهارات اللازمة، لتحقيق مستهدفات الخطة."
+        ]
+      }
+    ],
+    evidence: [
+      "إرفاق الخطة الاستراتيجية المعتمدة للتحول الرقمي، التي تتضمن جميع متطلبات تطبيق المعيار، ويكون تاريخ اعتمادها خلال فترة لا تزيد عن (36) شهرًا."
+    ]
+  }
+};
+
 // Enhanced standards with metrics
 export const STANDARDS_HIERARCHY = [
   // Perspective 1 - الاستراتيجية والاحتياجية (7 standards)
@@ -159,7 +180,7 @@ export const STANDARDS_HIERARCHY = [
 ];
 
 export const NAV_ITEMS = [
-  { key: "dashboard", label: "لوحة القيادة", labelEn: "Dashboard", iconKey: "dashboard", isGroup: false },
+  { key: "dashboard", label: "لوحة التحكم", labelEn: "Dashboard", iconKey: "dashboard", isGroup: false },
   
   { 
     key: "management", 
@@ -168,7 +189,7 @@ export const NAV_ITEMS = [
     iconKey: "catalog",
     isGroup: true,
     children: [
-      { key: "catalog", label: "فهرس المعايير", labelEn: "Catalog", iconKey: "catalog", isGroup: false },
+      { key: "catalog", label: "فهرس المقاييس", labelEn: "Catalog", iconKey: "catalog", isGroup: false },
       { key: "tasks", label: "إدارة المهام", labelEn: "Tasks", iconKey: "tasks", isGroup: false },
     ]
   },

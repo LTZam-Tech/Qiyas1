@@ -1,31 +1,48 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import standardsService from '../services/standardsService.js';
 import usersService from '../services/usersService.js';
+import orgStructureService from '../services/orgStructureService.js';
+import perspectivesService from '../services/perspectivesService.js';
+import axesService from '../services/axesService.js';
+import standardsService from '../services/standardsService.js';
 import { createTask } from '../services/tasksService.js';
 import styles from './TaskModal.module.css';
 
 const PRIORITY_OPTIONS = [
-  ['low', 'منخفض'],
-  ['normal', 'عادي'],
-  ['high', 'عالي'],
   ['critical', 'حرج'],
+  ['high', 'عالي'],
+  ['medium', 'متوسط'],
+  ['low', 'منخفض'],
 ];
+
+const EVIDENCE_OPTIONS = [
+  ['file', 'ملف'],
+  ['screenshot', 'لقطة شاشة'],
+];
+
+const TITLE_REGEX = /^(?=.{1,50}$)[A-Za-z\u0600-\u06FF\s]+$/u;
+const DESCRIPTION_REGEX = /^(?=.{0,300}$)[A-Za-z0-9\u0600-\u06FF\s]*$/u;
 
 const TaskModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     title: '',
+    perspectiveId: '',
+    axisId: '',
     standardId: '',
-    evidenceRequirementId: '',
+    evidenceType: '',
     assignedTo: '',
+    targetEntity: '',
     dueDate: '',
-    priority: 'normal',
+    priority: 'medium',
     description: '',
   });
 
-  const [standards, setStandards] = useState([]);
-  const [evidenceRequirements, setEvidenceRequirements] = useState([]);
   const [users, setUsers] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [units, setUnits] = useState([]);
+  const [perspectives, setPerspectives] = useState([]);
+  const [axes, setAxes] = useState([]);
+  const [standards, setStandards] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState('');
@@ -37,25 +54,119 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
     }
   }, [isOpen]);
 
-  // Load evidence requirements when standard changes
+  // Load axes when perspective changes
   useEffect(() => {
-    if (formData.standardId) {
-      loadEvidenceRequirements(formData.standardId);
-    } else {
-      setEvidenceRequirements([]);
-      setFormData((prev) => ({ ...prev, evidenceRequirementId: '' }));
+    let active = true;
+
+    const run = async () => {
+      if (!formData.perspectiveId) {
+        setAxes([]);
+        setStandards([]);
+        return;
+      }
+
+      try {
+        const nextAxes = await axesService.getAxes(formData.perspectiveId);
+        if (!active) return;
+        setAxes(nextAxes);
+      } catch (err) {
+        if (!active) return;
+        setAxes([]);
+        setError(err.message || 'فشل تحميل المحاور');
+      }
+    };
+
+    run();
+    return () => {
+      active = false;
+    };
+  }, [formData.perspectiveId]);
+
+  // Load standards when axis changes
+  useEffect(() => {
+    let active = true;
+
+    const run = async () => {
+      if (!formData.axisId) {
+        setStandards([]);
+        return;
+      }
+
+      try {
+        const nextStandards = await standardsService.getStandards(formData.axisId);
+        if (!active) return;
+        setStandards(nextStandards);
+      } catch (err) {
+        if (!active) return;
+        setStandards([]);
+        setError(err.message || 'فشل تحميل المعايير');
+      }
+    };
+
+    run();
+    return () => {
+      active = false;
+    };
+  }, [formData.axisId]);
+
+  const targetEntities = useMemo(() => {
+    return [
+      ...departments.map((department) => ({
+        value: `department:${department.id}`,
+        label: `إدارة - ${department.name}`,
+      })),
+      ...units.map((unit) => ({
+        value: `unit:${unit.id}`,
+        label: `وحدة - ${unit.name}`,
+      })),
+    ];
+  }, [departments, units]);
+
+  const selectedStandard = useMemo(() => {
+    return standards.find((standard) => String(standard.id) === String(formData.standardId));
+  }, [formData.standardId, standards]);
+
+  const selectedAssignee = useMemo(() => {
+    return users.find((user) => String(user.id) === String(formData.assignedTo));
+  }, [formData.assignedTo, users]);
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      perspectiveId: '',
+      axisId: '',
+      standardId: '',
+      evidenceType: '',
+      assignedTo: '',
+      targetEntity: '',
+      dueDate: '',
+      priority: 'medium',
+      description: '',
+    });
+    setError('');
+  };
+
+  const parseTargetEntity = (value) => {
+    if (!value.includes(':')) {
+      return { targetType: '', targetId: '' };
     }
-  }, [formData.standardId]);
+    const [targetType, targetId] = value.split(':');
+    return { targetType, targetId };
+  };
 
   const loadInitialData = async () => {
     setIsLoadingData(true);
     try {
-      const [standardsData, usersData] = await Promise.all([
-        standardsService.getStandards(),
+      const [usersData, departmentsData, unitsData, perspectivesData] = await Promise.all([
         usersService.getUsers(),
+        orgStructureService.getDepartments(),
+        orgStructureService.getUnits(),
+        perspectivesService.getPerspectives(),
       ]);
-      setStandards(standardsData);
       setUsers(usersData);
+      setDepartments(departmentsData);
+      setUnits(unitsData);
+      setPerspectives(perspectivesData);
     } catch (err) {
       console.error('Error loading data:', err);
       setError('فشل تحميل البيانات. الرجاء المحاولة مرة أخرى.');
@@ -64,19 +175,19 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  const loadEvidenceRequirements = async (standardId) => {
-    try {
-      const standard = await standardsService.getStandardById(standardId);
-      setEvidenceRequirements(standard.evidence_requirements || []);
-    } catch (err) {
-      console.error('Error loading evidence requirements:', err);
-      setEvidenceRequirements([]);
-    }
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      if (name === 'perspectiveId') {
+        return { ...prev, perspectiveId: value, axisId: '', standardId: '' };
+      }
+
+      if (name === 'axisId') {
+        return { ...prev, axisId: value, standardId: '' };
+      }
+
+      return { ...prev, [name]: value };
+    });
     setError('');
   };
 
@@ -85,52 +196,74 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
     setError('');
 
     // Validation
-    if (!formData.title.trim()) {
-      setError('العنوان مطلوب');
+    const trimmedTitle = formData.title.trim();
+    const trimmedDescription = formData.description.trim();
+
+    if (!trimmedTitle) {
+      setError('عنوان المهمة مطلوب');
+      return;
+    }
+    if (!TITLE_REGEX.test(trimmedTitle)) {
+      setError('عنوان المهمة يجب أن يكون أحرف عربية أو إنجليزية فقط وبحد أقصى 50 حرفًا');
+      return;
+    }
+    if (!formData.perspectiveId) {
+      setError('المنظور مطلوب');
+      return;
+    }
+    if (!formData.axisId) {
+      setError('المحور مطلوب');
       return;
     }
     if (!formData.standardId) {
       setError('المعيار مطلوب');
       return;
     }
-    if (!formData.evidenceRequirementId) {
-      setError('الشاهد المطلوب مطلوب');
+    if (!formData.evidenceType) {
+      setError('نوع الشاهد مطلوب');
       return;
     }
     if (!formData.assignedTo) {
       setError('المسؤول مطلوب');
       return;
     }
+    if (!formData.targetEntity) {
+      setError('الوحدة/الإدارة مطلوبة');
+      return;
+    }
     if (!formData.dueDate) {
       setError('الموعد النهائي مطلوب');
       return;
     }
+    if (trimmedDescription && !DESCRIPTION_REGEX.test(trimmedDescription)) {
+      setError('الوصف يجب أن يكون أحرف عربية/إنجليزية أو أرقام فقط وبحد أقصى 300 حرف');
+      return;
+    }
+
+    const { targetType, targetId } = parseTargetEntity(formData.targetEntity);
 
     setIsLoading(true);
     try {
       const taskData = {
-        title: formData.title,
+        title: trimmedTitle,
+        perspectiveId: formData.perspectiveId,
+        axisId: formData.axisId,
         standardId: formData.standardId,
-        evidenceRequirementId: formData.evidenceRequirementId,
+        standardCode: selectedStandard?.code,
+        standardTitle: selectedStandard?.name_ar || selectedStandard?.name || selectedStandard?.title,
+        evidenceType: formData.evidenceType,
         assignedTo: formData.assignedTo,
+        assignedToName: selectedAssignee?.full_name || selectedAssignee?.name || selectedAssignee?.email,
+        targetType,
+        targetId,
         dueDate: formData.dueDate,
         priority: formData.priority,
-        description: formData.description || undefined,
+        description: trimmedDescription || undefined,
       };
 
       await createTask(taskData);
-      
-      // Reset form
-      setFormData({
-        title: '',
-        standardId: '',
-        evidenceRequirementId: '',
-        assignedTo: '',
-        dueDate: '',
-        priority: 'normal',
-        description: '',
-      });
-      
+
+      resetForm();
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -144,13 +277,13 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
   if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={styles.overlay} onClick={() => { resetForm(); onClose(); }}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <button
             type="button"
             className={styles.closeButton}
-            onClick={onClose}
+            onClick={() => { resetForm(); onClose(); }}
             aria-label="إغلاق"
           >
             ×
@@ -177,7 +310,52 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
                 className={styles.input}
                 placeholder="أدخل عنوان المهمة"
                 disabled={isLoading}
+                maxLength={50}
               />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="perspectiveId" className={styles.label}>
+                المنظور <span className={styles.required}>*</span>
+              </label>
+              <select
+                id="perspectiveId"
+                name="perspectiveId"
+                value={formData.perspectiveId}
+                onChange={handleChange}
+                className={styles.select}
+                disabled={isLoading}
+              >
+                <option value="">اختر المنظور</option>
+                {perspectives.map((perspective) => (
+                  <option key={perspective.id} value={perspective.id}>
+                    {perspective.code} - {perspective.name_ar || perspective.name || perspective.name_en}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="axisId" className={styles.label}>
+                المحور <span className={styles.required}>*</span>
+              </label>
+              <select
+                id="axisId"
+                name="axisId"
+                value={formData.axisId}
+                onChange={handleChange}
+                className={styles.select}
+                disabled={isLoading || !formData.perspectiveId}
+              >
+                <option value="">
+                  {formData.perspectiveId ? 'اختر المحور' : 'اختر المنظور أولاً'}
+                </option>
+                {axes.map((axis) => (
+                  <option key={axis.id} value={axis.id}>
+                    {axis.code} - {axis.name_ar || axis.name || axis.name_en}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className={styles.formGroup}>
@@ -190,35 +368,35 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.standardId}
                 onChange={handleChange}
                 className={styles.select}
-                disabled={isLoading}
+                disabled={isLoading || !formData.axisId}
               >
-                <option value="">اختر المعيار</option>
+                <option value="">
+                  {formData.axisId ? 'اختر المعيار' : 'اختر المحور أولاً'}
+                </option>
                 {standards.map((standard) => (
                   <option key={standard.id} value={standard.id}>
-                    {standard.code} - {standard.name}
+                    {standard.code} - {standard.name_ar || standard.name || standard.title}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className={styles.formGroup}>
-              <label htmlFor="evidenceRequirementId" className={styles.label}>
-                الشاهد المطلوب <span className={styles.required}>*</span>
+              <label htmlFor="evidenceType" className={styles.label}>
+                نوع الشاهد <span className={styles.required}>*</span>
               </label>
               <select
-                id="evidenceRequirementId"
-                name="evidenceRequirementId"
-                value={formData.evidenceRequirementId}
+                id="evidenceType"
+                name="evidenceType"
+                value={formData.evidenceType}
                 onChange={handleChange}
                 className={styles.select}
-                disabled={isLoading || !formData.standardId}
+                disabled={isLoading}
               >
-                <option value="">
-                  {formData.standardId ? 'اختر الشاهد المطلوب' : 'اختر المعيار أولاً'}
-                </option>
-                {evidenceRequirements.map((req) => (
-                  <option key={req.id} value={req.id}>
-                    {req.title}
+                <option value="">اختر نوع الشاهد</option>
+                {EVIDENCE_OPTIONS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
                   </option>
                 ))}
               </select>
@@ -240,6 +418,27 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.full_name || user.name || user.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="targetEntity" className={styles.label}>
+                الوحدة / الإدارة <span className={styles.required}>*</span>
+              </label>
+              <select
+                id="targetEntity"
+                name="targetEntity"
+                value={formData.targetEntity}
+                onChange={handleChange}
+                className={styles.select}
+                disabled={isLoading}
+              >
+                <option value="">اختر الوحدة أو الإدارة</option>
+                {targetEntities.map((target) => (
+                  <option key={target.value} value={target.value}>
+                    {target.label}
                   </option>
                 ))}
               </select>
@@ -296,13 +495,14 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
                 placeholder="أدخل تعليمات أو وصف المهمة (اختياري)"
                 rows={4}
                 disabled={isLoading}
+                maxLength={300}
               />
             </div>
 
             <div className={styles.actions}>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={() => { resetForm(); onClose(); }}
                 className={styles.cancelButton}
                 disabled={isLoading}
               >

@@ -10,6 +10,10 @@
   font-weight: 700;
   color: #5c3a73;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 
 /* Domain Boxes Grid */
@@ -40,6 +44,14 @@
   transform: translateY(-6px);
   box-shadow: 0 8px 24px rgba(123, 44, 191, 0.5);
   background: linear-gradient(135deg, #9d4edd 0%, #7b2cbf 100%);
+}
+
+.domainIcon {
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
 }
 
 .domainCode {
@@ -94,6 +106,9 @@
   transition: all 0.2s;
   align-self: flex-start;
   font-family: Cairo, sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .backButton:hover {
@@ -107,6 +122,18 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border-left: 5px solid #7b2cbf;
+}
+
+.perspectiveHeaderContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.perspectiveHeaderContent > svg {
+  color: #7b2cbf;
+  flex-shrink: 0;
+  margin-top: 4px;
 }
 
 .perspectiveTitle {
@@ -134,6 +161,15 @@
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: right;
+}
+
+.axisSection:hover {
+  box-shadow: 0 4px 12px rgba(123, 44, 191, 0.2);
+  transform: translateY(-2px);
 }
 
 .axisHeader {
@@ -143,6 +179,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+}
+
+.axisIconWrapper {
+  color: #7b2cbf;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .axisTitle {
@@ -160,6 +205,18 @@
   padding: 3px 10px;
   border-radius: 8px;
   font-weight: 600;
+}
+
+.axisPreview {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #7b2cbf;
+  font-weight: 600;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .standardsList {
@@ -246,6 +303,132 @@
   text-align: center;
   color: #7a6b8a;
   font-size: 14px;
+}
+
+/* Standard Detail View */
+.standardDetailCard {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.standardHeader {
+  border-bottom: 2px solid #e0d4ea;
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.standardHeader > svg {
+  color: #7b2cbf;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.standardCode {
+  color: #7b2cbf;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  font-family: Cairo, sans-serif;
+}
+
+.standardTitle {
+  color: #2d1b3d;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  font-family: Cairo, sans-serif;
+  line-height: 1.4;
+}
+
+.standardTitleEn {
+  color: #7a6b8a;
+  font-size: 16px;
+  margin: 0;
+  font-weight: 500;
+}
+
+.standardSection {
+  margin-bottom: 28px;
+}
+
+.sectionHeading {
+  color: #5c3a73;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 16px;
+  font-family: Cairo, sans-serif;
+  border-right: 4px solid #7b2cbf;
+  padding-right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sectionHeading svg {
+  flex-shrink: 0;
+}
+
+.sectionContent {
+  color: #2d1b3d;
+  font-size: 15px;
+  line-height: 1.8;
+  margin: 0;
+  font-family: Cairo, sans-serif;
+  padding: 16px;
+  background: #f8f6fb;
+  border-radius: 8px;
+}
+
+.requirementBlock {
+  margin-bottom: 20px;
+}
+
+.requirementTitle {
+  color: #2d1b3d;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  font-family: Cairo, sans-serif;
+  line-height: 1.6;
+}
+
+.requirementList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  padding-right: 24px;
+}
+
+.requirementList li {
+  color: #2d1b3d;
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 10px;
+  font-family: Cairo, sans-serif;
+  padding-right: 8px;
+}
+
+.evidenceList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.evidenceList li {
+  color: #2d1b3d;
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 12px;
+  font-family: Cairo, sans-serif;
+  padding: 12px 16px;
+  background: #f8f6fb;
+  border-radius: 8px;
+  border-right: 3px solid #7b2cbf;
 }
 
 /* Responsive */

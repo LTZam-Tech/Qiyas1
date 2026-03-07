@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { C } from '../../utils/theme.js';
+import { Icons } from '../../utils/icons.jsx';
 import styles from './Layout.module.css';
 
 export default function Header({
@@ -26,10 +27,10 @@ export default function Header({
             className={`${styles.headerBtn} ${styles.mobileMenuBtn}`}
             onClick={onToggleSidebar}
           >
-            ☰
+            {Icons.menuIcon}
           </button>
         )}
-        <span style={{ color: C.white, fontWeight: 800 }}>📘</span>
+        <span style={{ color: C.white, display: 'flex', alignItems: 'center' }}>{Icons.bookIcon}</span>
         <span className={styles.headerTitle}>{title}</span>
       </div>
 
@@ -45,15 +46,15 @@ export default function Header({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
         />
-        <span aria-hidden="true">🔍</span>
+        <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center' }}>{Icons.searchIcon}</span>
       </form>
 
       <div className={styles.headerControls}>
         <button type="button" className={styles.headerBtn} aria-label="Toggle theme" onClick={onToggleTheme}>
-          ☀️
+          {Icons.sunIcon}
         </button>
         <button type="button" className={styles.headerBtn} aria-label="Toggle language" onClick={onToggleLanguage}>
-          🌍
+          {Icons.globeIcon}
         </button>
         <button
           type="button"
@@ -62,7 +63,7 @@ export default function Header({
           onClick={onToggleNotifications}
           style={{ position: 'relative' }}
         >
-          🔔
+          {Icons.bellIcon}
           {notificationCount > 0 && (
             <span
               style={{

@@ -1,7 +1,35 @@
 import { Response, NextFunction } from 'express';
+import { z } from 'zod';
 import tasksService from './tasks.service';
 import { AuthRequest } from '@/middleware/auth';
 import { asyncHandler } from '@/utils/errors';
+import { ValidationError } from '@/utils/errors';
+
+const titleRegex = /^(?=.{1,50}$)[A-Za-z\u0600-\u06FF\s]+$/u;
+const descriptionRegex = /^(?=.{0,300}$)[A-Za-z0-9\u0600-\u06FF\s]*$/u;
+
+const createTaskSchema = z.object({
+  title: z.string().regex(titleRegex, 'Task name must be Arabic/English letters only and max 50 chars'),
+  perspectiveId: z.string().uuid('Invalid perspective ID'),
+  axisId: z.string().uuid('Invalid axis ID'),
+  standardId: z.string().uuid('Invalid standard ID'),
+  evidenceType: z.enum(['file', 'screenshot']),
+  assignedTo: z.string().uuid('Invalid assigned user ID'),
+  targetType: z.enum(['department', 'unit']),
+  targetId: z.string().uuid('Invalid target ID'),
+  dueDate: z.string().min(1, 'Due date is required'),
+  priority: z.enum(['critical', 'high', 'medium', 'low']),
+  description: z.string().regex(descriptionRegex, 'Description must be alphanumeric (Arabic/English) max 300 chars').optional(),
+});
+
+const updateTaskSchema = z.object({
+  title: z.string().regex(titleRegex, 'Task name must be Arabic/English letters only and max 50 chars').optional(),
+  dueDate: z.string().optional(),
+  priority: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+  status: z.enum(['draft', 'assigned', 'in_progress', 'submitted', 'under_review', 'approved', 'rejected', 'resubmission_required', 'closed', 'cancelled']).optional(),
+  description: z.string().regex(descriptionRegex, 'Description must be alphanumeric (Arabic/English) max 300 chars').optional(),
+  completionNotes: z.string().optional(),
+});
 
 class TasksController {
   getTasks = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
@@ -22,13 +50,23 @@ class TasksController {
   });
 
   createTask = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
-    const task = await tasksService.createTask(req.body, req.user!.id);
+    const validation = createTaskSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ValidationError('Validation failed', validation.error.issues);
+    }
+
+    const task = await tasksService.createTask(validation.data, req.user!.id);
     res.status(201).json({ success: true, data: { task } });
   });
 
   updateTask = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
     const taskId = req.params.id as string;
-    const task = await tasksService.updateTask(taskId, req.body, req.user!.id);
+    const validation = updateTaskSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ValidationError('Validation failed', validation.error.issues);
+    }
+
+    const task = await tasksService.updateTask(taskId, validation.data, req.user!.id);
     res.json({ success: true, data: { task } });
   });
 

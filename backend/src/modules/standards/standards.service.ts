@@ -5,12 +5,14 @@ import { NotFoundError } from '@/utils/errors';
 interface Standard {
   id: string;
   axis_id: string;
-  name: string;
+  name_ar: string;
+  name_en: string;
   code: string;
-  description: string;
+  description_ar: string;
+  description_en: string;
   weight: number;
-  display_order: number;
-  completion_percentage: number;
+  sort_order: number;
+  completion_pct: number;
 }
 
 class StandardsService extends BaseRepository<Standard> {
@@ -22,8 +24,8 @@ class StandardsService extends BaseRepository<Standard> {
     let query = `
       SELECT 
         s.*,
-        a.name as axis_name,
-        p.name as perspective_name,
+        a.name_ar as axis_name,
+        p.name_ar as perspective_name,
         COUNT(DISTINCT er.id) as evidence_requirements_count
       FROM standards s
       LEFT JOIN axes a ON s.axis_id = a.id
@@ -33,11 +35,13 @@ class StandardsService extends BaseRepository<Standard> {
     const params: any[] = [];
 
     if (axisId) {
-      query += ' WHERE s.axis_id = $1';
+      query += ' WHERE s.axis_id = $1 AND s.deleted_at IS NULL';
       params.push(axisId);
+    } else {
+      query += ' WHERE s.deleted_at IS NULL';
     }
 
-    query += ' GROUP BY s.id, a.name, p.name ORDER BY s.axis_id, s.display_order';
+    query += ' GROUP BY s.id, a.name_ar, p.name_ar ORDER BY s.axis_id, s.sort_order';
 
     const result = await db.query(query, params);
     return result.rows;
@@ -47,15 +51,16 @@ class StandardsService extends BaseRepository<Standard> {
     const result = await db.query(`
       SELECT 
         s.*,
-        a.name as axis_name,
-        p.name as perspective_name,
+        a.name_ar as axis_name,
+        p.name_ar as perspective_name,
         COUNT(DISTINCT er.id) as evidence_requirements_count
       FROM standards s
       LEFT JOIN axes a ON s.axis_id = a.id
       LEFT JOIN perspectives p ON a.perspective_id = p.id
       LEFT JOIN evidence_requirements er ON s.id = er.standard_id
       WHERE s.id = $1
-      GROUP BY s.id, a.name, p.name
+        AND s.deleted_at IS NULL
+      GROUP BY s.id, a.name_ar, p.name_ar
     `, [standardId]);
 
     if (result.rows.length === 0) {
@@ -64,7 +69,7 @@ class StandardsService extends BaseRepository<Standard> {
 
     // Get evidence requirements
     const reqsResult = await db.query(
-      'SELECT * FROM evidence_requirements WHERE standard_id = $1 ORDER BY display_order',
+      'SELECT * FROM evidence_requirements WHERE standard_id = $1 AND deleted_at IS NULL ORDER BY sort_order',
       [standardId]
     );
 
@@ -76,10 +81,10 @@ class StandardsService extends BaseRepository<Standard> {
 
   async createStandard(data: any, createdBy: string) {
     const result = await db.query(`
-      INSERT INTO standards (axis_id, name, code, description, weight, display_order)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO standards (axis_id, name_ar, name_en, code, description_ar, description_en, weight, sort_order)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
-    `, [data.axisId, data.name, data.code, data.description, data.weight, data.displayOrder]);
+    `, [data.axisId, data.name, data.name, data.code, data.description, data.description, data.weight, data.displayOrder]);
 
     const standard = result.rows[0];
     await this.logAudit(createdBy, 'create_standard', 'standard', standard.id, data);
@@ -94,11 +99,17 @@ class StandardsService extends BaseRepository<Standard> {
     const values: any[] = [];
     let idx = 1;
 
-    if (data.name) { updates.push(`name = $${idx}`); values.push(data.name); idx++; }
+    if (data.name) {
+      updates.push(`name_ar = $${idx}`); values.push(data.name); idx++;
+      updates.push(`name_en = $${idx}`); values.push(data.name); idx++;
+    }
     if (data.code) { updates.push(`code = $${idx}`); values.push(data.code); idx++; }
-    if (data.description) { updates.push(`description = $${idx}`); values.push(data.description); idx++; }
+    if (data.description) {
+      updates.push(`description_ar = $${idx}`); values.push(data.description); idx++;
+      updates.push(`description_en = $${idx}`); values.push(data.description); idx++;
+    }
     if (data.weight !== undefined) { updates.push(`weight = $${idx}`); values.push(data.weight); idx++; }
-    if (data.displayOrder !== undefined) { updates.push(`display_order = $${idx}`); values.push(data.displayOrder); idx++; }
+    if (data.displayOrder !== undefined) { updates.push(`sort_order = $${idx}`); values.push(data.displayOrder); idx++; }
 
     if (updates.length === 0) return this.getStandardById(standardId);
 

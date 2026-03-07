@@ -19,6 +19,7 @@ import submissionRoutes from '@/modules/submissions/submissions.routes';
 import reviewRoutes from '@/modules/reviews/reviews.routes';
 import dashboardRoutes from '@/modules/dashboard/dashboard.routes';
 import reportRoutes from '@/modules/reports/reports.routes';
+import orgStructureRoutes from '@/modules/org-structure/org-structure.routes';
 
 const app: Application = express();
 
@@ -102,6 +103,7 @@ app.use('/api/v1/perspectives', perspectiveRoutes);
 app.use('/api/v1/axes', axisRoutes);
 app.use('/api/v1/standards', standardRoutes);
 app.use('/api/v1/tasks', taskRoutes);
+app.use('/api/v1', orgStructureRoutes);
 app.use('/api/v1/submissions', submissionRoutes);
 app.use('/api/v1/reviews', reviewRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);

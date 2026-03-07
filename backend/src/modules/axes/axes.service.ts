@@ -3,14 +3,16 @@ import db from '@/db';
 import { NotFoundError } from '@/utils/errors';
 
 interface Axis {
-  id: number;
-  perspective_id: number;
-  name: string;
+  id: string;
+  perspective_id: string;
+  name_ar: string;
+  name_en: string;
   code: string;
-  description: string;
+  description_ar: string;
+  description_en: string;
   weight: number;
-  display_order: number;
-  completion_percentage: number;
+  sort_order: number;
+  completion_pct: number;
 }
 
 class AxesService extends BaseRepository<Axis> {
@@ -22,7 +24,7 @@ class AxesService extends BaseRepository<Axis> {
     let query = `
       SELECT 
         a.*,
-        p.name as perspective_name,
+        p.name_ar as perspective_name,
         COUNT(DISTINCT s.id) as standards_count
       FROM axes a
       LEFT JOIN perspectives p ON a.perspective_id = p.id
@@ -31,11 +33,13 @@ class AxesService extends BaseRepository<Axis> {
     const params: any[] = [];
 
     if (perspectiveId) {
-      query += ' WHERE a.perspective_id = $1';
+      query += ' WHERE a.perspective_id = $1 AND a.deleted_at IS NULL';
       params.push(perspectiveId);
+    } else {
+      query += ' WHERE a.deleted_at IS NULL';
     }
 
-    query += ' GROUP BY a.id, p.name ORDER BY a.perspective_id, a.display_order';
+    query += ' GROUP BY a.id, p.name_ar ORDER BY a.perspective_id, a.sort_order';
 
     const result = await db.query(query, params);
     return result.rows;
@@ -45,13 +49,14 @@ class AxesService extends BaseRepository<Axis> {
     const result = await db.query(`
       SELECT 
         a.*,
-        p.name as perspective_name,
+        p.name_ar as perspective_name,
         COUNT(DISTINCT s.id) as standards_count
       FROM axes a
       LEFT JOIN perspectives p ON a.perspective_id = p.id
       LEFT JOIN standards s ON a.id = s.axis_id
       WHERE a.id = $1
-      GROUP BY a.id, p.name
+        AND a.deleted_at IS NULL
+      GROUP BY a.id, p.name_ar
     `, [axisId]);
 
     if (result.rows.length === 0) {
@@ -60,7 +65,7 @@ class AxesService extends BaseRepository<Axis> {
 
     // Get standards
     const standardsResult = await db.query(
-      'SELECT * FROM standards WHERE axis_id = $1 ORDER BY display_order',
+      'SELECT * FROM standards WHERE axis_id = $1 AND deleted_at IS NULL ORDER BY sort_order',
       [axisId]
     );
 
@@ -72,10 +77,10 @@ class AxesService extends BaseRepository<Axis> {
 
   async createAxis(data: any, createdBy: string) {
     const result = await db.query(`
-      INSERT INTO axes (perspective_id, name, code, description, weight, display_order)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO axes (perspective_id, name_ar, name_en, code, description_ar, description_en, weight, sort_order)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
-    `, [data.perspectiveId, data.name, data.code, data.description, data.weight, data.displayOrder]);
+    `, [data.perspectiveId, data.name, data.name, data.code, data.description, data.description, data.weight, data.displayOrder]);
 
     const axis = result.rows[0];
     await this.logAudit(createdBy, 'create_axis', 'axis', axis.id, data);
@@ -90,11 +95,17 @@ class AxesService extends BaseRepository<Axis> {
     const values: any[] = [];
     let idx = 1;
 
-    if (data.name) { updates.push(`name = $${idx}`); values.push(data.name); idx++; }
+    if (data.name) {
+      updates.push(`name_ar = $${idx}`); values.push(data.name); idx++;
+      updates.push(`name_en = $${idx}`); values.push(data.name); idx++;
+    }
     if (data.code) { updates.push(`code = $${idx}`); values.push(data.code); idx++; }
-    if (data.description) { updates.push(`description = $${idx}`); values.push(data.description); idx++; }
+    if (data.description) {
+      updates.push(`description_ar = $${idx}`); values.push(data.description); idx++;
+      updates.push(`description_en = $${idx}`); values.push(data.description); idx++;
+    }
     if (data.weight !== undefined) { updates.push(`weight = $${idx}`); values.push(data.weight); idx++; }
-    if (data.displayOrder !== undefined) { updates.push(`display_order = $${idx}`); values.push(data.displayOrder); idx++; }
+    if (data.displayOrder !== undefined) { updates.push(`sort_order = $${idx}`); values.push(data.displayOrder); idx++; }
 
     if (updates.length === 0) return this.getAxisById(axisId);
 
