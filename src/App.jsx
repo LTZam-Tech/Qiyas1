@@ -33,13 +33,13 @@ const PAGE_COMPONENTS = {
 
 export default function App() {
   const { isMobile, isTablet, vw } = useResponsive();
-  const { user: authUser, logout, isLoading: authLoading } = useAuth();
-  // LOGIN TEMPORARILY DISABLED — use a mock dean user so sidebar/role logic works
-  const MOCK_USER = useMemo(
-    () => ({ id: 'mock', email: 'dean@university.edu', name: 'Dr. Ahmed Al-Qahtani', role: 'dean' }),
-    [],
-  );
-  const user = authUser ?? MOCK_USER;
+  const {
+    user,
+    login,
+    logout,
+    isLoading: authLoading,
+    isAuthenticating,
+  } = useAuth();
   
   // Read language from URL path (/en/ or /ar/)
   const getLanguageFromPath = () => {
@@ -202,10 +202,9 @@ export default function App() {
 
   const PageComponent = PAGE_COMPONENTS[page] || DashboardPage;
 
-  // LOGIN TEMPORARILY DISABLED — uncomment to re-enable authentication gate
-  // if (!user) {
-  //   return <LoginPage onLogin={login} isLoading={isAuthenticating} />;
-  // }
+  if (!user) {
+    return <LoginPage onLogin={login} isLoading={isAuthenticating} lang={lang} />;
+  }
 
   if (isLoading || authLoading) {
     return (

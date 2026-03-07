@@ -168,7 +168,7 @@
 .notifications {
   position: absolute;
   top: 58px;
-  left: 16px;
+  right: 16px;
   min-width: 260px;
   background: #fff;
   border-radius: 10px;
@@ -178,8 +178,8 @@
 }
 
 [dir="rtl"] .notifications {
-  left: auto;
-  right: 16px;
+  right: auto;
+  left: 16px;
 }
 
 .notifications h4 {

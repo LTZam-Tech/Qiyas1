@@ -36,7 +36,13 @@ class UsersService extends BaseRepository<User> {
   async getAllUsers(filters?: { role?: string; department?: string; status?: string }) {
     let query = `
       SELECT 
-        u.id, u.email, u.name, u.status, u.last_login, u.created_at,
+        u.id,
+        u.email,
+        u.name,
+        u.is_active,
+        CASE WHEN u.is_active THEN 'active' ELSE 'inactive' END as status,
+        u.last_login,
+        u.created_at,
         string_agg(DISTINCT r.name, ', ') as roles
       FROM users u
       LEFT JOIN user_roles ur ON u.id = ur.user_id
@@ -53,8 +59,12 @@ class UsersService extends BaseRepository<User> {
     }
 
     if (filters?.status) {
-      query += ` AND u.status = $${paramIndex}`;
-      params.push(filters.status);
+      const statusFilter = String(filters.status).toLowerCase();
+      if (statusFilter === 'active') {
+        query += ` AND u.is_active = TRUE`;
+      } else if (statusFilter === 'inactive' || statusFilter === 'suspended') {
+        query += ` AND u.is_active = FALSE`;
+      }
       paramIndex++;
     }
 
@@ -67,7 +77,14 @@ class UsersService extends BaseRepository<User> {
   async getUserById(userId: string) {
     const result = await db.query(
       `SELECT 
-        u.id, u.email, u.name, u.status, u.last_login, u.created_at, u.updated_at,
+        u.id,
+        u.email,
+        u.name,
+        u.is_active,
+        CASE WHEN u.is_active THEN 'active' ELSE 'inactive' END as status,
+        u.last_login,
+        u.created_at,
+        u.updated_at,
         string_agg(DISTINCT r.id, ',') as role_ids,
         string_agg(DISTINCT r.name, ', ') as role,
         COALESCE(
@@ -103,9 +120,9 @@ class UsersService extends BaseRepository<User> {
 
     // Create user
     const result = await db.query(
-      `INSERT INTO users (email, password_hash, name, is_active, status)
-       VALUES ($1, $2, $3, true, 'active')
-       RETURNING id, email, name, status, created_at`,
+      `INSERT INTO users (email, password_hash, name, is_active)
+       VALUES ($1, $2, $3, true)
+       RETURNING id, email, name, is_active, created_at`,
       [data.email, passwordHash, data.fullName]
     );
 
@@ -139,8 +156,9 @@ class UsersService extends BaseRepository<User> {
     }
 
     if (data.status) {
-      updates.push(`status = $${paramIndex}`);
-      values.push(data.status);
+      const isActive = data.status === 'active';
+      updates.push(`is_active = $${paramIndex}`);
+      values.push(isActive);
       paramIndex++;
     }
 
@@ -165,7 +183,7 @@ class UsersService extends BaseRepository<User> {
   async deleteUser(userId: string, deletedBy: string) {
     await this.getUserById(userId); // Check exists
 
-    await db.query('UPDATE users SET status = $1, updated_at = NOW() WHERE id = $2', ['deleted', userId]);
+    await db.query('UPDATE users SET is_active = FALSE, updated_at = NOW() WHERE id = $1', [userId]);
 
     // Audit log
     await this.logAudit(deletedBy, 'delete_user', 'user', userId, {});

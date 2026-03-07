@@ -44,7 +44,7 @@ Consultant:
   Password: ConsultPass123
 
 User:
-  Email: user@department.edu
+   Email: employee@test.com
   Password: UserPass123
 ```
 

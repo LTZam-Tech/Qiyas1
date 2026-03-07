@@ -7,7 +7,7 @@ router.use(authenticate);
 
 router.get('/', submissionsController.getSubmissions);
 router.get('/:id', submissionsController.getSubmissionById);
-router.post('/', authorize('submit_evidence'), submissionsController.uploadMiddleware, submissionsController.createSubmission);
+router.post('/', authorize('evidence:submit'), submissionsController.uploadMiddleware, submissionsController.createSubmission);
 router.get('/:id/files/:fileId/download', submissionsController.downloadFile);
 
 export default router;

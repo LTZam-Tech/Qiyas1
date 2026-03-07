@@ -130,7 +130,7 @@ const LoginPage = ({ onLogin, isLoading, lang = 'ar' }) => {
             <p>🔑 {lang === 'ar' ? 'مسؤول' : 'Admin'}: admin@university.edu / AdminPass123</p>
             <p>👤 {lang === 'ar' ? 'عميد' : 'Dean'}: dean@university.edu / DeanPass123</p>
             <p>📋 {lang === 'ar' ? 'مستشار' : 'Consultant'}: consultant@qiyas.sa / ConsultPass123</p>
-            <p>👥 {lang === 'ar' ? 'مستخدم' : 'User'}: user@department.edu / UserPass123</p>
+            <p>👥 {lang === 'ar' ? 'موظف' : 'Employee'}: employee@test.com / UserPass123</p>
           </div>
         </div>
       </div>

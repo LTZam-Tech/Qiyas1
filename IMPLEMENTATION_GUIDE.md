@@ -49,6 +49,10 @@ Complete E2E implementation of the Qiyas Compliance Platform with role-based aut
 ### Login Credentials (Demo)
 
 ```
+📧 Admin:
+  Email: admin@university.edu
+  Password: AdminPass123
+
 📧 Dean:
    Email: dean@university.edu
    Password: DeanPass123
@@ -57,8 +61,8 @@ Complete E2E implementation of the Qiyas Compliance Platform with role-based aut
    Email: consultant@qiyas.sa
    Password: ConsultPass123
 
-📧 User:
-   Email: user@department.edu
+📧 Employee:
+  Email: employee@test.com
    Password: UserPass123
 ```
 

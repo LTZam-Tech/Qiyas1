@@ -8,8 +8,8 @@ router.use(authenticate);
 router.get('/', tasksController.getTasks);
 router.get('/my-tasks', tasksController.getMyTasks);
 router.get('/:id', tasksController.getTaskById);
-router.post('/', authorize('create_task'), tasksController.createTask);
+router.post('/', authorize('task:assign'), tasksController.createTask);
 router.put('/:id', tasksController.updateTask);
-router.delete('/:id', authorize('create_task'), tasksController.deleteTask);
+router.delete('/:id', authorize('task:assign'), tasksController.deleteTask);
 
 export default router;

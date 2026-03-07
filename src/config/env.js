@@ -9,7 +9,7 @@ const toNumber = (value, fallback) => {
 };
 
 export const env = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1',
   requestTimeoutMs: toNumber(import.meta.env.VITE_API_TIMEOUT_MS, 10000),
   useMockApi: toBool(import.meta.env.VITE_USE_MOCK_API, true),
 };

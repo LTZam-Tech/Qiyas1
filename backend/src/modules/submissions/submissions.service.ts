@@ -3,13 +3,15 @@ import db from '@/db';
 import storageService from '@/services/storage.service';
 import { NotFoundError } from '@/utils/errors';
 import { createHash } from 'crypto';
+import path from 'path';
 
 interface Submission {
-  id: number;
-  task_id: number;
-  submitted_by: number;
+  id: string;
+  task_id: string;
+  submitted_by: string;
+  evidence_requirement_id: string;
   status: string;
-  submission_notes: string;
+  notes: string;
   submitted_at: Date;
 }
 
@@ -22,7 +24,7 @@ class SubmissionsService extends BaseRepository<Submission> {
     let query = `
       SELECT 
         es.*,
-        u.full_name as submitted_by_name,
+        u.name as submitted_by_name,
         t.title as task_title,
         COUNT(ef.id) as file_count
       FROM evidence_submissions es
@@ -46,7 +48,7 @@ class SubmissionsService extends BaseRepository<Submission> {
       idx++;
     }
 
-    query += ' GROUP BY es.id, u.full_name, t.title ORDER BY es.submitted_at DESC';
+    query += ' GROUP BY es.id, u.name, t.title ORDER BY es.submitted_at DESC';
 
     const result = await db.query(query, params);
     return result.rows;
@@ -56,10 +58,10 @@ class SubmissionsService extends BaseRepository<Submission> {
     const result = await db.query(`
       SELECT 
         es.*,
-        u.full_name as submitted_by_name,
+        u.name as submitted_by_name,
         u.email as submitted_by_email,
         t.title as task_title,
-        t.description as task_description
+        t.instructions as task_description
       FROM evidence_submissions es
       LEFT JOIN users u ON es.submitted_by = u.id
       LEFT JOIN tasks t ON es.task_id = t.id
@@ -83,12 +85,14 @@ class SubmissionsService extends BaseRepository<Submission> {
   }
 
   async createSubmission(data: { taskId: string; submissionNotes: string }, files: any[], submittedBy: string) {
+    const evidenceRequirementId = await this.resolveEvidenceRequirementId(data.taskId);
+
     // Create submission
     const result = await db.query(`
-      INSERT INTO evidence_submissions (task_id, submitted_by, status, submission_notes, submitted_at)
-      VALUES ($1, $2, 'pending_review', $3, NOW())
+      INSERT INTO evidence_submissions (task_id, evidence_requirement_id, submitted_by, status, notes, submitted_at)
+      VALUES ($1, $2, $3, 'submitted', $4, NOW())
       RETURNING *
-    `, [data.taskId, submittedBy, data.submissionNotes]);
+    `, [data.taskId, evidenceRequirementId, submittedBy, data.submissionNotes]);
 
     const submission = result.rows[0];
 
@@ -96,11 +100,35 @@ class SubmissionsService extends BaseRepository<Submission> {
     for (const file of files) {
       const checksum = await this.calculateChecksum(file.path);
       const objectName = await storageService.uploadFile(file.path, file.originalname, 'evidence');
+      const fileExt = path.extname(file.originalname || '').replace('.', '').toLowerCase();
 
       await db.query(`
-        INSERT INTO evidence_files (submission_id, file_name, file_path, file_size, mime_type, checksum)
-        VALUES ($1, $2, $3, $4, $5, $6)
-      `, [submission.id, file.originalname, objectName, file.size, file.mimetype, checksum]);
+        INSERT INTO evidence_files (
+          submission_id,
+          original_filename,
+          stored_filename,
+          storage_path,
+          bucket,
+          mime_type,
+          file_size_bytes,
+          file_ext,
+          checksum_sha256,
+          uploaded_by,
+          uploaded_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+      `, [
+        submission.id,
+        file.originalname,
+        objectName,
+        objectName,
+        'evidence',
+        file.mimetype,
+        file.size,
+        fileExt,
+        checksum,
+        submittedBy,
+      ]);
     }
 
     // Update task status
@@ -136,9 +164,68 @@ class SubmissionsService extends BaseRepository<Submission> {
     }
 
     const file = result.rows[0];
-    const url = await storageService.getSignedUrl(file.file_path, 'evidence', 900); // 15 min
+    const storagePath = file.storage_path || file.stored_filename;
+    const url = await storageService.getSignedUrl(storagePath, 'evidence', 900); // 15 min
 
     return url;
+  }
+
+  private async resolveEvidenceRequirementId(taskId: string): Promise<string> {
+    const taskResult = await db.query(
+      'SELECT id, standard_id, evidence_requirement_id FROM tasks WHERE id = $1',
+      [taskId]
+    );
+
+    if (taskResult.rows.length === 0) {
+      throw new NotFoundError('Task not found');
+    }
+
+    const task = taskResult.rows[0];
+
+    if (task.evidence_requirement_id) {
+      return task.evidence_requirement_id;
+    }
+
+    const existingReqResult = await db.query(
+      `SELECT id
+       FROM evidence_requirements
+       WHERE standard_id = $1 AND deleted_at IS NULL
+       ORDER BY sort_order ASC, created_at ASC
+       LIMIT 1`,
+      [task.standard_id]
+    );
+
+    if (existingReqResult.rows.length > 0) {
+      return existingReqResult.rows[0].id;
+    }
+
+    const createdReqResult = await db.query(
+      `INSERT INTO evidence_requirements (
+         standard_id,
+         code,
+         title_en,
+         title_ar,
+         description_en,
+         description_ar,
+         is_required,
+         weight,
+         sort_order,
+         status,
+         review_status
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, true, 100, 1, 'active', 'pending')
+       RETURNING id`,
+      [
+        task.standard_id,
+        `AUTO-${Date.now()}`,
+        'Default evidence requirement',
+        'متطلب شاهد افتراضي',
+        'Auto-created for task submission flow',
+        'تم إنشاؤه تلقائيا لمسار رفع الشواهد',
+      ]
+    );
+
+    return createdReqResult.rows[0].id;
   }
 
   private async calculateChecksum(filePath: string): Promise<string> {

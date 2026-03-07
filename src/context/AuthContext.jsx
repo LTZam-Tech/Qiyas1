@@ -25,9 +25,9 @@ const MOCK_USERS = {
     password: 'ConsultPass123',
     user: { id: 3, email: 'consultant@qiyas.sa', fullName: 'Consultant User', role: 'consultant' },
   },
-  'user@department.edu': {
+  'employee@test.com': {
     password: 'UserPass123',
-    user: { id: 4, email: 'user@department.edu', fullName: 'Regular User', role: 'user' },
+    user: { id: 4, email: 'employee@test.com', fullName: 'Employee User', role: 'user' },
   },
 };
 
@@ -43,9 +43,9 @@ export function AuthProvider({ children }) {
             if (env.useMockApi) {
               setUser({
                 id: 'mock-user-1',
-                email: 'dean@example.com',
-                full_name: 'د. أحمد محمد',
-                full_name_en: 'Dr. Ahmed Mohammed',
+                email: 'dean@university.edu',
+                full_name: 'د. أحمد القحطاني',
+                full_name_en: 'Dr. Ahmed Al-Qahtani',
                 role: 'dean',
                 token: 'mock-token',
               });

@@ -15,7 +15,7 @@ const TABLE_HEADERS = {
   ar: ['الأولوية', 'الحالة', 'الموعد النهائي', 'المسؤول', 'الشاهد المطلوب', 'المعيار'],
   en: ['Priority', 'Status', 'Due Date', 'Responsible', 'Evidence Type', 'Standard'],
 };
-const TASK_CREATE_ROLES = new Set(['dean', 'consultant']);
+const TASK_CREATE_ROLES = new Set(['admin', 'dean', 'consultant']);
 
 const collectRoleCandidates = (user) => {
   if (!user) return [];

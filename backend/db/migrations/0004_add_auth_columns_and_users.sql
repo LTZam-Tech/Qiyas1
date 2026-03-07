@@ -24,9 +24,9 @@ VALUES
    '$2b$12$Y15dKXU2JyXlNnTluaJcQul7xEJGIO/qBrwMBVfpIiJcVvSl3hbDi', -- ConsultPass123
    true, '+966503456789', 'Quality Assurance', 'External Consultant'),
   
-  (gen_random_uuid(), 'Sara Al-Mutairi', 'سارة المطيري', 'user@department.edu',
+  (gen_random_uuid(), 'Mohamed Employee', 'محمد الموظف', 'employee@test.com',
    '$2b$12$XG7ohwzuT0t8NalQWp6eEOhOKV9hDlOvCv/y41ss29FzOLhJbJUfq', -- UserPass123
-   true, '+966504567890', 'Computer Science', 'Department Coordinator')
+   true, '+966504567890', 'General Administration', 'Employee')
 ON CONFLICT (email) DO UPDATE SET
   password_hash = EXCLUDED.password_hash,
   is_active = EXCLUDED.is_active;
@@ -43,7 +43,7 @@ WITH user_role_mapping AS (
     (u.email = 'admin@university.edu' AND r.name = 'admin') OR
     (u.email = 'dean@university.edu' AND r.name = 'dean') OR
     (u.email = 'consultant@qiyas.sa' AND r.name = 'consultant') OR
-    (u.email = 'user@department.edu' AND r.name = 'employee')
+    (u.email = 'employee@test.com' AND r.name = 'employee')
 )
 INSERT INTO user_roles (user_id, role_id, assigned_by)
 SELECT user_id, role_id, assigned_by FROM user_role_mapping
@@ -58,5 +58,5 @@ SELECT
 FROM users u
 LEFT JOIN user_roles ur ON u.id = ur.user_id
 LEFT JOIN roles r ON ur.role_id = r.id
-WHERE u.email IN ('admin@university.edu', 'dean@university.edu', 'consultant@qiyas.sa', 'user@department.edu')
+WHERE u.email IN ('admin@university.edu', 'dean@university.edu', 'consultant@qiyas.sa', 'employee@test.com')
 ORDER BY u.email;
