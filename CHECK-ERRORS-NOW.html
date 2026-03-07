@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Login Errors - Step by Step</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            margin-top: 0;
+            font-size: 32px;
+        }
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        .error-display {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .success-display {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        .code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Login Error Diagnostic</h1>
+        <p style="font-size: 18px; color: #666;">Frontend restarted with fresh environment. Let's check what's happening.</p>
+
+        <div class="step">
+            <h3>📋 Step 1: Check Environment Configuration</h3>
+            <p>First, verify the frontend is using the CORRECT settings.</p>
+            <div class="button-group">
+                <button class="btn-primary" onclick="checkEnvironment()">Check Frontend Environment</button>
+            </div>
+            <div id="env-result"></div>
+        </div>
+
+        <div class="step">
+            <h3>🐛 Step 2: View Error Logs</h3>
+            <p>Check what errors have been captured in localStorage.</p>
+            <div class="button-group">
+                <button class="btn-primary" onclick="viewErrorLogs()">View Error Logs</button>
+                <button class="btn-danger" onclick="clearErrors()">Clear Error Logs</button>
+            </div>
+            <div id="error-result"></div>
+        </div>
+
+        <div class="step">
+            <h3>🔐 Step 3: Test Login</h3>
+            <p>Test the backend login API directly from here.</p>
+            <div class="button-group">
+                <button class="btn-success" onclick="testBackendLogin()">Test Backend Login</button>
+            </div>
+            <div id="login-result"></div>
+        </div>
+
+        <div class="step">
+            <h3>🌐 Step 4: Open Frontend & Try Login</h3>
+            <p>After checking above, try logging in through the actual app.</p>
+            <div class="button-group">
+                <button class="btn-primary" onclick="openFrontend()">Open  Frontend (localhost:5173)</button>
+                <button class="btn-danger" onclick="clearCacheAndOpen()">Clear Cache & Open Frontend</button>
+            </div>
+            <div class="warning">
+                <strong>⚠️ If login still fails:</strong>
+                <ol>
+                    <li>Open browser DevTools (F12)</li>
+                    <li>Go to Console tab</li>
+                    <li>Look for errors in red</li>
+                    <li>Copy and report the error messages</li>
+                </ol>
+            </div>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function checkEnvironment() {
+            const resultDiv = document.getElementById('env-result');
+            resultDiv.innerHTML = '<p>🔄 Checking...</p>';
+            
+            try {
+                // Try to fetch from frontend and check what localStorage has
+                const frontendOk = await fetch('http://localhost:5173').then(r => r.ok);
+                
+                // Check error logs for environment-related errors
+                const errorLogs = JSON.parse(localStorage.getItem('qiyas_error_logs') || '[]');
+                const envErrors = errorLogs.filter(e => 
+                    e.message?.includes('mock') || 
+                    e.message?.includes('environment') ||
+                    e.message?.includes('VITE_')
+                );
+                
+                let html = '<div class="success-display">';
+                html += `<p><strong>Frontend Server:</strong> ${frontendOk ? '✅ Running on http://localhost:5173' : '❌ Not responding'}</p>`;
+                html += '</div>';
+                
+                html += '<div class="warning">';
+                html += '<p><strong>⚠️ IMPORTANT:</strong> The frontend logs its environment to the browser console.</p>';
+                html += '<p>To verify the ACTUAL settings:</p>';
+                html += '<ol>';
+                html += '<li>Click "Open Frontend" button below</li>';
+                html += '<li>Press F12 to open DevTools</li>';
+                html += '<li>Look in Console for: <span class="code">📋 Environment Configuration</span></li>';
+                html += '<li>Check that <span class="code">useMockApi: false</span></li>';
+                html += '</ol>';
+                html += '</div>';
+                
+                if (envErrors.length > 0) {
+                    html += '<div class="error-display">';
+                    html += '<p><strong>⚠️ Found environment-related errors:</strong></p>';
+                    html += '<pre>' + JSON.stringify(envErrors, null, 2) + '</pre>';
+                    html += '</div>';
+                }
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error-display"><p>❌ Error: ${error.message}</p></div>`;
+            }
+        }
+        
+        async function viewErrorLogs() {
+            const resultDiv = document.getElementById('error-result');
+            resultDiv.innerHTML = '<p>🔄 Loading error logs...</p>';
+            
+            try {
+                const errorLogs = JSON.parse(localStorage.getItem('qiyas_error_logs') || '[]');
+                
+                if (errorLogs.length === 0) {
+                    resultDiv.innerHTML = '<div class="success-display"><p>✅ No errors logged yet!</p></div>';
+                    return;
+                }
+                
+                // Get recent errors
+                const recentErrors = errorLogs.slice(-10).reverse();
+                
+                // Count by type
+                const errorCount = errorLogs.filter(e => e.severity === 'error').length;
+                const warningCount = errorLogs.filter(e => e.severity === 'warning').length;
+                
+                let html = '<div class="error-display">';
+                html += `<p><strong>📊 Total Errors:</strong> ${errorLogs.length} (${errorCount} errors, ${warningCount} warnings)</p>`;
+                html += '</div>';
+                
+                html += '<div class="error-display">';
+                html += '<h4>Last 10 Errors:</h4>';
+                html += '<pre>' + JSON.stringify(recentErrors, null, 2) + '</pre>';
+                html += '</div>';
+                
+                // Check for specific login errors
+                const loginErrors = errorLogs.filter(e => 
+                    e.message?.toLowerCase().includes('login') ||
+                    e.message?.toLowerCase().includes('auth') ||
+                    e.message?.toLowerCase().includes('401') ||
+                    e.message?.toLowerCase().includes('403')
+                );
+                
+                if (loginErrors.length > 0) {
+                    html += '<div class="error-display">';
+                    html += '<h4>🔐 Login-Related Errors:</h4>';
+                    html += '<pre>' + JSON.stringify(loginErrors, null, 2) + '</pre>';
+                    html += '</div>';
+                }
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error-display"><p>❌ Error reading logs: ${error.message}</p></div>`;
+            }
+        }
+        
+        function clearErrors() {
+            if (confirm('Clear all error logs?')) {
+                localStorage.removeItem('qiyas_error_logs');
+                document.getElementById('error-result').innerHTML = '<div class="success-display"><p>✅ Error logs cleared!</p></div>';
+            }
+        }
+        
+        async function testBackendLogin() {
+            const resultDiv = document.getElementById('login-result');
+            resultDiv.innerHTML = '<p>🔄 Testing backend login...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': 'http://localhost:5173'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@university.edu',
+                        password: 'AdminPass123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    let html = '<div class="success-display">';
+                    html += '<p><strong>✅ Backend Login Works!</strong></p>';
+                    html += '<p>User: ' + (data.data.user.firstName || '') + ' ' + (data.data.user.lastName || '') + '</p>';
+                    html += '<p>Role: ' + data.data.user.role + '</p>';
+                    html += '<p>Token: ' + data.data.accessToken.substring(0, 30) + '...</p>';
+                    html += '</div>';
+                    html += '<div class="warning">';
+                    html += '<p><strong>✅ Backend is working correctly.</strong> If frontend login fails, the issue is in the browser/frontend code.</p>';
+                    html += '</div>';
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<div class="error-display"><p>❌ Login failed</p><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error-display"><p>❌ Request failed: ${error.message}</p></div>`;
+            }
+        }
+        
+        function openFrontend() {
+            window.open('http://localhost:5173', '_blank');
+        }
+        
+        function clearCacheAndOpen() {
+            if (confirm('This will clear localStorage and sessionStorage, then open the frontend. Continue?')) {
+                // Clear all storage
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Open frontend in new tab
+                const newTab = window.open('http://localhost:5173', '_blank');
+                if (newTab) {
+                    alert('✅ Cache cleared! Frontend opening in new tab.');
+                } else {
+                    alert('Cache cleared! Please manually open: http://localhost:5173');
+                }
+            }
+        }
+        
+        // Auto-run checks on load
+        window.addEventListener('load', () => {
+            checkEnvironment();
+            viewErrorLogs();
+        });
+    </script>
+</body>
+</html>

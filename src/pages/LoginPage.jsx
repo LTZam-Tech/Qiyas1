@@ -39,17 +39,25 @@ const LoginPage = ({ onLogin, isLoading, lang = 'ar' }) => {
       let userMessage = 'Login failed. Please try again.';
 
       if (err.name === 'AbortError' || err.message.includes('timeout')) {
-        userMessage = '⏱️ Connection timeout. Please check if backend server is running.';
+        userMessage = 'Connection timeout. Please check your network.';
       } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        userMessage = '🌐 Cannot connect to server. Please ensure backend is running on port 8000.';
+        userMessage = 'Cannot connect to server. Please ensure backend is running on port 3001.';
       } else if (err.status === 401) {
-        userMessage = '🔒 Invalid email or password.';
+        userMessage = 'Invalid email or password.';
       } else if (err.status === 404) {
-        userMessage = '❌ Login endpoint not found. Check backend configuration.';
+        userMessage = 'Login endpoint not found.';
       } else if (err.message) {
         userMessage = err.message;
       }
 
+      console.error('❌ LOGIN ERROR:', err);
+      console.error('Error details:', {
+        name: err.name,
+        message: err.message,
+        status: err.status,
+        body: err.body,
+      });
+      
       setError(userMessage);
     }
   };

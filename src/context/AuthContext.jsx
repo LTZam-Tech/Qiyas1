@@ -39,20 +39,6 @@ export function AuthProvider({ children }) {
   // Check for existing token on mount
   useEffect(() => {
     const checkAuth = async () => {
-            // In mock API mode, auto-login as dean for testing
-            if (env.useMockApi) {
-              setUser({
-                id: 'mock-user-1',
-                email: 'dean@university.edu',
-                full_name: 'د. أحمد القحطاني',
-                full_name_en: 'Dr. Ahmed Al-Qahtani',
-                role: 'dean',
-                token: 'mock-token',
-              });
-              setIsLoading(false);
-              return;
-            }
-      
       const token = getAccessToken();
       if (token) {
         if (env.useMockApi) {

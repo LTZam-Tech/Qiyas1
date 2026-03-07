@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connection Test - Qiyas Portal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #667eea; }
+        h2 { color: #666; margin-top: 30px; }
+        .test-box {
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .success {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        .error {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+        .warning {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .info {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Qiyas Portal Connection Diagnostic</h1>
+        <p>This tool tests the connection between your browser and the backend server.</p>
+
+        <div class="info">
+            <strong>🎯 Purpose:</strong> Identify why the login page shows "Cannot connect to server" even though backend is running.
+        </div>
+
+        <h2>Test Results:</h2>
+        <div id="results"></div>
+
+        <div class="step">
+            <button onclick="runAllTests()" id="runBtn">▶️ Run All Tests</button>
+            <button onclick="clearResults()">🗑️ Clear Results</button>
+            <button onclick="openFrontend()">🌐 Open Frontend</button>
+            <button onclick="clearStorageAndReload()">🔄 Clear Cache & Reload Frontend</button>
+        </div>
+    </div>
+
+    <script>
+        async function runAllTests() {
+            const btn = document.getElementById('runBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Running tests...';
+            
+            clearResults();
+            
+            await testBackendHealth();
+            await testBackendLogin();
+            await testCORS();
+            await testFromFrontendOrigin();
+            await checkLocalStorage();
+            
+            btn.disabled = false;
+            btn.textContent = '▶️ Run All Tests';
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function addResult(title, success, details, rawData = null) {
+            const div = document.createElement('div');
+            div.className = `test-box ${success ? 'success' : 'error'}`;
+            
+            let html = `<h3>${success ? '✅' : '❌'} ${title}</h3>`;
+            html += `<p>${details}</p>`;
+            
+            if (rawData) {
+                html += '<pre>' + JSON.stringify(rawData, null, 2) + '</pre>';
+            }
+            
+            div.innerHTML = html;
+            document.getElementById('results').appendChild(div);
+        }
+
+        function addWarning(title, details) {
+            const div = document.createElement('div');
+            div.className = 'test-box warning';
+            div.innerHTML = `<h3>⚠️ ${title}</h3><p>${details}</p>`;
+            document.getElementById('results').appendChild(div);
+        }
+
+        async function testBackendHealth() {
+            try {
+                const response = await fetch('http://localhost:3001/health', {
+                    method: 'GET'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult('Backend Health Check', true, 
+                        `Backend server is responding on port 3001. Status: ${data.status}`,
+                        data);
+                } else {
+                    addResult('Backend Health Check', false, 
+                        `Backend responded with error: ${response.status}`, 
+                        data);
+                }
+            } catch (error) {
+                addResult('Backend Health Check', false, 
+                    `Cannot reach backend: ${error.message}. Make sure backend is running on port 3001.`,
+                    { error: error.message, name: error.name });
+            }
+        }
+
+        async function testBackendLogin() {
+            try {
+                const response = await fetch('http://localhost:3001/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@university.edu',
+                        password: 'AdminPass123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    addResult('Backend Login API', true, 
+                        `Login successful! User: ${data.data.user.email} (${data.data.user.role})`,
+                        { 
+                            user: data.data.user,
+                            hasToken: !!data.data.accessToken,
+                            tokenLength: data.data.accessToken?.length
+                        });
+                } else {
+                    addResult('Backend Login API', false, 
+                        `Login failed: ${data.message || 'Unknown error'}`,
+                        data);
+                }
+            } catch (error) {
+                addResult('Backend Login API', false, 
+                    `Cannot connect to login endpoint: ${error.message}`,
+                    { 
+                        error: error.message, 
+                        name: error.name,
+                        type: error.constructor.name
+                    });
+            }
+        }
+
+        async function testCORS() {
+            try {
+                // Test OPTIONS preflight
+                const response = await fetch('http://localhost:3001/api/v1/auth/login', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'http://localhost:5173',
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'content-type,authorization'
+                    }
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                    'Access-Control-Allow-Credentials': response.headers.get('Access-Control-Allow-Credentials')
+                };
+                
+                const hasValidCORS = corsHeaders['Access-Control-Allow-Origin'] !== null;
+                
+                if (hasValidCORS) {
+                    addResult('CORS Configuration', true,
+                        'CORS headers are configured correctly',
+                        corsHeaders);
+                } else {
+                   addResult('CORS Configuration', false,
+                        'CORS headers are missing or misconfigured',
+                        corsHeaders);
+                }
+            } catch (error) {
+                addResult('CORS Configuration', false,
+                    `CORS test failed: ${error.message}`,
+                    { error: error.message });
+            }
+        }
+
+        async function testFromFrontendOrigin() {
+            try {
+                // Simulate exact request from frontend
+                const response = await fetch('http://localhost:3001/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': 'http://localhost:5173'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@university.edu',
+                        password: 'AdminPass123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    addResult('Frontend Origin Test', true,
+                        'Backend accepts requests from frontend origin (localhost:5173)',
+                        {
+                            origin: 'http://localhost:5173',
+                            responseOk: response.ok,
+                            hasToken: !!data.data.accessToken
+                        });
+                } else {
+                    addResult('Frontend Origin Test', false,
+                        `Request from frontend origin failed: ${data.message}`,
+                        data);
+                }
+            } catch (error) {
+                addResult('Frontend Origin Test', false,
+                    `❗ THIS IS THE ISSUE: Requests from localhost:5173 are failing: ${error.message}`,
+                    {
+                        error: error.message,
+                        name: error.name,
+                        possibleCauses: [
+                            'CORS not allowing localhost:5173',
+                            'Backend not running',
+                            'Browser security blocking the request',
+                            'Network/firewall issue'
+                        ]
+                    });
+            }
+        }
+
+        async function checkLocalStorage() {
+            const accessToken = localStorage.getItem('qiyas_access_token');
+            const mockUser = localStorage.getItem('qiyas_mock_user');
+            const errorLogs = localStorage.getItem('qiyas_error_logs');
+            
+            let issues = [];
+            if (mockUser) {
+                issues.push('Mock user data found (indicates mock mode was active)');
+            }
+            if (accessToken && accessToken.startsWith('mock_')) {
+                issues.push('Mock token found (not a real backend token)');
+            }
+            
+            if (issues.length > 0) {
+                addWarning('LocalStorage Issues',
+                    `Found cached data that might cause issues:<br>• ${issues.join('<br>• ')}<br><br>` +
+                    `<strong>Recommendation:</strong> Click "Clear Cache & Reload Frontend" button below.`);
+            } else {
+                addResult('LocalStorage Check', true,
+                    'No problematic cached data found',
+                    {
+                        hasAccessToken: !!accessToken,
+                        hasMockUser: !!mockUser,
+                        hasErrorLogs: !!errorLogs
+                    });
+            }
+        }
+
+        function openFrontend() {
+            window.open('http://localhost:5173', '_blank');
+        }
+
+        function clearStorageAndReload() {
+            if (confirm('This will:\n1. Clear ALL localStorage data\n2. Clear sessionStorage\n3. Open frontend in new tab\n\nContinue?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.open('http://localhost:5173', '_blank');
+                alert('✅ Storage cleared! Frontend opened in new tab.\n\nNow try logging in.');
+            }
+        }
+
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
+            runAllTests();
+        });
+    </script>
+</body>
+</html>

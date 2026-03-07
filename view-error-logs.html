@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Qiyas Error Log Viewer</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            max-width: 1200px; 
+            margin: 20px auto; 
+            padding: 20px; 
+            background: #f5f5f5;
+        }
+        .header { 
+            background: #fff; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { margin: 0 0 10px 0; color: #333; }
+        .stats { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+            gap: 15px; 
+            margin-bottom: 20px; 
+        }
+        .stat-card { 
+            background: #fff; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-value { 
+            display: block; 
+            font-size: 32px; 
+            font-weight: bold; 
+            color: #3b82f6; 
+        }
+        .stat-label { 
+            display: block; 
+            font-size: 12px; 
+            color: #666; 
+            margin-top: 5px;
+        }
+        .error-list { 
+            background: #fff; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .error-item { 
+            padding: 15px; 
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .error-item:hover { background: #f9fafb; }
+        .error-item.expanded { background: #f0f9ff; }
+        .error-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .severity-badge { 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 11px; 
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .severity-error { background: #fee2e2; color: #991b1b; }
+        .severity-warning { background: #fef3c7; color: #92400e; }
+        .severity-info { background: #dbeafe; color: #1e40af; }
+        .source-badge { 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 11px; 
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .error-message { 
+            font-size: 14px; 
+            color: #111; 
+            margin: 5px 0;
+            font-weight: 500;
+        }
+        .error-time { 
+            font-size: 12px; 
+            color: #6b7280; 
+        }
+        .error-details { 
+            margin-top: 10px; 
+            padding: 10px; 
+            background: #f9fafb; 
+            border-radius: 4px; 
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .no-errors { 
+            text-align: center; 
+            padding: 40px; 
+            color: #6b7280; 
+        }
+        button { 
+            padding: 10px 20px; 
+            background: #ef4444; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 14px;
+        }
+        button:hover { background: #dc2626; }
+        .filter-bar { 
+            background: #fff; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            display: flex; 
+            gap: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        select, input { 
+            padding: 8px; 
+            border: 1px solid #d1d5db; 
+            border-radius: 4px; 
+            font-size: 14px;
+        }
+        input { flex: 1; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 Qiyas Error Log Viewer</h1>
+        <p style="margin: 0; color: #666;">Viewing errors from browser localStorage</p>
+    </div>
+
+    <div id="stats-container"></div>
+    
+    <div class="filter-bar">
+        <input type="text" id="search" placeholder="Search errors..." />
+        <select id="sourceFilter">
+            <option value="all">All Sources</option>
+            <option value="frontend">Frontend</option>
+            <option value="backend">Backend</option>
+            <option value="database">Database</option>
+        </select>
+        <select id="severityFilter">
+            <option value="all">All Severities</option>
+            <option value="error">Error</option>
+            <option value="warning">Warning</option>
+            <option value="info">Info</option>
+        </select>
+        <button onclick="clearAllErrors()">Clear All</button>
+    </div>
+
+    <div id="error-container" class="error-list"></div>
+
+    <script>
+        let allErrors = [];
+        let expandedIds = new Set();
+
+        function loadErrors() {
+            const storage = localStorage.getItem('qiyas_error_logs');
+            if (storage) {
+                allErrors = JSON.parse(storage);
+            }
+            renderStats();
+            renderErrors();
+        }
+
+        function renderStats() {
+            const now = new Date();
+            const last24h = new Date(now - 24 * 60 * 60 * 1000);
+            const lastHour = new Date(now - 60 * 60 * 1000);
+
+            const stats = {
+                total: allErrors.length,
+                last24h: allErrors.filter(e => new Date(e.timestamp) > last24h).length,
+                lastHour: allErrors.filter(e => new Date(e.timestamp) > lastHour).length,
+                errors: allErrors.filter(e => e.severity === 'error').length,
+                warnings: allErrors.filter(e => e.severity === 'warning').length,
+            };
+
+            document.getElementById('stats-container').innerHTML = `
+                <div class="stats">
+                    <div class="stat-card">
+                        <span class="stat-value">${stats.total}</span>
+                        <span class="stat-label">Total Errors</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value">${stats.last24h}</span>
+                        <span class="stat-label">Last 24 Hours</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value">${stats.lastHour}</span>
+                        <span class="stat-label">Last Hour</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value">${stats.errors}</span>
+                        <span class="stat-label">Errors</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value">${stats.warnings}</span>
+                        <span class="stat-label">Warnings</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderErrors() {
+            const search = document.getElementById('search').value.toLowerCase();
+            const sourceFilter = document.getElementById('sourceFilter').value;
+            const severityFilter = document.getElementById('severityFilter').value;
+
+            let filtered = allErrors.filter(e => {
+                if (search && !e.message.toLowerCase().includes(search) && !JSON.stringify(e.details).toLowerCase().includes(search)) {
+                    return false;
+                }
+                if (sourceFilter !== 'all' && e.source !== sourceFilter) {
+                    return false;
+                }
+                if (severityFilter !== 'all' && e.severity !== severityFilter) {
+                    return false;
+                }
+                return true;
+            });
+
+            const container = document.getElementById('error-container');
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="no-errors">✅ No errors found</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(error => {
+                const isExpanded = expandedIds.has(error.id);
+                return `
+                    <div class="error-item ${isExpanded ? 'expanded' : ''}" onclick="toggleError('${error.id}')">
+                        <div class="error-header">
+                            <span class="severity-badge severity-${error.severity}">${error.severity}</span>
+                            <span class="source-badge">${error.source}</span>
+                            <span class="error-time">${new Date(error.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div class="error-message">${error.message}</div>
+                        ${isExpanded ? `
+                            <div class="error-details">
+                                <strong>Type:</strong> ${error.type}
+                                <strong>URL:</strong> ${error.url || 'N/A'}
+                                
+                                ${error.details && Object.keys(error.details).length > 0 ? `
+                                <strong>Details:</strong>
+                                ${JSON.stringify(error.details, null, 2)}
+                                ` : ''}
+                                
+                                ${error.stack ? `
+                                <strong>Stack Trace:</strong>
+                                ${error.stack}
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleError(id) {
+            if (expandedIds.has(id)) {
+                expandedIds.delete(id);
+            } else {
+                expandedIds.add(id);
+            }
+            renderErrors();
+        }
+
+        function clearAllErrors() {
+            if (confirm('Are you sure you want to clear all errors?')) {
+                localStorage.removeItem('qiyas_error_logs');
+                allErrors = [];
+                expandedIds.clear();
+                renderStats();
+                renderErrors();
+            }
+        }
+
+        // Event listeners
+        document.getElementById('search').addEventListener('input', renderErrors);
+        document.getElementById('sourceFilter').addEventListener('change', renderErrors);
+        document.getElementById('severityFilter').addEventListener('change', renderErrors);
+
+        // Load on page load
+        loadErrors();
+
+        // Auto-refresh every 2 seconds
+        setInterval(loadErrors, 2000);
+    </script>
+</body>
+</html>

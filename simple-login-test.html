@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Login Test - Qiyas</title>
+    <style>
+        body { font-family: Arial; max-width: 500px; margin: 50px auto; padding: 20px; }
+        input, button { display: block; width: 100%; padding: 10px; margin: 10px 0; font-size: 16px; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>🔐 Qiyas Login Test</h1>
+    <p>This tests login API directly (no React, no AuthContext)</p>
+    
+    <form id="loginForm">
+        <input type="email" id="email" value="dean@university.edu" placeholder="Email" required>
+        <input type="password" id="password" value="DeanPass123" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+    
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = '<p>Testing login...</p>';
+            
+            try {
+                console.log('🔐 Attempting login...');
+                console.log('Email:', email);
+                console.log('API URL: http://localhost:3001/api/v1/auth/login');
+                
+                const response = await fetch('http://localhost:3001/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (response.ok && data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Login Successful!</h3>
+                        <p><strong>Email:</strong> ${data.data.user.email}</p>
+                        <p><strong>Name:</strong> ${data.data.user.name}</p>
+                        <p><strong>Role:</strong> ${data.data.user.role}</p>
+                        <p><strong>Token:</strong> ${data.data.accessToken.substring(0, 30)}...</p>
+                        <p style="margin-top: 15px; padding: 10px; background: #fff; border: 1px solid #ccc;">
+                            <strong>This proves the API works!</strong><br>
+                            If the main app doesn't work, the issue is in React/AuthContext.
+                        </p>
+                    `;
+                } else {
+                    throw new Error(data.error?.message || 'Login failed');
+                }
+            } catch (error) {
+                console.error('❌ Login error:', error);
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Login Failed</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p style="margin-top: 10px; font-size: 14px;">
+                        Check browser console (F12) for details.
+                    </p>
+                `;
+            }
+        });
+        
+        // Auto-test on load
+        console.log('Page loaded. Ready to test login.');
+        console.log('Frontend location:', window.location.href);
+        console.log('Will call API at: http://localhost:3001/api/v1/auth/login');
+    </script>
+</body>
+</html>
