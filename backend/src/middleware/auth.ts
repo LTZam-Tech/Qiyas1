@@ -251,8 +251,8 @@ export const canSubmitEvidence = async (userId: string, taskId: string): Promise
   // Only assigned user can submit evidence
   if (task.assigned_to !== userId) return false;
   
-  // Task must be assignable for submission workflow
-  if (!['in_progress', 'assigned', 'submitted'].includes(task.status)) return false;
+  // Task must be in a state that allows submission
+  if (!['in_progress', 'assigned', 'resubmission_required'].includes(task.status)) return false;
   
   return true;
 };
@@ -277,8 +277,8 @@ export const canReviewSubmission = async (userId: string, submissionId: string):
   // Only consultants can review
   if (role !== 'consultant') return false;
   
-  // Submission must be pending review
-  if (data.status !== 'pending_review') return false;
+  // Submission must be in a reviewable state
+  if (data.status !== 'submitted' && data.status !== 'under_review') return false;
   
   return true;
 };

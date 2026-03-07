@@ -69,7 +69,7 @@ class TasksService extends BaseRepository<Task> {
       LEFT JOIN perspectives p ON t.perspective_id = p.id
       LEFT JOIN departments d ON t.target_department_id = d.id
       LEFT JOIN units un ON t.target_unit_id = un.id
-      WHERE 1=1
+      WHERE t.deleted_at IS NULL
     `;
     const params: any[] = [];
     let paramIndex = 1;
@@ -128,7 +128,7 @@ class TasksService extends BaseRepository<Task> {
       LEFT JOIN perspectives p ON t.perspective_id = p.id
       LEFT JOIN departments d ON t.target_department_id = d.id
       LEFT JOIN units un ON t.target_unit_id = un.id
-      WHERE t.id = $1
+      WHERE t.id = $1 AND t.deleted_at IS NULL
     `, [taskId]);
 
     if (result.rows.length === 0) {
@@ -259,7 +259,7 @@ class TasksService extends BaseRepository<Task> {
   async deleteTask(taskId: string, deletedBy: string) {
     await this.getTaskById(taskId);
 
-    await db.query('DELETE FROM tasks WHERE id = $1', [taskId]);
+    await db.query('UPDATE tasks SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1', [taskId]);
     await this.logAudit(deletedBy, 'delete_task', 'task', taskId, {});
 
     return true;
@@ -274,7 +274,7 @@ class TasksService extends BaseRepository<Task> {
       FROM tasks t
       LEFT JOIN evidence_requirements er ON t.evidence_requirement_id = er.id
       LEFT JOIN standards s ON t.standard_id = s.id
-      WHERE t.assigned_to = $1
+      WHERE t.assigned_to = $1 AND t.deleted_at IS NULL
       ORDER BY t.due_date ASC
     `, [userId]);
 
@@ -285,11 +285,11 @@ class TasksService extends BaseRepository<Task> {
     const result = await db.query(`
       SELECT 
         t.*,
-        u.full_name as assigned_to_name,
+        u.name as assigned_to_name,
         u.email as assigned_to_email
       FROM tasks t
       LEFT JOIN users u ON t.assigned_to = u.id
-      WHERE t.status NOT IN ('completed', 'cancelled') AND t.due_date < NOW()
+      WHERE t.status NOT IN ('approved', 'closed', 'cancelled') AND t.due_date < NOW()
       ORDER BY t.due_date ASC
     `);
 

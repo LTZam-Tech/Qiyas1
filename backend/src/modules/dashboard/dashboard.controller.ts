@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import dashboardService from './dashboard.service';
 import { AuthRequest } from '@/middleware/auth';
 import { asyncHandler } from '@/utils/errors';
+import config from '@/config';
 import logger from '@/utils/logger';
 
 class DashboardController {
@@ -53,8 +54,14 @@ class DashboardController {
         data: summary,
       });
     } catch (error) {
-      // If database not fully set up, return mock data
-      logger.warn('Dashboard data unavailable, returning mock data', { error });
+      // In production, do not return mock data for a government compliance system
+      if (config.env === 'production') {
+        logger.error('Dashboard data unavailable', { error });
+        throw error;
+      }
+
+      // Only return mock data in development when database is not set up
+      logger.warn('Dashboard data unavailable, returning mock data (development only)', { error });
       
       res.json({
         success: true,

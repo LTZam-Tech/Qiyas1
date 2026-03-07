@@ -39,32 +39,30 @@ class DashboardService {
   // Get global dashboard overview
   async getOverview(userId: string, role: string): Promise<DashboardOverview> {
     try {
-      // Get global completion from materialized view
+      // Get global completion using the recalc function
       const globalResult = await db.query(`
-        SELECT completion_percentage 
-        FROM global_completion_mv 
-        LIMIT 1
+        SELECT recalc_global_completion() as completion_pct
       `);
       
-      const globalCompletion = globalResult.rows[0]?.completion_percentage || 0;
+      const globalCompletion = globalResult.rows[0]?.completion_pct || 0;
 
-      // Get hierarchy counts
+      // Get hierarchy counts (only active, non-deleted)
       const countsResult = await db.query(`
         SELECT 
-          (SELECT COUNT(*) FROM perspectives) as perspectives_count,
-          (SELECT COUNT(*) FROM axes) as axes_count,
-          (SELECT COUNT(*) FROM standards) as standards_count
+          (SELECT COUNT(*) FROM perspectives WHERE deleted_at IS NULL) as perspectives_count,
+          (SELECT COUNT(*) FROM axes WHERE deleted_at IS NULL) as axes_count,
+          (SELECT COUNT(*) FROM standards WHERE deleted_at IS NULL) as standards_count
       `);
       
       const counts = countsResult.rows[0];
 
-      // Get task statistics
+      // Get task statistics (use valid task statuses from CHECK constraint)
       const tasksResult = await db.query(`
         SELECT 
           COUNT(*) as total,
-          COUNT(*) FILTER (WHERE status = 'completed') as completed,
-          COUNT(*) FILTER (WHERE status IN ('pending', 'in_progress')) as pending,
-          COUNT(*) FILTER (WHERE status != 'completed' AND due_date < NOW()) as overdue
+          COUNT(*) FILTER (WHERE status = 'approved' OR status = 'closed') as completed,
+          COUNT(*) FILTER (WHERE status IN ('assigned', 'in_progress', 'submitted', 'under_review')) as pending,
+          COUNT(*) FILTER (WHERE status NOT IN ('approved', 'closed', 'cancelled') AND due_date < NOW()) as overdue
         FROM tasks
         WHERE ($1 = 'admin' OR $1 = 'dean') OR assigned_to = $2
       `, [role, userId]);
@@ -93,22 +91,22 @@ class DashboardService {
       const result = await db.query(`
         SELECT 
           p.id,
-          p.name,
+          p.name_ar as name,
           p.code,
           p.weight,
-          p.completion_percentage,
+          p.completion_pct,
           COUNT(DISTINCT a.id) as axes_count
         FROM perspectives p
         LEFT JOIN axes a ON p.id = a.perspective_id
-        GROUP BY p.id, p.name, p.code, p.weight, p.completion_percentage
-        ORDER BY p.display_order
+        GROUP BY p.id, p.name_ar, p.code, p.weight, p.completion_pct
+        ORDER BY p.sort_order
       `);
 
       return result.rows.map((row: any) => ({
         id: row.id,
         name: row.name,
         code: row.code,
-        completion_percentage: parseFloat(row.completion_percentage) || 0,
+        completion_percentage: parseFloat(row.completion_pct) || 0,
         weight: parseFloat(row.weight),
         axes_count: parseInt(row.axes_count),
       }));
@@ -124,13 +122,13 @@ class DashboardService {
       const result = await db.query(`
         SELECT 
           COUNT(*) as total,
-          COUNT(*) FILTER (WHERE status = 'pending') as pending,
+          COUNT(*) FILTER (WHERE status IN ('assigned', 'draft')) as pending,
           COUNT(*) FILTER (WHERE status = 'in_progress') as in_progress,
-          COUNT(*) FILTER (WHERE status = 'completed') as completed,
-          COUNT(*) FILTER (WHERE status != 'completed' AND due_date < NOW()) as overdue,
-          COUNT(*) FILTER (WHERE priority = 'urgent') as urgent,
+          COUNT(*) FILTER (WHERE status IN ('approved', 'closed')) as completed,
+          COUNT(*) FILTER (WHERE status NOT IN ('approved', 'closed', 'cancelled') AND due_date < NOW()) as overdue,
+          COUNT(*) FILTER (WHERE priority = 'critical') as urgent,
           COUNT(*) FILTER (WHERE priority = 'high') as high,
-          COUNT(*) FILTER (WHERE priority = 'normal') as normal,
+          COUNT(*) FILTER (WHERE priority = 'medium') as normal,
           COUNT(*) FILTER (WHERE priority = 'low') as low
         FROM tasks
         WHERE ($1 = 'admin' OR $1 = 'dean') OR assigned_to = $2
@@ -199,15 +197,15 @@ class DashboardService {
           SELECT 
             'escalation' as type,
             ee.id,
-            ee.created_at as timestamp,
+            ee.triggered_at as timestamp,
             t.title as task_title,
-            u.full_name as user_name,
-            ee.status
+            u.name as user_name,
+            CASE WHEN ee.resolved_at IS NOT NULL THEN 'resolved' ELSE 'pending' END as status
           FROM escalation_events ee
           JOIN tasks t ON ee.task_id = t.id
           JOIN users u ON t.assigned_to = u.id
           WHERE ($1 = 'admin' OR $1 = 'dean') OR t.assigned_to = $2
-          ORDER BY ee.created_at DESC
+          ORDER BY ee.triggered_at DESC
           LIMIT $3
         )
         ORDER BY timestamp DESC
@@ -224,7 +222,7 @@ class DashboardService {
   // Refresh dashboard snapshot (materialized view)
   async refreshSnapshot(): Promise<void> {
     try {
-      await db.query('REFRESH MATERIALIZED VIEW CONCURRENTLY global_completion_mv');
+      await db.query('REFRESH MATERIALIZED VIEW CONCURRENTLY dashboard_snapshot_mv');
       logger.info('Dashboard snapshot refreshed');
     } catch (error) {
       logger.error('Dashboard snapshot refresh error', error);

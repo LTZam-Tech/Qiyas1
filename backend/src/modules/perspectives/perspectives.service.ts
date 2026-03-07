@@ -1,6 +1,6 @@
 import { BaseRepository } from '@/db/repository';
 import db from '@/db';
-import { NotFoundError } from '@/utils/errors';
+import { NotFoundError, BusinessLogicError } from '@/utils/errors';
 
 interface Perspective {
   id: string;
@@ -173,12 +173,12 @@ class PerspectivesService extends BaseRepository<Perspective> {
     await this.getPerspectiveById(perspectiveId); // Check exists
 
     // Check for dependencies
-    const axesResult = await db.query('SELECT COUNT(*) as count FROM axes WHERE perspective_id = $1', [perspectiveId]);
+    const axesResult = await db.query('SELECT COUNT(*) as count FROM axes WHERE perspective_id = $1 AND deleted_at IS NULL', [perspectiveId]);
     if (parseInt(axesResult.rows[0].count) > 0) {
-      throw new Error('Cannot delete perspective with existing axes');
+      throw new BusinessLogicError('Cannot delete perspective with existing axes');
     }
 
-    await db.query('DELETE FROM perspectives WHERE id = $1', [perspectiveId]);
+    await db.query('UPDATE perspectives SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1', [perspectiveId]);
 
     // Audit log
     await this.logAudit(deletedBy, 'delete_perspective', 'perspective', perspectiveId, {});

@@ -7,8 +7,8 @@ router.use(authenticate);
 
 router.get('/', axesController.getAxes);
 router.get('/:id', axesController.getAxisById);
-router.post('/', authorize('manage_hierarchy'), axesController.createAxis);
-router.put('/:id', authorize('manage_hierarchy'), axesController.updateAxis);
-router.delete('/:id', authorize('manage_hierarchy'), axesController.deleteAxis);
+router.post('/', authorize('perspective:manage'), axesController.createAxis);
+router.put('/:id', authorize('perspective:manage'), axesController.updateAxis);
+router.delete('/:id', authorize('perspective:manage'), axesController.deleteAxis);
 
 export default router;

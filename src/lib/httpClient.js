@@ -90,6 +90,12 @@ const getSafeTimeoutMs = (value) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 10000;
 };
 
+const getCsrfToken = () => {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+};
+
 export async function request(path, options = {}, query = {}) {
   const { timeoutMs, headers: customHeaders = {}, ...restOptions } = options;
   const controller = new AbortController();
@@ -100,12 +106,16 @@ export async function request(path, options = {}, query = {}) {
 
   try {
     const token = authTokenGetter?.();
+    const method = (restOptions.method || 'GET').toUpperCase();
+    const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+    const csrfToken = isMutating ? getCsrfToken() : null;
     const config = await applyRequestInterceptors({
       url: createUrl(path, query),
       options: {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
           ...customHeaders,
         },
         ...restOptions,
@@ -114,6 +124,7 @@ export async function request(path, options = {}, query = {}) {
     });
 
     const response = await fetch(config.url, {
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(config.options?.headers || {}),
