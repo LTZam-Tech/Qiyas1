@@ -1,7 +1,9 @@
 ﻿import { useState } from 'react';
 import PropTypes from 'prop-types';
 import Badge from '../components/Badge.jsx';
+import TaskModal from '../components/TaskModal.jsx';
 import useTasksData from '../hooks/useTasksData.js';
+import { useAuth } from '../context/useAuth.js';
 import styles from './TasksPage.module.css';
 
 const FILTERS = [
@@ -16,23 +18,45 @@ const TABLE_HEADERS = ['الأولوية', 'الحالة', 'الموعد الن�
 
 const TasksPage = ({ isMobile }) => {
   const [filter, setFilter] = useState('all');
-  const { data: tasks, isLoading, error } = useTasksData(filter);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { data: tasks, isLoading, error, refetch } = useTasksData(filter);
+  const { user } = useAuth();
+
+  // Check if user has permission to create tasks (dean or consultant)
+  const canCreateTask = user?.role === 'dean' || user?.role === 'consultant';
+
+  const handleTaskCreated = () => {
+    // Refresh the tasks list after creating a new task
+    refetch?.();
+  };
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <div className={styles.filters}>
-          {FILTERS.map(([key, label]) => (
+        <div className={styles.headerLeft}>
+          <div className={styles.filters}>
+            {FILTERS.map(([key, label]) => (
+              <button
+                type="button"
+                key={key}
+                aria-label={`فلترة المهام: ${label}`}
+                className={`${styles.filterButton} ${filter === key ? styles.filterButtonActive : ''}`}
+                onClick={() => setFilter(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {canCreateTask && (
             <button
               type="button"
-              key={key}
-              aria-label={`فلترة المهام: ${label}`}
-              className={`${styles.filterButton} ${filter === key ? styles.filterButtonActive : ''}`}
-              onClick={() => setFilter(key)}
+              className={styles.createButton}
+              onClick={() => setIsModalOpen(true)}
+              aria-label="إنشاء مهمة جديدة"
             >
-              {label}
+              + مهمة جديدة
             </button>
-          ))}
+          )}
         </div>
         <h2 className={styles.heading}>إدارة المهام - Task Management</h2>
       </div>
@@ -92,6 +116,12 @@ const TasksPage = ({ isMobile }) => {
           </tbody>
         </table>
       </div>
+
+      <TaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleTaskCreated}
+      />
     </div>
   );
 };

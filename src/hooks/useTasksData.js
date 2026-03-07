@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getTasks } from '../services/tasksService.js';
 
 export default function useTasksData(filter) {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
+
+  const refetch = useCallback(() => {
+    setRefetchTrigger((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -32,7 +37,7 @@ export default function useTasksData(filter) {
     return () => {
       isMounted = false;
     };
-  }, [filter]);
+  }, [filter, refetchTrigger]);
 
-  return { data, isLoading, error };
+  return { data, isLoading, error, refetch };
 }

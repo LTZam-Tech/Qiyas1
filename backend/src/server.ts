@@ -48,6 +48,18 @@ async function startServer() {
       logger.info(`Health check: http://localhost:${PORT}/health`);
     });
 
+    // Handle server errors
+    server.on('error', (error: NodeJS.ErrnoException) => {
+      console.error('Server error:', error);
+      logger.error('Server error', error);
+      
+      if (error.code === 'EADDRINUSE') {
+        logger.error(`Port ${PORT} is already in use`);
+      }
+      
+      process.exit(1);
+    });
+
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {
       logger.info(`${signal} received, closing server gracefully`);

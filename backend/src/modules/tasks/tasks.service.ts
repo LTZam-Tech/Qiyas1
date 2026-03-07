@@ -100,10 +100,19 @@ class TasksService extends BaseRepository<Task> {
 
   async createTask(data: any, createdBy: string) {
     const result = await db.query(`
-      INSERT INTO tasks (evidence_requirement_id, assigned_to, created_by, title, description, due_date, priority, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+      INSERT INTO tasks (evidence_requirement_id, standard_id, assigned_to, assigned_by, title, instructions, due_date, priority, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'assigned')
       RETURNING *
-    `, [data.evidenceRequirementId, data.assignedTo, createdBy, data.title, data.description, data.dueDate, data.priority]);
+    `, [
+      data.evidenceRequirementId,
+      data.standardId,
+      data.assignedTo,
+      createdBy,
+      data.title,
+      data.description || data.instructions,
+      data.dueDate,
+      data.priority || 'normal'
+    ]);
 
     const task = result.rows[0];
     await this.logAudit(createdBy, 'create_task', 'task', task.id, data);
