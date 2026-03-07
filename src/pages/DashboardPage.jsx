@@ -42,7 +42,7 @@ const DashboardPage = ({ isMobile, lang }) => {
               <div key={p.id} className={styles.row}>
                 <span className={styles.percent}>{p.completion}%</span>
                 <div className={styles.progressWrapper}><ProgressBar value={p.completion} height={8} /></div>
-                <span className={styles.perspectiveLabel}>{p.name}</span>
+                <span className={styles.perspectiveLabel}>{lang === 'ar' ? p.name : p.nameEn}</span>
               </div>
             )) : (
               <p className={styles.emptyState}>{lang === 'ar' ? 'لا توجد بيانات للمناظير حاليا' : 'No perspective data available'}</p>
@@ -63,7 +63,7 @@ const DashboardPage = ({ isMobile, lang }) => {
                 <div key={a.id} className={`${styles.activityRow} ${isLast ? styles.activityRowLast : ''}`}>
                   <div className={`${styles.activityDot} ${dotClass}`} />
                   <div className={styles.activityText}>
-                    <div className={styles.activityMain}><strong>{a.user}</strong> — {lang === 'ar' ? a.action_ar : a.action_en}</div>
+                    <div className={styles.activityMain}><strong>{lang === 'ar' ? a.user_ar : a.user_en}</strong> — {lang === 'ar' ? a.action_ar : a.action_en}</div>
                     <div className={styles.activityMeta}>{lang === 'ar' ? 'المعيار' : 'Standard'} {a.standard} | {lang === 'ar' ? a.time_ar : a.time_en}</div>
                   </div>
                 </div>

@@ -134,7 +134,7 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
                       <Badge status={task.status} lang={lang} />
                     </td>
                     <td className={styles.dueCell}>{task.due}</td>
-                    <td className={styles.textCell}>{task.assignee}</td>
+                    <td className={styles.textCell}>{lang === 'ar' ? task.assignee_ar : task.assignee_en}</td>
                     <td className={styles.textCell}>{lang === 'ar' ? task.req_ar : task.req_en}</td>
                     <td className={styles.codeCell}>{task.code}</td>
                   </tr>

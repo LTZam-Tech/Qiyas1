@@ -45,6 +45,7 @@ export function AuthProvider({ children }) {
                 id: 'mock-user-1',
                 email: 'dean@example.com',
                 full_name: 'د. أحمد محمد',
+                full_name_en: 'Dr. Ahmed Mohammed',
                 role: 'dean',
                 token: 'mock-token',
               });

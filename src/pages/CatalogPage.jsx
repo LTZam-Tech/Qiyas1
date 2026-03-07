@@ -81,8 +81,7 @@ const CatalogPage = ({ lang }) => {
                 {Icons.documentIcon}
                 <div>
                   <h3 className={styles.standardCode}>{currentAxis.code}</h3>
-                  <h2 className={styles.standardTitle}>{currentAxis.name}</h2>
-                  <p className={styles.standardTitleEn}>{currentAxis.nameEn}</p>
+                  <h2 className={styles.standardTitle}>{lang === 'ar' ? currentAxis.name : currentAxis.nameEn}</h2>
                 </div>
               </div>
 
@@ -160,7 +159,7 @@ const CatalogPage = ({ lang }) => {
                 >
                   <div className={styles.axisHeader}>
                     <div className={styles.axisIconWrapper}>{Icons.folderIcon}</div>
-                    <div className={styles.axisTitle}>{axis.name}</div>
+                    <div className={styles.axisTitle}>{lang === 'ar' ? axis.name : axis.nameEn}</div>
                     <div className={styles.axisLabel}>{axis.code}</div>
                   </div>
                   {STANDARD_DETAILS[axis.id] && (

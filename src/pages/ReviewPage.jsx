@@ -40,7 +40,7 @@ const ReviewPage = ({ isMobile, lang }) => {
               <div className={styles.rowBody}>
                 <div className={styles.rowTitle}>{lang === 'ar' ? task.req_ar : task.req_en}</div>
                 <div className={styles.rowMeta}>
-                  {lang === 'ar' ? 'المعيار' : 'Standard'}: {task.code} | {lang === 'ar' ? 'المسؤول' : 'Responsible'}: {task.assignee}
+                  {lang === 'ar' ? 'المعيار' : 'Standard'}: {task.code} | {lang === 'ar' ? 'المسؤول' : 'Responsible'}: {lang === 'ar' ? task.assignee_ar : task.assignee_en}
                 </div>
               </div>
 

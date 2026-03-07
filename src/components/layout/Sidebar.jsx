@@ -73,7 +73,7 @@ export default function Sidebar({
           <div className={styles.profileCard}>
             <span aria-hidden="true">👤</span>
             <div>
-              <div>{user?.fullName || (lang === 'ar' ? user?.nameAr : user?.nameEn)}</div>
+              <div>{lang === 'ar' ? (user?.full_name || user?.fullName || 'User') : (user?.full_name_en || user?.full_name || 'User')}</div>
               <small style={{ 
                 display: 'inline-block',
                 padding: '2px 8px',
