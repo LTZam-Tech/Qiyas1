@@ -17,7 +17,7 @@ const DashboardPage = ({ isMobile, lang }) => {
   const alerts = data?.alerts ?? [];
 
   if (isLoading) {
-    return <p className={styles.emptyState}>Loading dashboard...</p>;
+    return <p className={styles.emptyState}>{lang === 'ar' ? 'جاري تحميل لوحة التحكم...' : 'Loading dashboard...'}</p>;
   }
 
   if (error) {

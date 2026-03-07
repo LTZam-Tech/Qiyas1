@@ -70,7 +70,7 @@ export default function Header({
               style={{
                 position: 'absolute',
                 top: 4,
-                right: 4,
+                ...(lang === 'ar' ? { left: 4 } : { right: 4 }),
                 width: 8,
                 height: 8,
                 borderRadius: '50%',

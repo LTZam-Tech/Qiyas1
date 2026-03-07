@@ -83,7 +83,6 @@
   font-size: 12px;
   color: #2d1b3d;
   min-width: 140px;
-  text-align: start;
 }
 
 .progressWrapper {
@@ -133,7 +132,6 @@
 
 .activityText {
   flex: 1;
-  text-align: start;
 }
 
 .activityMain {
@@ -163,7 +161,7 @@
 }
 
 .alertText {
-  text-align: start;
+  /* text flows naturally with dir attribute */
 }
 
 .alertTitle {

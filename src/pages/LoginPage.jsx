@@ -10,8 +10,9 @@ import styles from './LoginPage.module.css';
  *                          Should return a Promise; rejection triggers the error UI.
  *   isLoading {boolean}  - When true, disables inputs and shows a loading label
  *                          on the submit button (controlled by the parent/AuthContext).
+ *   lang      {string}   - 'ar' for Arabic or 'en' for English
  */
-const LoginPage = ({ onLogin, isLoading }) => {
+const LoginPage = ({ onLogin, isLoading, lang = 'ar' }) => {
   // Pre-filled with demo credentials for convenience during development.
   const [credentials, setCredentials] = useState({
     email: 'dean@university.edu',
@@ -26,7 +27,7 @@ const LoginPage = ({ onLogin, isLoading }) => {
     setError('');
 
     if (!credentials.email || !credentials.password) {
-      setError('Please enter email and password');
+      setError(lang === 'ar' ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور' : 'Please enter email and password');
       return;
     }
 
@@ -73,7 +74,7 @@ const LoginPage = ({ onLogin, isLoading }) => {
         <form className={styles.loginForm} onSubmit={handleSubmit}>
           {/* Email field */}
           <div className={styles.formGroup}>
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
             <input
               id="email"
               name="email"
@@ -81,7 +82,7 @@ const LoginPage = ({ onLogin, isLoading }) => {
               value={credentials.email}
               onChange={handleChange}
               className={styles.input}
-              placeholder="user@domain.com"
+              placeholder={lang === 'ar' ? 'user@example.com' : 'user@domain.com'}
               disabled={isLoading}
               required
             />
@@ -89,7 +90,7 @@ const LoginPage = ({ onLogin, isLoading }) => {
 
           {/* Password field with show/hide toggle */}
           <div className={styles.formGroup}>
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{lang === 'ar' ? 'كلمة المرور' : 'Password'}</label>
             <div className={styles.passwordWrapper}>
               <input
                 id="password"
@@ -98,7 +99,7 @@ const LoginPage = ({ onLogin, isLoading }) => {
                 value={credentials.password}
                 onChange={handleChange}
                 className={styles.input}
-                placeholder="••••••••"
+                placeholder={lang === 'ar' ? '••••••••' : '••••••••'}
                 disabled={isLoading}
                 required
               />
@@ -118,18 +119,18 @@ const LoginPage = ({ onLogin, isLoading }) => {
           {error && <div className={styles.error} role="alert">{error}</div>}
 
           <button type="submit" className={styles.submitButton} disabled={isLoading}>
-            {isLoading ? 'Logging in...' : 'Login'}
+            {isLoading ? (lang === 'ar' ? 'جاري تسجيل الدخول...' : 'Logging in...') : (lang === 'ar' ? 'تسجيل الدخول' : 'Login')}
           </button>
         </form>
 
         {/* Demo credentials hint — remove before going to production */}
         <div className={styles.demoCredentials}>
-          <p><strong>Demo Credentials:</strong></p>
+          <p><strong>{lang === 'ar' ? 'بيانات تجريبية:' : 'Demo Credentials:'}</strong></p>
           <div>
-            <p>🔑 Admin: admin@university.edu / AdminPass123</p>
-            <p>👤 Dean: dean@university.edu / DeanPass123</p>
-            <p>📋 Consultant: consultant@qiyas.sa / ConsultPass123</p>
-            <p>👥 User: user@department.edu / UserPass123</p>
+            <p>🔑 {lang === 'ar' ? 'مسؤول' : 'Admin'}: admin@university.edu / AdminPass123</p>
+            <p>👤 {lang === 'ar' ? 'عميد' : 'Dean'}: dean@university.edu / DeanPass123</p>
+            <p>📋 {lang === 'ar' ? 'مستشار' : 'Consultant'}: consultant@qiyas.sa / ConsultPass123</p>
+            <p>👥 {lang === 'ar' ? 'مستخدم' : 'User'}: user@department.edu / UserPass123</p>
           </div>
         </div>
       </div>
