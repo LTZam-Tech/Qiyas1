@@ -16,6 +16,36 @@ const getMockRole = (email = '') => {
   return 'user';
 };
 
+function generateId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+/**
+ * Demo-only credentials. These are for development/testing use ONLY.
+ * Remove or replace with real authentication when connecting to a production backend.
+ */
+const MOCK_USERS = {
+  'admin@university.edu': {
+    password: 'AdminPass123',
+    user: { id: 1, email: 'admin@university.edu', fullName: 'Admin User', role: 'admin' },
+  },
+  'dean@university.edu': {
+    password: 'DeanPass123',
+    user: { id: 2, email: 'dean@university.edu', fullName: 'Dean User', role: 'dean' },
+  },
+  'consultant@qiyas.sa': {
+    password: 'ConsultPass123',
+    user: { id: 3, email: 'consultant@qiyas.sa', fullName: 'Consultant User', role: 'consultant' },
+  },
+  'employee@test.com': {
+    password: 'UserPass123',
+    user: { id: 4, email: 'employee@test.com', fullName: 'Employee User', role: 'user' },
+  },
+};
+
 const buildMockUser = (email) => ({
   id: `mock-${Date.now()}`,
   email,
@@ -129,8 +159,19 @@ export function AuthProvider({ children }) {
           throw err;
         }
 
+        // Mock authentication: validate known demo accounts first.
+        const normalizedEmail = email.toLowerCase();
+        const mockEntry = MOCK_USERS[normalizedEmail];
+        if (mockEntry && mockEntry.password === password) {
+          const accessToken = generateId();
+          localStorage.setItem(MOCK_USER_KEY, JSON.stringify(mockEntry.user));
+          setAccessToken(accessToken);
+          setUser({ ...mockEntry.user, token: accessToken });
+          return { success: true };
+        }
+
         const mockUser = buildMockUser(email);
-        const accessToken = crypto.randomUUID();
+        const accessToken = generateId();
         localStorage.setItem(MOCK_USER_KEY, JSON.stringify(mockUser));
         setAccessToken(accessToken);
         setUser({ ...mockUser, token: accessToken });
