@@ -26,7 +26,6 @@
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid #e0d4ea;
-  direction: rtl;
 }
 
 .title {
@@ -59,7 +58,6 @@
 
 .form {
   padding: 24px;
-  direction: rtl;
 }
 
 .loadingState {
@@ -77,7 +75,7 @@
   color: #d32f2f;
   font-size: 13px;
   margin-bottom: 16px;
-  text-align: right;
+  text-align: start;
 }
 
 .formGroup {
@@ -97,7 +95,7 @@
   font-weight: 600;
   color: #2d1b3d;
   margin-bottom: 8px;
-  text-align: right;
+  text-align: start;
 }
 
 .required {
@@ -116,8 +114,7 @@
   color: #2d1b3d;
   background: #ffffff;
   transition: all 0.2s ease;
-  direction: rtl;
-  text-align: right;
+  text-align: start;
 }
 
 .input:focus,
