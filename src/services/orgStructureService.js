@@ -2,15 +2,15 @@ import { env } from '../config/env.js';
 import { request } from '../lib/httpClient.js';
 
 const MOCK_DEPARTMENTS = [
-  { id: 'dept-1', name: 'إدارة التحول الرقمي' },
-  { id: 'dept-2', name: 'إدارة الجودة والالتزام' },
-  { id: 'dept-3', name: 'إدارة البيانات والتحليلات' },
+  { id: 'dept-1', name: 'إدارة التحول الرقمي', name_en: 'Digital Transformation Department' },
+  { id: 'dept-2', name: 'إدارة الجودة والالتزام', name_en: 'Quality & Compliance Department' },
+  { id: 'dept-3', name: 'إدارة البيانات والتحليلات', name_en: 'Data & Analytics Department' },
 ];
 
 const MOCK_UNITS = [
-  { id: 'unit-1', name: 'وحدة الحوكمة الرقمية' },
-  { id: 'unit-2', name: 'وحدة إدارة المشاريع الرقمية' },
-  { id: 'unit-3', name: 'وحدة المتابعة والتنفيذ' },
+  { id: 'unit-1', name: 'وحدة الحوكمة الرقمية', name_en: 'Digital Governance Unit' },
+  { id: 'unit-2', name: 'وحدة إدارة المشاريع الرقمية', name_en: 'Digital Project Management Unit' },
+  { id: 'unit-3', name: 'وحدة المتابعة والتنفيذ', name_en: 'Follow-up & Implementation Unit' },
 ];
 
 const orgStructureService = {
@@ -26,7 +26,8 @@ const orgStructureService = {
 
       return departments.map((department) => ({
         id: department.id,
-        name: department.name_ar || department.name || department.name_en,
+        name: department.name_ar || department.name,
+        name_en: department.name_en || department.name,
       }));
     } catch (error) {
       console.warn('Departments API failed, using mock data:', error);
@@ -46,7 +47,8 @@ const orgStructureService = {
 
       return units.map((unit) => ({
         id: unit.id,
-        name: unit.name_ar || unit.name || unit.name_en,
+        name: unit.name_ar || unit.name,
+        name_en: unit.name_en || unit.name,
         departmentId: unit.department_id,
       }));
     } catch (error) {

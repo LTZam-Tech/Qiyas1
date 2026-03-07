@@ -9,15 +9,15 @@ import { createTask } from '../services/tasksService.js';
 import styles from './TaskModal.module.css';
 
 const PRIORITY_OPTIONS = [
-  ['critical', 'حرج'],
-  ['high', 'عالي'],
-  ['medium', 'متوسط'],
-  ['low', 'منخفض'],
+  ['critical', 'حرج', 'Critical'],
+  ['high', 'عالي', 'High'],
+  ['medium', 'متوسط', 'Medium'],
+  ['low', 'منخفض', 'Low'],
 ];
 
 const EVIDENCE_OPTIONS = [
-  ['file', 'ملف'],
-  ['screenshot', 'لقطة شاشة'],
+  ['file', 'ملف', 'File'],
+  ['screenshot', 'لقطة شاشة', 'Screenshot'],
 ];
 
 const TITLE_REGEX = /^(?=.{1,50}$)[A-Za-z\u0600-\u06FF\s]+$/u;
@@ -113,11 +113,11 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
     return [
       ...departments.map((department) => ({
         value: `department:${department.id}`,
-        label: `إدارة - ${department.name}`,
+        label: `إدارة - ${department.name}${department.name_en ? ` - ${department.name_en}` : ''}`,
       })),
       ...units.map((unit) => ({
         value: `unit:${unit.id}`,
-        label: `وحدة - ${unit.name}`,
+        label: `وحدة - ${unit.name}${unit.name_en ? ` - ${unit.name_en}` : ''}`,
       })),
     ];
   }, [departments, units]);
@@ -157,19 +157,26 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
   const loadInitialData = async () => {
     setIsLoadingData(true);
     try {
-      const [usersData, departmentsData, unitsData, perspectivesData] = await Promise.all([
+      const [usersResult, departmentsResult, unitsResult, perspectivesResult] = await Promise.allSettled([
         usersService.getUsers(),
         orgStructureService.getDepartments(),
         orgStructureService.getUnits(),
         perspectivesService.getPerspectives(),
       ]);
+
+      const usersData = usersResult.status === 'fulfilled' ? usersResult.value : [];
+      const departmentsData = departmentsResult.status === 'fulfilled' ? departmentsResult.value : [];
+      const unitsData = unitsResult.status === 'fulfilled' ? unitsResult.value : [];
+      const perspectivesData = perspectivesResult.status === 'fulfilled' ? perspectivesResult.value : [];
+
       setUsers(usersData);
       setDepartments(departmentsData);
       setUnits(unitsData);
       setPerspectives(perspectivesData);
-    } catch (err) {
-      console.error('Error loading data:', err);
-      setError('فشل تحميل البيانات. الرجاء المحاولة مرة أخرى.');
+
+      if (perspectivesData.length === 0) {
+        setError('تعذر تحميل المنظورات. الرجاء المحاولة مرة أخرى.');
+      }
     } finally {
       setIsLoadingData(false);
     }
@@ -327,11 +334,16 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
                 disabled={isLoading}
               >
                 <option value="">اختر المنظور</option>
-                {perspectives.map((perspective) => (
-                  <option key={perspective.id} value={perspective.id}>
-                    {perspective.code} - {perspective.name_ar || perspective.name || perspective.name_en}
-                  </option>
-                ))}
+                {perspectives.map((perspective) => {
+                  const nameAr = perspective.name_ar || perspective.name;
+                  const nameEn = perspective.name_en;
+                  const displayLabel = nameEn ? `${nameAr} - ${nameEn}` : nameAr;
+                  return (
+                    <option key={perspective.id} value={perspective.id}>
+                      {perspective.code} - {displayLabel}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -350,11 +362,16 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
                 <option value="">
                   {formData.perspectiveId ? 'اختر المحور' : 'اختر المنظور أولاً'}
                 </option>
-                {axes.map((axis) => (
-                  <option key={axis.id} value={axis.id}>
-                    {axis.code} - {axis.name_ar || axis.name || axis.name_en}
-                  </option>
-                ))}
+                {axes.map((axis) => {
+                  const nameAr = axis.name_ar || axis.name;
+                  const nameEn = axis.name_en;
+                  const displayLabel = nameEn ? `${nameAr} - ${nameEn}` : nameAr;
+                  return (
+                    <option key={axis.id} value={axis.id}>
+                      {axis.code} - {displayLabel}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -373,11 +390,16 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
                 <option value="">
                   {formData.axisId ? 'اختر المعيار' : 'اختر المحور أولاً'}
                 </option>
-                {standards.map((standard) => (
-                  <option key={standard.id} value={standard.id}>
-                    {standard.code} - {standard.name_ar || standard.name || standard.title}
-                  </option>
-                ))}
+                {standards.map((standard) => {
+                  const titleAr = standard.name_ar || standard.title;
+                  const titleEn = standard.name_en || standard.titleEn;
+                  const displayLabel = titleEn ? `${titleAr} - ${titleEn}` : titleAr;
+                  return (
+                    <option key={standard.id} value={standard.id}>
+                      {standard.code} - {displayLabel}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -394,9 +416,9 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
                 disabled={isLoading}
               >
                 <option value="">اختر نوع الشاهد</option>
-                {EVIDENCE_OPTIONS.map(([value, label]) => (
+                {EVIDENCE_OPTIONS.map(([value, label, labelEn]) => (
                   <option key={value} value={value}>
-                    {label}
+                    {labelEn ? `${label} - ${labelEn}` : label}
                   </option>
                 ))}
               </select>
@@ -415,11 +437,16 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
                 disabled={isLoading}
               >
                 <option value="">اختر المسؤول</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.full_name || user.name || user.email}
-                  </option>
-                ))}
+                {users.map((user) => {
+                  const nameAr = user.full_name;
+                  const nameEn = user.full_name_en;
+                  const displayLabel = nameEn ? `${nameAr} - ${nameEn}` : nameAr;
+                  return (
+                    <option key={user.id} value={user.id}>
+                      {displayLabel || user.email}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -473,9 +500,9 @@ const TaskModal = ({ isOpen, onClose, onSuccess }) => {
                   className={styles.select}
                   disabled={isLoading}
                 >
-                  {PRIORITY_OPTIONS.map(([value, label]) => (
+                  {PRIORITY_OPTIONS.map(([value, label, labelEn]) => (
                     <option key={value} value={value}>
-                      {label}
+                      {labelEn ? `${label} - ${labelEn}` : label}
                     </option>
                   ))}
                 </select>

@@ -5,11 +5,9 @@ import { STANDARDS_HIERARCHY } from '../utils/data.js';
 const standardsService = {
   // Get all standards
   async getStandards(axisId) {
-        if (env.useMockApi) {
-          // Return mock data
-          return STANDARDS_HIERARCHY
-            .filter((std) => !axisId || String(std.axisId) === String(axisId))
-            .map((std, idx) => ({
+        const localFallback = STANDARDS_HIERARCHY
+          .filter((std) => !axisId || String(std.axisId) === String(axisId))
+          .map((std, idx) => ({
             id: `std-${idx + 1}`,
             code: std.code,
             title: std.title,
@@ -20,11 +18,21 @@ const standardsService = {
               { id: `er-${idx + 1}-2`, title: `${std.title} - متطلب 2` },
             ],
           }));
+
+        if (env.useMockApi) {
+          // Return mock data
+          return localFallback;
         }
-    
-    const url = axisId ? `/standards?axisId=${axisId}` : '/standards';
-    const response = await request(url);
-    return response.data?.standards || [];
+
+    try {
+      const url = axisId ? `/standards?axisId=${axisId}` : '/standards';
+      const response = await request(url);
+      const standards = response.data?.standards || [];
+      return standards.length > 0 ? standards : localFallback;
+    } catch (error) {
+      console.warn('Standards API failed, using local fallback:', error);
+      return localFallback;
+    }
   },
 
   // Get standard by ID with evidence requirements
