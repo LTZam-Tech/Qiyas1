@@ -1,7 +1,6 @@
 ﻿import PropTypes from 'prop-types';
 import { cardGradients } from '../utils/theme.js';
 import { TASKS_DATA } from '../utils/data.js';
-import Badge from '../components/Badge.jsx';
 import StatCard from '../components/StatCard.jsx';
 import styles from './ReviewPage.module.css';
 
@@ -43,8 +42,6 @@ const ReviewPage = ({ isMobile, lang }) => {
                   {lang === 'ar' ? 'رفض' : 'Reject'}
                 </button>
               </div>
-
-              <Badge status={task.status} lang={lang} />
             </div>
           ))
         ) : (
