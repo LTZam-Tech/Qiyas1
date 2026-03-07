@@ -48,6 +48,10 @@
   flex-wrap: wrap;
 }
 
+[dir="ltr"] .row {
+  flex-direction: row-reverse;
+}
+
 .rowActions {
   display: flex;
   gap: 6px;
