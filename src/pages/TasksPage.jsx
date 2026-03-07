@@ -39,7 +39,7 @@ const collectRoleCandidates = (user) => {
   return Array.from(new Set(values));
 };
 
-const TasksPage = ({ isMobile, user: pageUser }) => {
+const TasksPage = ({ isMobile, user: pageUser, lang }) => {
   const [filter, setFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { data: tasks, isLoading, error, refetch } = useTasksData(filter);
@@ -147,6 +147,7 @@ const TasksPage = ({ isMobile, user: pageUser }) => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleTaskCreated}
+        lang={lang}
       />
     </div>
   );
