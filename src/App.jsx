@@ -33,9 +33,13 @@ const PAGE_COMPONENTS = {
 
 export default function App() {
   const { isMobile, isTablet, vw } = useResponsive();
-  const { user: authUser, logout, login, isLoading: authLoading, isAuthenticating } = useAuth();
+  const { user: authUser, logout, isLoading: authLoading } = useAuth();
   // LOGIN TEMPORARILY DISABLED — use a mock dean user so sidebar/role logic works
-  const user = authUser ?? { id: 'mock', email: 'dean@university.edu', name: 'Dr. Ahmed Al-Qahtani', role: 'dean' };
+  const MOCK_USER = useMemo(
+    () => ({ id: 'mock', email: 'dean@university.edu', name: 'Dr. Ahmed Al-Qahtani', role: 'dean' }),
+    [],
+  );
+  const user = authUser ?? MOCK_USER;
   const [page, setPage] = useState(PAGES.dashboard);
   const [sideOpen, setSideOpen] = useState(vw > BREAKPOINTS.tablet);
   const [expandedGroups, setExpandedGroups] = useState(new Set(['management']));
@@ -126,7 +130,7 @@ export default function App() {
             child.labelEn.toLowerCase().includes(query),
         ) || item.children,
     }));
-  }, [searchQuery]);
+  }, [searchQuery, roleBasedNavItems]);
 
   const pageTitle =
     NAV_ITEMS.flatMap((item) => [item, ...(item.children || [])]).find((item) => item.key === page) ||

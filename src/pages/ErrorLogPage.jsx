@@ -1,42 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import styles from './ErrorLogPage.module.css';
 import errorLogger from '../services/errorLogger.js';
 
 const ErrorLogPage = () => {
-  const [errors, setErrors] = useState([]);
-  const [filteredErrors, setFilteredErrors] = useState([]);
+  const [errors, setErrors] = useState(() => errorLogger.getAllErrors());
   const [selectedError, setSelectedError] = useState(null);
   const [filters, setFilters] = useState({
     source: 'all',
     severity: 'all',
     search: '',
   });
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState(() => errorLogger.getStats());
 
   useEffect(() => {
-    // Load initial errors
-    loadErrors();
-
-    // Subscribe to new errors
+    // Subscribe to new errors from the external system
     const unsubscribe = errorLogger.subscribe(() => {
-      loadErrors();
+      setErrors(errorLogger.getAllErrors());
+      setStats(errorLogger.getStats());
     });
 
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    applyFilters();
-  }, [errors, filters]);
-
-  const loadErrors = () => {
-    const allErrors = errorLogger.getAllErrors();
-    const errorStats = errorLogger.getStats();
-    setErrors(allErrors);
-    setStats(errorStats);
-  };
-
-  const applyFilters = () => {
+  const filteredErrors = useMemo(() => {
     let filtered = [...errors];
 
     if (filters.source !== 'all') {
@@ -55,8 +41,8 @@ const ErrorLogPage = () => {
       );
     }
 
-    setFilteredErrors(filtered);
-  };
+    return filtered;
+  }, [errors, filters]);
 
   const handleClearAll = () => {
     if (confirm('Are you sure you want to clear all error logs?')) {

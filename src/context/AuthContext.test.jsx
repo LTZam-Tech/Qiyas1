@@ -7,6 +7,13 @@ import * as authStorage from '../lib/authStorage';
 import * as httpClient from '../lib/httpClient';
 
 // Mock modules
+vi.mock('../config/env.js', () => ({
+  env: {
+    apiBaseUrl: 'http://localhost:8000/api/v1',
+    requestTimeoutMs: 10000,
+    useMockApi: false,
+  },
+}));
 vi.mock('../lib/authStorage');
 vi.mock('../lib/httpClient');
 
