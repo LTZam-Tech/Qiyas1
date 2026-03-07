@@ -33,7 +33,9 @@ const PAGE_COMPONENTS = {
 
 export default function App() {
   const { isMobile, isTablet, vw } = useResponsive();
-  const { user, logout, login, isLoading: authLoading, isAuthenticating } = useAuth();
+  const { user: authUser, logout, login, isLoading: authLoading, isAuthenticating } = useAuth();
+  // LOGIN TEMPORARILY DISABLED — use a mock dean user so sidebar/role logic works
+  const user = authUser ?? { id: 'mock', email: 'dean@university.edu', name: 'Dr. Ahmed Al-Qahtani', role: 'dean' };
   const [page, setPage] = useState(PAGES.dashboard);
   const [sideOpen, setSideOpen] = useState(vw > BREAKPOINTS.tablet);
   const [expandedGroups, setExpandedGroups] = useState(new Set(['management']));
@@ -138,10 +140,10 @@ export default function App() {
 
   const PageComponent = PAGE_COMPONENTS[page] || DashboardPage;
 
-  // Show login page if not authenticated
-  if (!user) {
-    return <LoginPage onLogin={login} isLoading={isAuthenticating} />;
-  }
+  // LOGIN TEMPORARILY DISABLED — uncomment to re-enable authentication gate
+  // if (!user) {
+  //   return <LoginPage onLogin={login} isLoading={isAuthenticating} />;
+  // }
 
   if (isLoading || authLoading) {
     return (

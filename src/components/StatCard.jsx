@@ -1,56 +1,60 @@
 import PropTypes from 'prop-types';
-import { C } from '../utils/theme.js';
+import { useState } from 'react';
 import { Icons } from '../utils/icons.jsx';
+import styles from './StatCard.module.css';
 
 const StatCard = ({ label, value, icon, gradient, change }) => {
+  const [isFlipped, setIsFlipped] = useState(false);
   const gradientBg = gradient || 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)';
+  const hasNumericChange = typeof change === 'number' && !Number.isNaN(change);
+  const changePrefix = hasNumericChange && change > 0 ? '+' : hasNumericChange && change < 0 ? '-' : '';
+
+  const toggleFlip = () => {
+    setIsFlipped((prev) => !prev);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleFlip();
+    }
+  };
 
   return (
     <div
-      style={{
-        background: gradientBg,
-        borderRadius: 16,
-        padding: '25.6px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-        minWidth: 0,
-        position: 'relative',
-        cursor: 'pointer',
-        width: '100%',
-        maxWidth: 383,
-        minHeight: 143,
-        justifyContent: 'space-between',
-        direction: 'rtl',
-      }}
+      className={styles.cardWrap}
+      role="button"
+      tabIndex={0}
+      onClick={toggleFlip}
+      onKeyDown={handleKeyDown}
+      aria-label={`${label} card details`}
+      aria-pressed={isFlipped}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ fontSize: 45, color: C.white, opacity: 0.9 }}>{Icons[icon]}</div>
-        <span
-          style={{
-            fontSize: 11,
-            color: C.white,
-            fontFamily: 'Cairo',
-            background: 'rgba(255,255,255,0.2)',
-            padding: '3px 8px',
-            borderRadius: 12,
-            fontWeight: 600,
-          }}
-        >
-          {label}
-        </span>
-      </div>
-
-      <div>
-        <div style={{ fontSize: 28, fontWeight: 800, color: C.white, fontFamily: 'Cairo', textAlign: 'right' }}>
-          {value}
-        </div>
-        {change && (
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontFamily: 'Cairo', marginTop: 4 }}>
-            {change > 0 ? '+' : '-'} {Math.abs(change)}%
+      <div className={`${styles.card} ${isFlipped ? styles.flipped : ''}`}>
+        <div className={styles.face} style={{ background: gradientBg }}>
+          <div className={styles.frontTop}>
+            <span className={styles.label}>{label}</span>
+            <div className={styles.icon}>{Icons[icon]}</div>
           </div>
-        )}
+
+          <div className={styles.value}>{value}</div>
+        </div>
+
+        <div className={`${styles.face} ${styles.back}`} style={{ background: gradientBg }}>
+          <div className={styles.backTop}>
+            <span className={styles.backLabel}>نسبة التغير</span>
+            <div className={styles.icon}>{Icons[icon]}</div>
+          </div>
+
+          <div className={styles.change}>
+            {hasNumericChange ? (
+              <>
+                {changePrefix}
+                {Math.abs(change)}%
+              </>
+            ) : '0%'}
+          </div>
+        </div>
       </div>
     </div>
   );

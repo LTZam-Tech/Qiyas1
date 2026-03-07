@@ -1,7 +1,7 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .heading {
@@ -9,155 +9,275 @@
   font-size: 22px;
   font-weight: 700;
   color: #5c3a73;
-}
-
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.panel {
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-}
-
-.panelButton {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  cursor: pointer;
-  border: none;
-  border-right: 4px solid #43a047;
-  background: transparent;
-}
-
-.panelButtonPartial {
-  border-right-color: #f57c00;
-}
-
-.panelButtonNon {
-  border-right-color: #d32f2f;
-}
-
-.chevron {
-  transform: rotate(180deg);
-  transition: transform 0.2s;
-  color: #7a6b8a;
-  display: flex;
-}
-
-.chevronOpen {
-  transform: rotate(90deg);
-}
-
-.panelBody {
-  flex: 1;
-  text-align: right;
-}
-
-.panelTitle {
-  font-size: 14px;
-  font-weight: 700;
-  color: #5c3a73;
-}
-
-.panelMeta {
-  font-size: 11px;
-  color: #7a6b8a;
-}
-
-.panelProgress {
-  width: 120px;
-}
-
-.panelProgressMobile {
-  width: 80px;
-}
-
-.panelPercent {
-  font-size: 13px;
-  font-weight: 700;
-  color: #5c3a73;
-  width: 40px;
   text-align: center;
 }
 
-.panelPercentMobile {
-  width: 30px;
+/* Domain Boxes Grid */
+.domainsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 20px 0;
 }
 
-.expanded {
-  padding: 0 16px 14px;
-  border-top: 1px solid #e0d4ea;
-}
-
-.expandedList {
+.domainBox {
+  background: linear-gradient(135deg, #7b2cbf 0%, #5a189a 100%);
+  border: none;
+  border-radius: 16px;
+  padding: 32px 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(123, 44, 191, 0.3);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.standardRow {
-  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: #f8f6fb;
-  border-radius: 6px;
+  gap: 12px;
+  min-height: 200px;
+  justify-content: center;
 }
 
-.standardBody {
-  flex: 1;
+.domainBox:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 24px rgba(123, 44, 191, 0.5);
+  background: linear-gradient(135deg, #9d4edd 0%, #7b2cbf 100%);
+}
+
+.domainCode {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+  font-family: Cairo, sans-serif;
+}
+
+.domainTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  line-height: 1.4;
+  font-family: Cairo, sans-serif;
+}
+
+.domainSubtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+  font-weight: 400;
+}
+
+.domainStats {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+/* Standards View */
+.standardsView {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.backButton {
+  background: linear-gradient(135deg, #7b2cbf 0%, #5a189a 100%);
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  align-self: flex-start;
+  font-family: Cairo, sans-serif;
+}
+
+.backButton:hover {
+  background: linear-gradient(135deg, #9d4edd 0%, #7b2cbf 100%);
+  transform: translateX(-3px);
+}
+
+.perspectiveHeader {
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-left: 5px solid #7b2cbf;
+}
+
+.perspectiveTitle {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #5c3a73;
+  font-family: Cairo, sans-serif;
+}
+
+.perspectiveMeta {
+  margin: 0;
+  font-size: 14px;
+  color: #7a6b8a;
+}
+
+.axesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.axisSection {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.axisHeader {
+  background: #f8f6fb;
+  padding: 12px 16px;
+  border-bottom: 2px solid #e0d4ea;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.axisTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2d1b3d;
   text-align: right;
+  flex: 1;
+}
+
+.axisLabel {
+  font-size: 11px;
+  color: #7a6b8a;
+  background: #e0d4ea;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.standardsList {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.standardCard {
+  background: #fafafa;
+  border: 1px solid #e8e4f0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .standardTitle {
   font-size: 13px;
   font-weight: 600;
   color: #2d1b3d;
+  text-align: right;
+  line-height: 1.4;
 }
 
-.standardMeta {
+.badgesRow {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 11px;
   font-size: 11px;
-  color: #7a6b8a;
+  font-weight: 700;
+  font-family: Cairo, sans-serif;
 }
 
-.standardProgress {
-  width: 80px;
+.badgeGreen {
+  background: #e8f5e9;
+  color: #2e7d32;
 }
 
-.standardProgressMobile {
-  width: 60px;
+.badgeOrange {
+  background: #fff3e0;
+  color: #e65100;
 }
 
-.standardCount {
-  font-size: 11px;
-  color: #7a6b8a;
-  width: 60px;
+.badgeRed {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.badgeBlue {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.badgeGray {
+  background: #f5f5f5;
+  color: #757575;
+}
+
+.emptyAxis {
   text-align: center;
-}
-
-.standardCountMobile {
-  width: 50px;
+  font-size: 12px;
+  color: #7a6b8a;
+  padding: 16px;
 }
 
 .emptyState {
-  background: #ffffff;
+  background: #fff;
+  padding: 32px;
   border-radius: 10px;
-  padding: 20px;
   text-align: center;
   color: #7a6b8a;
+  font-size: 14px;
 }
 
-.emptyPerspective {
-  font-size: 12px;
-  color: #7a6b8a;
-  padding: 10px;
-  text-align: center;
+/* Responsive */
+@media (max-width: 968px) {
+  .domainsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  .axesGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .domainsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .heading {
+    font-size: 18px;
+  }
+
+  .domainBox {
+    min-height: 160px;
+    padding: 24px 20px;
+  }
+
+  .domainCode {
+    font-size: 24px;
+  }
+
+  .domainTitle {
+    font-size: 16px;
+  }
 }

@@ -2,7 +2,17 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import styles from './LoginPage.module.css';
 
+/**
+ * LoginPage — Entry point for authenticated access.
+ *
+ * Props:
+ *   onLogin   {Function} - Called with { email, password } on form submit.
+ *                          Should return a Promise; rejection triggers the error UI.
+ *   isLoading {boolean}  - When true, disables inputs and shows a loading label
+ *                          on the submit button (controlled by the parent/AuthContext).
+ */
 const LoginPage = ({ onLogin, isLoading }) => {
+  // Pre-filled with demo credentials for convenience during development.
   const [credentials, setCredentials] = useState({
     email: 'dean@university.edu',
     password: 'DeanPass123',
@@ -10,6 +20,7 @@ const LoginPage = ({ onLogin, isLoading }) => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Handles form submission — delegates the actual auth call to onLogin (AuthContext).
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -20,25 +31,12 @@ const LoginPage = ({ onLogin, isLoading }) => {
     }
 
     try {
-      console.group('🔐 LoginPage: Submitting login');
-      console.log('Email:', credentials.email);
-      console.log('Calling onLogin...');
       await onLogin(credentials);
-      console.log('✅ onLogin completed successfully');
-      console.groupEnd();
+      // On success the parent (App.jsx) replaces this page with the main layout.
     } catch (err) {
-      console.error('❌ LoginPage: Login error:', err);
-      console.error('Error details:', {
-        name: err.name,
-        message: err.message,
-        status: err.status,
-        body: err.body,
-      });
-      console.groupEnd();
-      
-      // More user-friendly error messages
+      // Map common network / HTTP errors to user-friendly messages.
       let userMessage = 'Login failed. Please try again.';
-      
+
       if (err.name === 'AbortError' || err.message.includes('timeout')) {
         userMessage = '⏱️ Connection timeout. Please check if backend server is running.';
       } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
@@ -50,11 +48,12 @@ const LoginPage = ({ onLogin, isLoading }) => {
       } else if (err.message) {
         userMessage = err.message;
       }
-      
+
       setError(userMessage);
     }
   };
 
+  // Syncs each input field into state and clears any existing error on change.
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCredentials((prev) => ({
@@ -67,10 +66,12 @@ const LoginPage = ({ onLogin, isLoading }) => {
   return (
     <div className={styles.loginContainer}>
       <div className={styles.loginBox}>
+        {/* Brand header */}
         <h1 className={styles.title}>Qiyas Platform</h1>
-        <p className={styles.subtitle}>Quality & Compliance Management</p>
+        <p className={styles.subtitle}>Quality &amp; Compliance Management</p>
 
         <form className={styles.loginForm} onSubmit={handleSubmit}>
+          {/* Email field */}
           <div className={styles.formGroup}>
             <label htmlFor="email">Email</label>
             <input
@@ -86,6 +87,7 @@ const LoginPage = ({ onLogin, isLoading }) => {
             />
           </div>
 
+          {/* Password field with show/hide toggle */}
           <div className={styles.formGroup}>
             <label htmlFor="password">Password</label>
             <div className={styles.passwordWrapper}>
@@ -105,12 +107,14 @@ const LoginPage = ({ onLogin, isLoading }) => {
                 className={styles.togglePassword}
                 onClick={() => setShowPassword(!showPassword)}
                 disabled={isLoading}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? '🙈' : '👁️'}
               </button>
             </div>
           </div>
 
+          {/* Inline error message (role="alert" for screen-reader announcements) */}
           {error && <div className={styles.error} role="alert">{error}</div>}
 
           <button type="submit" className={styles.submitButton} disabled={isLoading}>
@@ -118,6 +122,7 @@ const LoginPage = ({ onLogin, isLoading }) => {
           </button>
         </form>
 
+        {/* Demo credentials hint — remove before going to production */}
         <div className={styles.demoCredentials}>
           <p><strong>Demo Credentials:</strong></p>
           <div>
@@ -131,7 +136,9 @@ const LoginPage = ({ onLogin, isLoading }) => {
 };
 
 LoginPage.propTypes = {
+  /** Called on form submit with { email, password }. Must return a Promise. */
   onLogin: PropTypes.func.isRequired,
+  /** Controls disabled state of inputs and the submit button label. */
   isLoading: PropTypes.bool,
 };
 
