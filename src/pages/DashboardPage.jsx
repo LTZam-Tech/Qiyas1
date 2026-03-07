@@ -80,7 +80,7 @@ const DashboardPage = ({ isMobile, lang }) => {
         <div className={styles.alertText}>
           <div className={styles.alertTitle}>{lang === 'ar' ? 'تنبيهات الاختناقات' : 'Bottleneck Alerts'}</div>
           <div className={styles.alertBody}>
-            {alerts.length > 0 ? alerts.join(' — ') : 'لا توجد تنبيهات حالية'}
+            {alerts.length > 0 ? alerts.join(' — ') : (lang === 'ar' ? 'لا توجد تنبيهات حالية' : 'No current alerts')}
           </div>
         </div>
       </div>
