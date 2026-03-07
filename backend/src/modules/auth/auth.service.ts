@@ -204,7 +204,7 @@ class AuthService {
     email: string;
     password: string;
     fullName: string;
-    roleId: number;
+    roleId: string;
     departmentId?: number;
   }): Promise<any> {
     // Check if email exists
@@ -220,15 +220,23 @@ class AuthService {
     // Hash password
     const passwordHash = await bcrypt.hash(data.password, config.security.bcryptRounds);
 
-    // Create user
+    // Create user using correct schema columns (name, not full_name)
     const result = await db.query(
-      `INSERT INTO users (email, password_hash, full_name, role_id, department_id, status)
-       VALUES ($1, $2, $3, $4, $5, 'active')
-       RETURNING id, email, full_name, created_at`,
-      [data.email, passwordHash, data.fullName, data.roleId, data.departmentId || null]
+      `INSERT INTO users (email, password_hash, name, is_active, department)
+       VALUES ($1, $2, $3, TRUE, $4)
+       RETURNING id, email, name, created_at`,
+      [data.email, passwordHash, data.fullName, data.departmentId ? String(data.departmentId) : null]
     );
 
     const user = result.rows[0];
+
+    // Assign role through user_roles junction table
+    await db.query(
+      `INSERT INTO user_roles (user_id, role_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, role_id) DO NOTHING`,
+      [user.id, data.roleId]
+    );
 
     // Log audit event
     await db.query(
