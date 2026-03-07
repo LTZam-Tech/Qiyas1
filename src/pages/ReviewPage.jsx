@@ -32,8 +32,6 @@ const ReviewPage = ({ isMobile, lang }) => {
                 </div>
               </div>
 
-              <Badge status={task.status} lang={lang} />
-
               <div className={styles.rowActions}>
                 <button type="button" aria-label={lang === 'ar' ? `اعتماد ${task.req_ar}` : `Approve ${task.req_en}`} className={`${styles.actionButton} ${styles.approve}`}>
                   {lang === 'ar' ? 'اعتماد' : 'Approve'}
@@ -45,6 +43,8 @@ const ReviewPage = ({ isMobile, lang }) => {
                   {lang === 'ar' ? 'رفض' : 'Reject'}
                 </button>
               </div>
+
+              <Badge status={task.status} lang={lang} />
             </div>
           ))
         ) : (
