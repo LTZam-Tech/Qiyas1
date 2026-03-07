@@ -6,15 +6,47 @@ import { Icons } from '../utils/icons.jsx';
 import useDashboardData from '../hooks/useDashboardData.js';
 import styles from './DashboardPage.module.css';
 
+const EMPTY_DASHBOARD = {
+  kpis: {
+    totalStandards: 0,
+    fullCompliance: 0,
+    partialCompliance: 0,
+    nonCompliance: 0,
+  },
+  perspectives: [],
+  activities: [],
+  alerts: [],
+};
+
+const normalizeDashboardData = (data) => {
+  if (!data || typeof data !== 'object') {
+    return EMPTY_DASHBOARD;
+  }
+
+  const kpis = data.kpis && typeof data.kpis === 'object' ? data.kpis : EMPTY_DASHBOARD.kpis;
+  return {
+    kpis: {
+      totalStandards: Number(kpis.totalStandards) || 0,
+      fullCompliance: Number(kpis.fullCompliance) || 0,
+      partialCompliance: Number(kpis.partialCompliance) || 0,
+      nonCompliance: Number(kpis.nonCompliance) || 0,
+    },
+    perspectives: Array.isArray(data.perspectives) ? data.perspectives : [],
+    activities: Array.isArray(data.activities) ? data.activities : [],
+    alerts: Array.isArray(data.alerts) ? data.alerts : [],
+  };
+};
+
 const DashboardPage = ({ isMobile, lang }) => {
   const { data, isLoading, error } = useDashboardData();
-  const totalStd = data?.kpis?.totalStandards ?? 0;
-  const full = data?.kpis?.fullCompliance ?? 0;
-  const partial = data?.kpis?.partialCompliance ?? 0;
-  const non = data?.kpis?.nonCompliance ?? 0;
-  const perspectives = data?.perspectives ?? [];
-  const activities = data?.activities ?? [];
-  const alerts = data?.alerts ?? [];
+  const safeData = normalizeDashboardData(data);
+  const totalStd = safeData.kpis.totalStandards;
+  const full = safeData.kpis.fullCompliance;
+  const partial = safeData.kpis.partialCompliance;
+  const non = safeData.kpis.nonCompliance;
+  const perspectives = safeData.perspectives;
+  const activities = safeData.activities;
+  const alerts = safeData.alerts;
 
   if (isLoading) {
     return <p className={styles.emptyState}>{lang === 'ar' ? 'جاري تحميل لوحة التحكم...' : 'Loading dashboard...'}</p>;

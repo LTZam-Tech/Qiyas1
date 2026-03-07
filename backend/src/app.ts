@@ -4,6 +4,7 @@ import cors from 'cors';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
+import { timingSafeEqual } from 'crypto';
 import config from '@/config';
 import { errorHandler } from '@/utils/errors';
 import logger from '@/utils/logger';
@@ -38,14 +39,58 @@ app.use(cors({
 }));
 
 // Body parsing
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(express.json({ limit: config.security.bodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: config.security.bodyLimit }));
 
 // Cookie parsing
 app.use(cookieParser());
 
 // Compression
 app.use(compression());
+
+// CSRF guard for cookie-authenticated state-changing requests
+app.use((req, res, next) => {
+  const method = req.method.toUpperCase();
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+  if (!isMutating) {
+    return next();
+  }
+
+  const hasRefreshCookie = Boolean(req.cookies?.refreshToken);
+  if (!hasRefreshCookie) {
+    return next();
+  }
+
+  const csrfCookie = req.cookies?.csrfToken;
+  const csrfHeader = req.get('x-csrf-token');
+  if (!csrfCookie || !csrfHeader) {
+    return res.status(403).json({
+      success: false,
+      error: {
+        type: 'https://errors.platform.sa/csrf',
+        title: 'CSRF token missing',
+        status: 403,
+        detail: 'Missing CSRF token for cookie-authenticated request',
+      },
+    });
+  }
+
+  const cookieBuf = Buffer.from(csrfCookie);
+  const headerBuf = Buffer.from(csrfHeader);
+  if (cookieBuf.length !== headerBuf.length || !timingSafeEqual(cookieBuf, headerBuf)) {
+    return res.status(403).json({
+      success: false,
+      error: {
+        type: 'https://errors.platform.sa/csrf',
+        title: 'Invalid CSRF token',
+        status: 403,
+        detail: 'CSRF validation failed',
+      },
+    });
+  }
+
+  return next();
+});
 
 // Rate limiting
 const limiter = rateLimit({

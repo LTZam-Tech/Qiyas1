@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import styles from './LoginPage.module.css';
+import { env } from '../config/env.js';
+
+const getBackendPortLabel = () => {
+  try {
+    const port = new URL(env.apiBaseUrl).port;
+    return port || 'default';
+  } catch {
+    return 'default';
+  }
+};
 
 /**
  * LoginPage — Entry point for authenticated access.
@@ -13,10 +23,10 @@ import styles from './LoginPage.module.css';
  *   lang      {string}   - 'ar' for Arabic or 'en' for English
  */
 const LoginPage = ({ onLogin, isLoading, lang = 'ar' }) => {
-  // Pre-filled with demo credentials for convenience during development.
+  // Keep fields empty by default to avoid exposing credentials in source/runtime.
   const [credentials, setCredentials] = useState({
-    email: 'dean@university.edu',
-    password: 'DeanPass123',
+    email: '',
+    password: '',
   });
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -41,7 +51,7 @@ const LoginPage = ({ onLogin, isLoading, lang = 'ar' }) => {
       if (err.name === 'AbortError' || err.message.includes('timeout')) {
         userMessage = 'Connection timeout. Please check your network.';
       } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        userMessage = 'Cannot connect to server. Please ensure backend is running on port 3001.';
+        userMessage = `Cannot connect to server. Please ensure backend is running on port ${getBackendPortLabel()}.`;
       } else if (err.status === 401) {
         userMessage = 'Invalid email or password.';
       } else if (err.status === 404) {
@@ -49,14 +59,6 @@ const LoginPage = ({ onLogin, isLoading, lang = 'ar' }) => {
       } else if (err.message) {
         userMessage = err.message;
       }
-
-      console.error('❌ LOGIN ERROR:', err);
-      console.error('Error details:', {
-        name: err.name,
-        message: err.message,
-        status: err.status,
-        body: err.body,
-      });
       
       setError(userMessage);
     }
@@ -130,17 +132,6 @@ const LoginPage = ({ onLogin, isLoading, lang = 'ar' }) => {
             {isLoading ? (lang === 'ar' ? 'جاري تسجيل الدخول...' : 'Logging in...') : (lang === 'ar' ? 'تسجيل الدخول' : 'Login')}
           </button>
         </form>
-
-        {/* Demo credentials hint — remove before going to production */}
-        <div className={styles.demoCredentials}>
-          <p><strong>{lang === 'ar' ? 'بيانات تجريبية:' : 'Demo Credentials:'}</strong></p>
-          <div>
-            <p>🔑 {lang === 'ar' ? 'مسؤول' : 'Admin'}: admin@university.edu / AdminPass123</p>
-            <p>👤 {lang === 'ar' ? 'عميد' : 'Dean'}: dean@university.edu / DeanPass123</p>
-            <p>📋 {lang === 'ar' ? 'مستشار' : 'Consultant'}: consultant@qiyas.sa / ConsultPass123</p>
-            <p>👥 {lang === 'ar' ? 'موظف' : 'Employee'}: employee@test.com / UserPass123</p>
-          </div>
-        </div>
       </div>
     </div>
   );

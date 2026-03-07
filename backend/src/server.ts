@@ -40,8 +40,8 @@ async function startServer() {
 
     console.log('Starting HTTP server...');
     
-    // Start server
-    const server = app.listen(PORT, () => {
+    // Start server - explicitly bind to 0.0.0.0 to accept both IPv4 and IPv6
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server listening on port ${PORT}`);
       logger.info(`Server running on port ${PORT} in ${config.env} mode`);
       logger.info(`API endpoint: http://localhost:${PORT}/api/v1`);

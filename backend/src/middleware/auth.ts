@@ -4,6 +4,7 @@ import config from '@/config';
 import db from '@/db';
 import { UnauthorizedError, ForbiddenError } from '@/utils/errors';
 import logger from '@/utils/logger';
+import { JwtPayload } from 'jsonwebtoken';
 
 export interface AuthUser {
   id: string;
@@ -15,6 +16,27 @@ export interface AuthUser {
 export interface AuthRequest extends Request {
   user?: AuthUser;
 }
+
+interface AccessTokenPayload extends JwtPayload {
+  userId: string;
+  role: string;
+}
+
+const toError = (error: unknown): Error => {
+  if (error instanceof Error) return error;
+  return new Error('Unknown authorization error');
+};
+
+const getJwtVerificationKey = (): string => {
+  if (config.jwt.algorithm === 'RS256') {
+    if (!config.jwt.accessPublicKey) {
+      throw new UnauthorizedError('JWT public key is not configured');
+    }
+    return config.jwt.accessPublicKey;
+  }
+
+  return config.jwt.accessSecret;
+};
 
 export const authenticate = async (
   req: AuthRequest,
@@ -31,7 +53,13 @@ export const authenticate = async (
     const token = authHeader.substring(7);
 
     try {
-      const decoded = jwt.verify(token, config.jwt.accessSecret) as any;
+      const decoded = jwt.verify(token, getJwtVerificationKey(), {
+        algorithms: [config.jwt.algorithm],
+      }) as AccessTokenPayload;
+
+      if (!decoded?.userId) {
+        throw new UnauthorizedError('Invalid token payload');
+      }
 
       // Fetch user with role and permissions
       const result = await db.query(`
@@ -82,7 +110,7 @@ export const authenticate = async (
       throw error;
     }
   } catch (error) {
-    next(error);
+    next(toError(error));
   }
 };
 
@@ -110,26 +138,48 @@ export const authorize = (...requiredPermissions: string[]) => {
           requiredPermissions,
           userPermissions: req.user.permissions,
         });
-        throw new ForbiddenError('Insufficient permissions');
+        const required = requiredPermissions.join(', ');
+        const message = config.env === 'production'
+          ? 'Insufficient permissions'
+          : `Insufficient permissions. Required one of: ${required}`;
+        throw new ForbiddenError(message);
       }
 
       next();
     } catch (error) {
-      next(error);
+      next(toError(error));
     }
   };
 };
 
 // Object-level authorization helpers
-export const canViewPerspective = async (_userId: string, perspectiveId: string): Promise<boolean> => {
+export const canViewPerspective = async (userId: string, perspectiveId: string): Promise<boolean> => {
+  const roleResult = await db.query(
+    `SELECT r.name as role
+     FROM users u
+     LEFT JOIN user_roles ur ON u.id = ur.user_id
+     LEFT JOIN roles r ON ur.role_id = r.id
+     WHERE u.id = $1`,
+    [userId]
+  );
+
+  const role = roleResult.rows[0]?.role;
+  if (role === 'admin' || role === 'dean') {
+    return true;
+  }
+
   const result = await db.query(`
-    SELECT 1 FROM perspectives WHERE id = $1
-  `, [perspectiveId]);
-  
-  return result.rows.length > 0; // All authenticated users can view perspectives
+    SELECT 1
+    FROM tasks t
+    WHERE t.perspective_id = $1
+      AND t.assigned_to = $2
+    LIMIT 1
+  `, [perspectiveId, userId]);
+
+  return result.rows.length > 0;
 };
 
-export const canEditPerspective = async (userId: string, _perspectiveId: string): Promise<boolean> => {
+export const canEditPerspective = async (userId: string, perspectiveId: string): Promise<boolean> => {
   const result = await db.query(`
     SELECT r.name FROM users u
     LEFT JOIN user_roles ur ON u.id = ur.user_id
@@ -138,6 +188,12 @@ export const canEditPerspective = async (userId: string, _perspectiveId: string)
   `, [userId]);
   
   if (result.rows.length === 0) return false;
+
+  const perspectiveExists = await db.query(
+    'SELECT 1 FROM perspectives WHERE id = $1 LIMIT 1',
+    [perspectiveId]
+  );
+  if (perspectiveExists.rows.length === 0) return false;
   
   const role = result.rows[0].name;
   return role === 'admin' || role === 'dean';
@@ -170,6 +226,20 @@ export const canViewTask = async (userId: string, taskId: string): Promise<boole
 };
 
 export const canSubmitEvidence = async (userId: string, taskId: string): Promise<boolean> => {
+  const permissionResult = await db.query(
+    `SELECT 1
+     FROM users u
+     LEFT JOIN user_roles ur ON u.id = ur.user_id
+     LEFT JOIN roles r ON ur.role_id = r.id
+     LEFT JOIN role_permissions rp ON r.id = rp.role_id
+     LEFT JOIN permissions p ON rp.permission_id = p.id
+     WHERE u.id = $1 AND p.name = 'evidence:submit'
+     LIMIT 1`,
+    [userId]
+  );
+
+  if (permissionResult.rows.length === 0) return false;
+
   const result = await db.query(`
     SELECT assigned_to, status FROM tasks WHERE id = $1
   `, [taskId]);
@@ -181,8 +251,8 @@ export const canSubmitEvidence = async (userId: string, taskId: string): Promise
   // Only assigned user can submit evidence
   if (task.assigned_to !== userId) return false;
   
-  // Task must be in progress
-  if (task.status !== 'in_progress') return false;
+  // Task must be assignable for submission workflow
+  if (!['in_progress', 'assigned', 'submitted'].includes(task.status)) return false;
   
   return true;
 };

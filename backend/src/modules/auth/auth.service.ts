@@ -1,11 +1,13 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { randomBytes, createHash } from 'crypto';
+import nodemailer from 'nodemailer';
 import db from '@/db';
-// import redis from '@/db/redis'; // Reserved for future caching
 import config from '@/config';
 import { UnauthorizedError, ConflictError, BusinessLogicError } from '@/utils/errors';
 import logger from '@/utils/logger';
+import { Algorithm } from 'jsonwebtoken';
+import { SignOptions } from 'jsonwebtoken';
 
 interface TokenPair {
   accessToken: string;
@@ -13,12 +15,76 @@ interface TokenPair {
 }
 
 class AuthService {
+  private readonly passwordChangeAttempts = new Map<string, number[]>();
+  private static readonly PASSWORD_CHANGE_WINDOW_MS = 15 * 60 * 1000;
+  private static readonly PASSWORD_CHANGE_MAX_ATTEMPTS = 5;
+
+  private getJwtSigningKey(): string {
+    if (config.jwt.algorithm === 'RS256') {
+      if (!config.jwt.accessPrivateKey) {
+        throw new UnauthorizedError('JWT private key is not configured');
+      }
+      return config.jwt.accessPrivateKey;
+    }
+
+    return config.jwt.accessSecret;
+  }
+
+  private enforceChangePasswordRateLimit(userId: string): void {
+    const now = Date.now();
+    const windowStart = now - AuthService.PASSWORD_CHANGE_WINDOW_MS;
+    const attempts = (this.passwordChangeAttempts.get(userId) || []).filter((t) => t > windowStart);
+
+    if (attempts.length >= AuthService.PASSWORD_CHANGE_MAX_ATTEMPTS) {
+      throw new UnauthorizedError('Too many password change attempts. Please try again later.');
+    }
+
+    attempts.push(now);
+    this.passwordChangeAttempts.set(userId, attempts);
+  }
+
+  private clearPasswordChangeAttempts(userId: string): void {
+    this.passwordChangeAttempts.delete(userId);
+  }
+
+  private async sendPasswordChangeNotification(email: string): Promise<void> {
+    const host = process.env.SMTP_HOST;
+    const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined;
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    const from = process.env.SMTP_FROM || 'no-reply@qiyas.local';
+
+    if (!host || !port || !user || !pass) {
+      logger.warn('SMTP not configured; skipping password-change email notification', { email });
+      return;
+    }
+
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+    });
+
+    await transporter.sendMail({
+      from,
+      to: email,
+      subject: 'Your Qiyas password was changed',
+      text: 'Your account password was changed successfully. If this was not you, contact support immediately.',
+    });
+  }
+
   // Generate access token (JWT, 15 minutes)
   generateAccessToken(userId: string, role: string): string {
+    const signOptions: SignOptions = {
+      expiresIn: config.jwt.accessExpiresIn as SignOptions['expiresIn'],
+      algorithm: config.jwt.algorithm as Algorithm,
+    };
+
     return jwt.sign(
       { userId, role },
-      config.jwt.accessSecret,
-      { expiresIn: '15m', algorithm: 'HS256' }
+      this.getJwtSigningKey(),
+      signOptions
     );
   }
 
@@ -90,7 +156,9 @@ class AuthService {
 
     // Reset failed login attempts on successful login
     await db.query(
-      `UPDATE users SET failed_login_attempts = 0, locked_until = NULL, last_login = NOW() WHERE id = $1`,
+      `UPDATE users
+       SET failed_login_attempts = 0, locked_until = NULL, last_login = NOW()
+       WHERE id = $1 AND deleted_at IS NULL`,
       [user.id]
     );
 
@@ -125,10 +193,14 @@ class AuthService {
     const result = await db.query(
       `UPDATE users 
        SET failed_login_attempts = failed_login_attempts + 1 
-       WHERE id = $1 
+       WHERE id = $1 AND deleted_at IS NULL
        RETURNING failed_login_attempts`,
       [userId]
     );
+
+    if (result.rows.length === 0) {
+      throw new UnauthorizedError('User not found');
+    }
 
     const attempts = result.rows[0].failed_login_attempts;
 
@@ -157,7 +229,10 @@ class AuthService {
        JOIN users u ON rt.user_id = u.id
        LEFT JOIN user_roles ur ON u.id = ur.user_id
        LEFT JOIN roles r ON ur.role_id = r.id
-       WHERE rt.token_hash = $1 AND rt.expires_at > NOW() AND rt.revoked_at IS NULL`,
+       WHERE rt.token_hash = $1
+         AND rt.expires_at > NOW()
+         AND rt.revoked_at IS NULL
+         AND u.deleted_at IS NULL`,
       [tokenHash]
     );
 
@@ -209,7 +284,7 @@ class AuthService {
   }): Promise<any> {
     // Check if email exists
     const existingUser = await db.query(
-      `SELECT id FROM users WHERE email = $1`,
+      `SELECT id FROM users WHERE email = $1 AND deleted_at IS NULL`,
       [data.email]
     );
 
@@ -252,9 +327,11 @@ class AuthService {
 
   // Change password
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    this.enforceChangePasswordRateLimit(userId);
+
     // Fetch user
     const result = await db.query(
-      `SELECT password_hash FROM users WHERE id = $1`,
+      `SELECT password_hash, email FROM users WHERE id = $1 AND deleted_at IS NULL`,
       [userId]
     );
 
@@ -276,7 +353,7 @@ class AuthService {
 
     // Update password
     await db.query(
-      `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
+      `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL`,
       [newPasswordHash, userId]
     );
 
@@ -285,6 +362,15 @@ class AuthService {
       `UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL`,
       [userId]
     );
+
+    await db.query(
+      `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata)
+       VALUES ($1, 'change_password', 'user', $1, $2)`,
+      [userId, JSON.stringify({ forced_logout: true })]
+    );
+
+    this.clearPasswordChangeAttempts(userId);
+    await this.sendPasswordChangeNotification(result.rows[0].email);
 
     logger.info('Password changed', { userId });
   }

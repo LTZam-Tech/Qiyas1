@@ -1,9 +1,9 @@
 import { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import tasksService from './tasks.service';
-import { AuthRequest } from '@/middleware/auth';
+import { AuthRequest, canViewTask } from '@/middleware/auth';
 import { asyncHandler } from '@/utils/errors';
-import { ValidationError } from '@/utils/errors';
+import { ValidationError, ForbiddenError } from '@/utils/errors';
 
 const titleRegex = /^(?=.{1,50}$)[A-Za-z\u0600-\u06FF\s]+$/u;
 const descriptionRegex = /^(?=.{0,300}$)[A-Za-z0-9\u0600-\u06FF\s]*$/u;
@@ -45,6 +45,11 @@ class TasksController {
 
   getTaskById = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
     const taskId = req.params.id as string;
+    const canView = await canViewTask(req.user!.id, taskId);
+    if (!canView) {
+      throw new ForbiddenError('You do not have access to this task');
+    }
+
     const task = await tasksService.getTaskById(taskId);
     res.json({ success: true, data: { task } });
   });
@@ -61,6 +66,11 @@ class TasksController {
 
   updateTask = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
     const taskId = req.params.id as string;
+    const canView = await canViewTask(req.user!.id, taskId);
+    if (!canView) {
+      throw new ForbiddenError('You do not have access to update this task');
+    }
+
     const validation = updateTaskSchema.safeParse(req.body);
     if (!validation.success) {
       throw new ValidationError('Validation failed', validation.error.issues);

@@ -3,11 +3,19 @@
  * Captures and stores all application errors from backend, frontend, and database
  */
 
+const MAX_IN_MEMORY_ERRORS = 500;
+const MAX_STORED_ERRORS = 100;
+const STORAGE_KEY = 'qiyas_error_logs';
+const MS_IN_HOUR = 60 * 60 * 1000;
+const MS_IN_24_HOURS = 24 * MS_IN_HOUR;
+const IS_DEV = typeof import.meta !== 'undefined' ? import.meta.env?.DEV : false;
+
 class ErrorLogger {
   constructor() {
     this.errors = [];
-    this.maxErrors = 500; // Keep last 500 errors
+    this.maxErrors = MAX_IN_MEMORY_ERRORS;
     this.listeners = new Set();
+    this.cleanupCallbacks = [];
     
     // Initialize with error from localStorage
     this.loadFromStorage();
@@ -19,7 +27,7 @@ class ErrorLogger {
   setupGlobalErrorHandlers() {
     // Capture unhandled promise rejections
     if (typeof window !== 'undefined') {
-      window.addEventListener('unhandledrejection', (event) => {
+      const onUnhandledRejection = (event) => {
         this.log({
           type: 'unhandled-rejection',
           source: 'frontend',
@@ -27,10 +35,12 @@ class ErrorLogger {
           stack: event.reason?.stack,
           timestamp: new Date().toISOString(),
         });
-      });
+      };
+      window.addEventListener('unhandledrejection', onUnhandledRejection);
+      this.cleanupCallbacks.push(() => window.removeEventListener('unhandledrejection', onUnhandledRejection));
 
       // Capture global errors
-      window.addEventListener('error', (event) => {
+      const onGlobalError = (event) => {
         this.log({
           type: 'global-error',
           source: 'frontend',
@@ -41,7 +51,12 @@ class ErrorLogger {
           stack: event.error?.stack,
           timestamp: new Date().toISOString(),
         });
-      });
+      };
+      window.addEventListener('error', onGlobalError);
+      this.cleanupCallbacks.push(() => window.removeEventListener('error', onGlobalError));
+
+      // Ensure event handlers are detached on page unload.
+      window.addEventListener('beforeunload', () => this.destroy(), { once: true });
     }
   }
 
@@ -59,7 +74,9 @@ class ErrorLogger {
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
     };
 
-    console.error(`[${errorEntry.severity.toUpperCase()}] ${errorEntry.source}:`, errorEntry.message);
+    if (IS_DEV) {
+      console.error(`[${errorEntry.severity.toUpperCase()}] ${errorEntry.source}:`, errorEntry.message);
+    }
     
     this.errors.unshift(errorEntry); // Add to beginning
     
@@ -98,7 +115,6 @@ class ErrorLogger {
         status: response.status,
         statusText: response.statusText,
         url: response.url,
-        body: response.body,
       },
     });
   }
@@ -185,36 +201,42 @@ class ErrorLogger {
       try {
         listener(this.errors);
       } catch (err) {
-        console.error('Error notifying listener:', err);
+        if (IS_DEV) {
+          console.error('Error notifying listener:', err);
+        }
       }
     });
   }
 
   saveToStorage() {
     try {
-      // Only save last 100 to localStorage to avoid quota
-      const toSave = this.errors.slice(0, 100);
-      localStorage.setItem('qiyas_error_logs', JSON.stringify(toSave));
+      // Only save a bounded window to avoid quota exhaustion.
+      const toSave = this.errors.slice(0, MAX_STORED_ERRORS);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch (err) {
-      console.error('Failed to save errors to storage:', err);
+      if (IS_DEV) {
+        console.error('Failed to save errors to storage:', err);
+      }
     }
   }
 
   loadFromStorage() {
     try {
-      const saved = localStorage.getItem('qiyas_error_logs');
+      const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         this.errors = JSON.parse(saved);
       }
     } catch (err) {
-      console.error('Failed to load errors from storage:', err);
+      if (IS_DEV) {
+        console.error('Failed to load errors from storage:', err);
+      }
     }
   }
 
   getStats() {
     const now = new Date();
-    const last24h = new Date(now - 24 * 60 * 60 * 1000);
-    const lastHour = new Date(now - 60 * 60 * 1000);
+    const last24h = new Date(now.getTime() - MS_IN_24_HOURS);
+    const lastHour = new Date(now.getTime() - MS_IN_HOUR);
 
     return {
       total: this.errors.length,
@@ -231,6 +253,18 @@ class ErrorLogger {
         database: this.errors.filter(e => e.source === 'database').length,
       },
     };
+  }
+
+  destroy() {
+    for (const cleanup of this.cleanupCallbacks) {
+      try {
+        cleanup();
+      } catch {
+        // Ignore cleanup failures at shutdown.
+      }
+    }
+    this.cleanupCallbacks = [];
+    this.listeners.clear();
   }
 }
 

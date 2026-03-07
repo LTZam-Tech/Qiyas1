@@ -227,12 +227,23 @@ class TasksService extends BaseRepository<Task> {
     const values: any[] = [];
     let idx = 1;
 
-    if (data.title) { updates.push(`title = $${idx}`); values.push(data.title); idx++; }
-    if (data.description) { updates.push(`instructions = $${idx}`); values.push(data.description); idx++; }
-    if (data.dueDate) { updates.push(`due_date = $${idx}`); values.push(data.dueDate); idx++; }
-    if (data.priority) { updates.push(`priority = $${idx}`); values.push(data.priority); idx++; }
-    if (data.status) { updates.push(`status = $${idx}`); values.push(data.status); idx++; }
-    if (data.completionNotes) { updates.push(`completion_notes = $${idx}`); values.push(data.completionNotes); idx++; }
+    const fieldMappings: Array<[keyof UpdateTaskInput, string]> = [
+      ['title', 'title'],
+      ['description', 'instructions'],
+      ['dueDate', 'due_date'],
+      ['priority', 'priority'],
+      ['status', 'status'],
+      ['completionNotes', 'completion_notes'],
+    ];
+
+    for (const [inputField, dbColumn] of fieldMappings) {
+      const value = data[inputField];
+      if (value !== undefined && value !== null && value !== '') {
+        updates.push(`${dbColumn} = $${idx}`);
+        values.push(value);
+        idx++;
+      }
+    }
 
     if (updates.length === 0) return this.getTaskById(taskId);
 

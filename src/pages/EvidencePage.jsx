@@ -1,18 +1,46 @@
-﻿import PropTypes from 'prop-types';
+﻿import { useRef, useState } from 'react';
+import PropTypes from 'prop-types';
 import { Icons } from '../utils/icons.jsx';
 import Badge from '../components/Badge.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 import useEvidenceData from '../hooks/useEvidenceData.js';
 import styles from './EvidencePage.module.css';
 
+const FILE_NAME_PATTERN = /^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+_\d{8}\.[A-Za-z0-9]+$/;
+
 const EvidencePage = ({ isMobile, lang }) => {
   const { data, isLoading, error } = useEvidenceData();
-  const items = data.slice(0, 6);
+  const items = (data || []).slice(0, 6);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef(null);
 
   const cardStatusClass = (status) => {
     if (status === 'non') return styles.cardNon;
     if (status === 'partial') return styles.cardPartial;
     return styles.cardFull;
+  };
+
+  const handleUploaderClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelection = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) {
+      setUploadError('');
+      return;
+    }
+
+    const invalidFile = files.find((file) => !FILE_NAME_PATTERN.test(file.name));
+    if (invalidFile) {
+      setUploadError(
+        lang === 'ar'
+          ? `اسم الملف غير صالح: ${invalidFile.name}. استخدم النمط المطلوب.`
+          : `Invalid file name: ${invalidFile.name}. Use the required pattern.`
+      );
+    } else {
+      setUploadError('');
+    }
   };
 
   return (
@@ -47,7 +75,23 @@ const EvidencePage = ({ isMobile, lang }) => {
         </div>
       ) : null}
 
-      <button type="button" aria-label={lang === 'ar' ? 'رفع شاهد جديد' : 'Upload New Evidence'} className={styles.uploader}>
+      {uploadError ? <div className={styles.errorState}>{uploadError}</div> : null}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        onChange={handleFileSelection}
+        style={{ display: 'none' }}
+        aria-label={lang === 'ar' ? 'اختيار ملفات الأدلة' : 'Select evidence files'}
+      />
+
+      <button
+        type="button"
+        aria-label={lang === 'ar' ? 'رفع شاهد جديد' : 'Upload New Evidence'}
+        className={styles.uploader}
+        onClick={handleUploaderClick}
+      >
         <div className={styles.uploaderIcon}>{Icons.upload}</div>
         <div className={styles.uploaderTitle}>{lang === 'ar' ? 'رفع شاهد جديد' : 'Upload New Evidence'}</div>
         <div className={styles.uploaderHint}>{lang === 'ar' ? 'اسحب الملفات هنا أو اضغط للاختيار' : 'Drag files here or click to select'} - PDF, PNG, XLSX, DOCX</div>

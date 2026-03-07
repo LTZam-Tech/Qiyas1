@@ -5,6 +5,7 @@ import storageService from '@/services/storage.service';
 import { NotFoundError, ValidationError } from '@/utils/errors';
 import { createHash } from 'crypto';
 import path from 'path';
+import fs from 'fs';
 
 interface Submission {
   id: string;
@@ -87,14 +88,8 @@ class SubmissionsService extends BaseRepository<Submission> {
 
   async createSubmission(data: { taskId: string; submissionNotes: string }, files: any[], submittedBy: string) {
     // Validate uploaded files
-    const maxFileSize = config.upload.maxFileSizeMB * 1024 * 1024;
     for (const file of files) {
-      if (file.size > maxFileSize) {
-        throw new ValidationError(`File "${file.originalname}" exceeds maximum size of ${config.upload.maxFileSizeMB}MB`);
-      }
-      if (!config.upload.allowedMimeTypes.includes(file.mimetype)) {
-        throw new ValidationError(`File type "${file.mimetype}" is not allowed for "${file.originalname}"`);
-      }
+      this.validateUploadFile(file);
     }
 
     const evidenceRequirementId = await this.resolveEvidenceRequirementId(data.taskId);
@@ -152,6 +147,47 @@ class SubmissionsService extends BaseRepository<Submission> {
     return submission;
   }
 
+  private validateUploadFile(file: any): void {
+    const maxFileSize = config.upload.maxFileSizeMB * 1024 * 1024;
+    if (!file?.originalname || !file?.path) {
+      throw new ValidationError('Invalid file upload payload');
+    }
+
+    const originalName = path.basename(String(file.originalname));
+    if (originalName !== file.originalname || originalName.includes('..')) {
+      throw new ValidationError(`Invalid file name: ${file.originalname}`);
+    }
+
+    if (!fs.existsSync(file.path)) {
+      throw new ValidationError(`Uploaded file is missing on disk: ${originalName}`);
+    }
+
+    if (file.size > maxFileSize) {
+      throw new ValidationError(`File "${originalName}" exceeds maximum size of ${config.upload.maxFileSizeMB}MB`);
+    }
+
+    if (!config.upload.allowedMimeTypes.includes(file.mimetype)) {
+      throw new ValidationError(`File type "${file.mimetype}" is not allowed for "${originalName}"`);
+    }
+
+    const extension = path.extname(originalName).toLowerCase();
+    const extMimeMap: Record<string, string[]> = {
+      '.pdf': ['application/pdf'],
+      '.doc': ['application/msword'],
+      '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+      '.xls': ['application/vnd.ms-excel'],
+      '.xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+      '.png': ['image/png'],
+      '.jpg': ['image/jpeg'],
+      '.jpeg': ['image/jpeg'],
+    };
+
+    const allowedForExt = extMimeMap[extension];
+    if (!allowedForExt || !allowedForExt.includes(file.mimetype)) {
+      throw new ValidationError(`File extension does not match MIME type for "${originalName}"`);
+    }
+  }
+
   async updateSubmissionStatus(submissionId: string, status: string, updatedBy: string) {
     await this.getSubmissionById(submissionId);
 
@@ -184,7 +220,7 @@ class SubmissionsService extends BaseRepository<Submission> {
 
   private async resolveEvidenceRequirementId(taskId: string): Promise<string> {
     const taskResult = await db.query(
-      'SELECT id, standard_id, evidence_requirement_id FROM tasks WHERE id = $1',
+      'SELECT id, evidence_requirement_id FROM tasks WHERE id = $1',
       [taskId]
     );
 
@@ -198,50 +234,12 @@ class SubmissionsService extends BaseRepository<Submission> {
       return task.evidence_requirement_id;
     }
 
-    const existingReqResult = await db.query(
-      `SELECT id
-       FROM evidence_requirements
-       WHERE standard_id = $1 AND deleted_at IS NULL
-       ORDER BY sort_order ASC, created_at ASC
-       LIMIT 1`,
-      [task.standard_id]
+    throw new ValidationError(
+      'Task is missing evidence requirement configuration. Set evidence_requirement_id before submission.'
     );
-
-    if (existingReqResult.rows.length > 0) {
-      return existingReqResult.rows[0].id;
-    }
-
-    const createdReqResult = await db.query(
-      `INSERT INTO evidence_requirements (
-         standard_id,
-         code,
-         title_en,
-         title_ar,
-         description_en,
-         description_ar,
-         is_required,
-         weight,
-         sort_order,
-         status,
-         review_status
-       )
-       VALUES ($1, $2, $3, $4, $5, $6, true, 100, 1, 'active', 'pending')
-       RETURNING id`,
-      [
-        task.standard_id,
-        `AUTO-${Date.now()}`,
-        'Default evidence requirement',
-        'متطلب شاهد افتراضي',
-        'Auto-created for task submission flow',
-        'تم إنشاؤه تلقائيا لمسار رفع الشواهد',
-      ]
-    );
-
-    return createdReqResult.rows[0].id;
   }
 
   private async calculateChecksum(filePath: string): Promise<string> {
-    const fs = require('fs');
     const hash = createHash('sha256');
     const stream = fs.createReadStream(filePath);
 

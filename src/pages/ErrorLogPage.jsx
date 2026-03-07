@@ -5,6 +5,7 @@ import errorLogger from '../services/errorLogger.js';
 const ErrorLogPage = () => {
   const [errors, setErrors] = useState(() => errorLogger.getAllErrors());
   const [selectedError, setSelectedError] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [filters, setFilters] = useState({
     source: 'all',
     severity: 'all',
@@ -13,11 +14,18 @@ const ErrorLogPage = () => {
   const [stats, setStats] = useState(() => errorLogger.getStats());
 
   useEffect(() => {
+    setIsInitializing(true);
+
+    setErrors(errorLogger.getAllErrors());
+    setStats(errorLogger.getStats());
+
     // Subscribe to new errors from the external system
     const unsubscribe = errorLogger.subscribe(() => {
       setErrors(errorLogger.getAllErrors());
       setStats(errorLogger.getStats());
     });
+
+    setIsInitializing(false);
 
     return unsubscribe;
   }, []);
@@ -86,10 +94,12 @@ const ErrorLogPage = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>📊 Error Logs</h1>
-        <button className={styles.clearButton} onClick={handleClearAll}>
-          🗑️ Clear All
+        <button className={styles.clearButton} onClick={handleClearAll} aria-label="Clear all error logs">
+          Clear All
         </button>
       </div>
+
+      {isInitializing ? <div className={styles.noErrors}>Loading error logs...</div> : null}
 
       {stats && (
         <div className={styles.stats}>
@@ -121,12 +131,14 @@ const ErrorLogPage = () => {
           type="text"
           placeholder="Search errors..."
           className={styles.searchInput}
+          aria-label="Search errors"
           value={filters.search}
           onChange={(e) => setFilters({ ...filters, search: e.target.value })}
         />
         
         <select
           className={styles.filterSelect}
+          aria-label="Filter by source"
           value={filters.source}
           onChange={(e) => setFilters({ ...filters, source: e.target.value })}
         >
@@ -138,6 +150,7 @@ const ErrorLogPage = () => {
 
         <select
           className={styles.filterSelect}
+          aria-label="Filter by severity"
           value={filters.severity}
           onChange={(e) => setFilters({ ...filters, severity: e.target.value })}
         >
@@ -163,6 +176,15 @@ const ErrorLogPage = () => {
                   key={error.id}
                   className={`${styles.errorItem} ${selectedError?.id === error.id ? styles.selected : ''}`}
                   onClick={() => setSelectedError(error)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Error ${error.source} ${error.severity}: ${error.message}`}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedError(error);
+                    }
+                  }}
                 >
                   <div className={styles.errorHeader}>
                     <span
@@ -190,8 +212,9 @@ const ErrorLogPage = () => {
               <button
                 className={styles.deleteButton}
                 onClick={() => handleDeleteError(selectedError.id)}
+                aria-label="Delete selected error"
               >
-                🗑️ Delete
+                Delete
               </button>
             </div>
 

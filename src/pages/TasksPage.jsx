@@ -1,9 +1,10 @@
-﻿import { useState } from 'react';
+﻿import { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import Badge from '../components/Badge.jsx';
 import TaskModal from '../components/TaskModal.jsx';
 import useTasksData from '../hooks/useTasksData.js';
 import useAuth from '../context/useAuth.js';
+import errorLogger from '../services/errorLogger.js';
 import styles from './TasksPage.module.css';
 
 const FILTERS = {
@@ -51,10 +52,18 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
   // Check if user has permission to create tasks (dean or consultant)
   const canCreateTask = roleCandidates.some((role) => TASK_CREATE_ROLES.has(role));
 
-  const handleTaskCreated = () => {
+  const handleTaskCreated = useCallback(async () => {
     // Refresh the tasks list after creating a new task
-    refetch?.();
-  };
+    if (typeof refetch === 'function') {
+      try {
+        await refetch();
+      } catch (refreshError) {
+        errorLogger.logWarning('Failed to refresh tasks after creation', 'frontend', {
+          message: refreshError?.message,
+        });
+      }
+    }
+  }, [refetch]);
 
   return (
     <div className={styles.page}>

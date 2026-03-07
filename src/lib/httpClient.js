@@ -38,24 +38,65 @@ const parseResponse = async (response) => {
 };
 
 const applyRequestInterceptors = async (requestConfig) => {
-  let nextConfig = requestConfig;
-  for (const interceptor of requestInterceptors) {
-    nextConfig = (await interceptor(nextConfig)) || nextConfig;
+  if (requestInterceptors.length === 0) {
+    return requestConfig;
   }
-  return nextConfig;
+
+  const interceptorResults = await Promise.all(
+    requestInterceptors.map((interceptor) => interceptor(requestConfig))
+  );
+
+  return interceptorResults.reduce((acc, patch) => {
+    if (!patch || typeof patch !== 'object') {
+      return acc;
+    }
+
+    return {
+      ...acc,
+      ...patch,
+      options: {
+        ...(acc.options || {}),
+        ...(patch.options || {}),
+        headers: {
+          ...(acc.options?.headers || {}),
+          ...(patch.options?.headers || {}),
+        },
+      },
+    };
+  }, requestConfig);
 };
 
 const applyResponseInterceptors = async (responseBody) => {
-  let nextBody = responseBody;
-  for (const interceptor of responseInterceptors) {
-    nextBody = (await interceptor(nextBody)) ?? nextBody;
+  if (responseInterceptors.length === 0) {
+    return responseBody;
   }
+
+  let nextBody = responseBody;
+  const interceptorResults = await Promise.all(
+    responseInterceptors.map((interceptor) => interceptor(responseBody))
+  );
+
+  for (const result of interceptorResults) {
+    if (result !== undefined && result !== null) {
+      nextBody = result;
+    }
+  }
+
   return nextBody;
 };
 
+const getSafeTimeoutMs = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 10000;
+};
+
 export async function request(path, options = {}, query = {}) {
+  const { timeoutMs, headers: customHeaders = {}, ...restOptions } = options;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), env.requestTimeoutMs);
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    getSafeTimeoutMs(timeoutMs ?? env.requestTimeoutMs)
+  );
 
   try {
     const token = authTokenGetter?.();
@@ -65,9 +106,9 @@ export async function request(path, options = {}, query = {}) {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(options.headers || {}),
+          ...customHeaders,
         },
-        ...options,
+        ...restOptions,
         signal: controller.signal,
       },
     });
@@ -85,14 +126,13 @@ export async function request(path, options = {}, query = {}) {
     
     return applyResponseInterceptors(parsed);
   } catch (error) {
-    // Log to error logger
+    // Avoid storing sensitive payload/headers while still retaining request context.
     errorLogger.logBackendError(
       error.message || 'Request failed',
       {
         status: error.status,
         url: path,
-        method: options.method || 'GET',
-        body: error.body,
+        method: restOptions.method || 'GET',
       }
     );
     

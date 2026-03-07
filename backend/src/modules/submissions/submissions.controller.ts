@@ -1,9 +1,9 @@
 import { Response, NextFunction } from 'express';
 import multer from 'multer';
 import submissionsService from './submissions.service';
-import { AuthRequest } from '@/middleware/auth';
+import { AuthRequest, canSubmitEvidence, canViewTask } from '@/middleware/auth';
 import { asyncHandler } from '@/utils/errors';
-import { ValidationError } from '@/utils/errors';
+import { ValidationError, ForbiddenError } from '@/utils/errors';
 import config from '@/config';
 
 const upload = multer({
@@ -34,6 +34,12 @@ class SubmissionsController {
   getSubmissionById = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
     const submissionId = req.params.id as string;
     const submission = await submissionsService.getSubmissionById(submissionId);
+
+    const canView = await canViewTask(req.user!.id, submission.task_id);
+    if (!canView) {
+      throw new ForbiddenError('You do not have access to this submission');
+    }
+
     res.json({ success: true, data: { submission } });
   });
 
@@ -50,6 +56,11 @@ class SubmissionsController {
       throw new ValidationError('Task ID is required');
     }
 
+    const canSubmit = await canSubmitEvidence(req.user!.id, taskId as string);
+    if (!canSubmit) {
+      throw new ForbiddenError('You do not have permission to submit evidence for this task');
+    }
+
     const submission = await submissionsService.createSubmission(
       { taskId: taskId as string, submissionNotes },
       files,
@@ -62,6 +73,12 @@ class SubmissionsController {
   downloadFile = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
     const submissionId = req.params.id as string;
     const fileId = req.params.fileId as string;
+
+    const submission = await submissionsService.getSubmissionById(submissionId);
+    const canView = await canViewTask(req.user!.id, submission.task_id);
+    if (!canView) {
+      throw new ForbiddenError('You do not have access to this file');
+    }
 
     const url = await submissionsService.getFileDownloadUrl(submissionId, fileId);
 

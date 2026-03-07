@@ -160,6 +160,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
 
   const loadInitialData = async () => {
     setIsLoadingData(true);
+    setError('');
     try {
       const [usersResult, departmentsResult, unitsResult, perspectivesResult] = await Promise.allSettled([
         usersService.getUsers(),
@@ -178,9 +179,12 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
       setUnits(unitsData);
       setPerspectives(perspectivesData);
 
-      if (perspectivesData.length === 0) {
+      const hasCriticalData = perspectivesData.length > 0 && usersData.length > 0;
+      if (!hasCriticalData) {
         setError(lang === 'ar' ? 'تعذر تحميل المنظورات. الرجاء المحاولة مرة أخرى.' : 'Failed to load perspectives. Please try again.');
       }
+    } catch {
+      setError(lang === 'ar' ? 'تعذر تحميل بيانات النموذج. الرجاء المحاولة مرة أخرى.' : 'Failed to load form data. Please try again.');
     } finally {
       setIsLoadingData(false);
     }
@@ -252,6 +256,11 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
     }
 
     const { targetType, targetId } = parseTargetEntity(formData.targetEntity);
+    const selectedStandardTitle = selectedStandard?.name_ar || selectedStandard?.name || selectedStandard?.title;
+    if (!selectedStandardTitle) {
+      setError(lang === 'ar' ? 'لم يتم العثور على بيانات المعيار المحدد' : 'Selected standard data is missing');
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -261,7 +270,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
         axisId: formData.axisId,
         standardId: formData.standardId,
         standardCode: selectedStandard?.code,
-        standardTitle: selectedStandard?.name_ar || selectedStandard?.name || selectedStandard?.title,
+        standardTitle: selectedStandardTitle,
         evidenceType: formData.evidenceType,
         assignedTo: formData.assignedTo,
         assignedToName: selectedAssignee?.full_name || selectedAssignee?.name || selectedAssignee?.email,
@@ -304,6 +313,18 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
 
         {isLoadingData ? (
           <div className={styles.loadingState}>{lang === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'}</div>
+        ) : error && perspectives.length === 0 ? (
+          <div className={styles.loadingState}>
+            <div>{error}</div>
+            <button
+              type="button"
+              className={styles.submitButton}
+              onClick={loadInitialData}
+              style={{ marginTop: 12 }}
+            >
+              {lang === 'ar' ? 'إعادة المحاولة' : 'Retry'}
+            </button>
+          </div>
         ) : (
           <form className={styles.form} onSubmit={handleSubmit}>
             {error && <div className={styles.error}>{error}</div>}

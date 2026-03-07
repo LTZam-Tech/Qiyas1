@@ -1,9 +1,9 @@
 import { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import reviewsService from './reviews.service';
-import { AuthRequest } from '@/middleware/auth';
+import { AuthRequest, canReviewSubmission } from '@/middleware/auth';
 import { asyncHandler } from '@/utils/errors';
-import { ValidationError } from '@/utils/errors';
+import { ValidationError, ForbiddenError } from '@/utils/errors';
 
 const createReviewSchema = z.object({
   submissionId: z.string().uuid('Invalid submission ID'),
@@ -33,6 +33,11 @@ class ReviewsController {
     
     if (!validation.success) {
       throw new ValidationError('Validation failed', validation.error.issues);
+    }
+
+    const canReview = await canReviewSubmission(req.user!.id, validation.data.submissionId);
+    if (!canReview) {
+      throw new ForbiddenError('You do not have permission to review this submission');
     }
 
     const review = await reviewsService.createReview(validation.data, req.user!.id);

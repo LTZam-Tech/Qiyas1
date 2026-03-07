@@ -1,5 +1,35 @@
 import { env } from '../config/env.js';
 import { request } from '../lib/httpClient.js';
+import errorLogger from './errorLogger.js';
+
+const getResponseData = (response) => response?.data || response || {};
+
+const normalizeDepartment = (department) => {
+  const nameAr = department?.name_ar || department?.name || '';
+  const nameEn = department?.name_en || department?.name || nameAr;
+  return {
+    ...department,
+    name: nameAr,
+    name_en: nameEn,
+    nameAr,
+    nameEn,
+  };
+};
+
+const normalizeUnit = (unit) => {
+  const nameAr = unit?.name_ar || unit?.name || '';
+  const nameEn = unit?.name_en || unit?.name || nameAr;
+  const departmentId = unit?.department_id || unit?.departmentId || '';
+  return {
+    ...unit,
+    name: nameAr,
+    name_en: nameEn,
+    nameAr,
+    nameEn,
+    department_id: departmentId,
+    departmentId,
+  };
+};
 
 const MOCK_DEPARTMENTS = [
   { id: 'dept-1', name: 'إدارة التحول الرقمي', name_en: 'Digital Transformation Department' },
@@ -16,44 +46,43 @@ const MOCK_UNITS = [
 const orgStructureService = {
   async getDepartments() {
     if (env.useMockApi) {
-      return MOCK_DEPARTMENTS;
+      return MOCK_DEPARTMENTS.map(normalizeDepartment);
     }
 
     try {
       const response = await request('/departments');
-      const departments = response.data?.departments || [];
-      if (departments.length === 0) return MOCK_DEPARTMENTS;
+      const data = getResponseData(response);
+      const departments = Array.isArray(data.departments) ? data.departments : [];
+      if (departments.length === 0) return MOCK_DEPARTMENTS.map(normalizeDepartment);
 
-      return departments.map((department) => ({
-        id: department.id,
-        name: department.name_ar || department.name,
-        name_en: department.name_en || department.name,
-      }));
+      return departments.map(normalizeDepartment);
     } catch (error) {
-      console.warn('Departments API failed, using mock data:', error);
-      return MOCK_DEPARTMENTS;
+      errorLogger.logWarning('Departments API failed, using mock data fallback', 'backend', {
+        message: error?.message,
+        status: error?.status,
+      });
+      return MOCK_DEPARTMENTS.map(normalizeDepartment);
     }
   },
 
   async getUnits() {
     if (env.useMockApi) {
-      return MOCK_UNITS;
+      return MOCK_UNITS.map(normalizeUnit);
     }
 
     try {
       const response = await request('/units');
-      const units = response.data?.units || [];
-      if (units.length === 0) return MOCK_UNITS;
+      const data = getResponseData(response);
+      const units = Array.isArray(data.units) ? data.units : [];
+      if (units.length === 0) return MOCK_UNITS.map(normalizeUnit);
 
-      return units.map((unit) => ({
-        id: unit.id,
-        name: unit.name_ar || unit.name,
-        name_en: unit.name_en || unit.name,
-        departmentId: unit.department_id,
-      }));
+      return units.map(normalizeUnit);
     } catch (error) {
-      console.warn('Units API failed, using mock data:', error);
-      return MOCK_UNITS;
+      errorLogger.logWarning('Units API failed, using mock data fallback', 'backend', {
+        message: error?.message,
+        status: error?.status,
+      });
+      return MOCK_UNITS.map(normalizeUnit);
     }
   },
 };

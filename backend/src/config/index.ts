@@ -49,7 +49,9 @@ interface Config {
     accessExpiresIn: string;
     refreshSecret: string;
     refreshExpiresIn: string;
-    algorithm: string;
+    algorithm: 'HS256' | 'RS256';
+    accessPrivateKey?: string;
+    accessPublicKey?: string;
   };
   
   // Security
@@ -59,6 +61,13 @@ interface Config {
     lockoutDurationMinutes: number;
     rateLimitWindowMs: number;
     rateLimitMaxRequests: number;
+    bodyLimit: string;
+  };
+
+  // Auth/session
+  auth: {
+    refreshTokenCookieMaxAgeMs: number;
+    csrfCookieMaxAgeMs: number;
   };
   
   // File Upload
@@ -116,7 +125,9 @@ const config: Config = {
     accessExpiresIn: '15m',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'change-this-refresh-secret',
     refreshExpiresIn: '30d',
-    algorithm: 'HS256', // Use RS256 in production with key files
+    algorithm: (process.env.JWT_ALGORITHM === 'RS256' ? 'RS256' : 'HS256'),
+    accessPrivateKey: process.env.JWT_ACCESS_PRIVATE_KEY,
+    accessPublicKey: process.env.JWT_ACCESS_PUBLIC_KEY,
   },
   
   security: {
@@ -125,6 +136,18 @@ const config: Config = {
     lockoutDurationMinutes: 15,
     rateLimitWindowMs: 60 * 1000, // 1 minute
     rateLimitMaxRequests: 100,
+    bodyLimit: process.env.BODY_LIMIT || '512kb',
+  },
+
+  auth: {
+    refreshTokenCookieMaxAgeMs: parseInt(
+      process.env.REFRESH_TOKEN_COOKIE_MAX_AGE_MS || String(30 * 24 * 60 * 60 * 1000),
+      10
+    ),
+    csrfCookieMaxAgeMs: parseInt(
+      process.env.CSRF_COOKIE_MAX_AGE_MS || String(30 * 24 * 60 * 60 * 1000),
+      10
+    ),
   },
   
   upload: {
@@ -153,7 +176,18 @@ const config: Config = {
 
 // Validate required config
 const requiredEnvVars = [
+  'POSTGRES_HOST',
+  'POSTGRES_PORT',
+  'POSTGRES_DB',
+  'POSTGRES_USER',
   'POSTGRES_PASSWORD',
+  'REDIS_HOST',
+  'REDIS_PORT',
+  'REDIS_DB',
+  'MINIO_ENDPOINT',
+  'MINIO_PORT',
+  'MINIO_ROOT_USER',
+  'MINIO_ROOT_PASSWORD',
   'JWT_ACCESS_SECRET',
   'JWT_REFRESH_SECRET',
 ];
@@ -173,6 +207,14 @@ if (config.env === 'production') {
   }
   if (config.database.password === 'change_me') {
     throw new Error('POSTGRES_PASSWORD must be changed from default value in production');
+  }
+
+  if (config.jwt.algorithm !== 'RS256') {
+    throw new Error('JWT_ALGORITHM must be RS256 in production');
+  }
+
+  if (!config.jwt.accessPrivateKey || !config.jwt.accessPublicKey) {
+    throw new Error('JWT_ACCESS_PRIVATE_KEY and JWT_ACCESS_PUBLIC_KEY are required when using RS256 in production');
   }
 }
 

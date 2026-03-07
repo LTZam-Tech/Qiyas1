@@ -1,7 +1,9 @@
 import { Response, NextFunction } from 'express';
 import { z } from 'zod';
+import { randomBytes } from 'crypto';
 import authService from './auth.service';
 import { AuthRequest } from '@/middleware/auth';
+import config from '@/config';
 import { asyncHandler } from '@/utils/errors';
 import { ValidationError } from '@/utils/errors';
 import logger from '@/utils/logger';
@@ -30,6 +32,17 @@ const changePasswordSchema = z.object({
 // });
 
 class AuthController {
+  private issueCsrfToken(res: Response): string {
+    const csrfToken = randomBytes(24).toString('hex');
+    res.cookie('csrfToken', csrfToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: config.auth.csrfCookieMaxAgeMs,
+    });
+    return csrfToken;
+  }
+
   // POST /api/v1/auth/login
   login = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
     const validation = loginSchema.safeParse(req.body);
@@ -49,14 +62,17 @@ class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      maxAge: config.auth.refreshTokenCookieMaxAgeMs,
     });
+
+    const csrfToken = this.issueCsrfToken(res);
 
     res.json({
       success: true,
       data: {
         user: result.user,
         accessToken: result.tokens.accessToken,
+        csrfToken,
       },
     });
   });
@@ -92,13 +108,16 @@ class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      maxAge: config.auth.refreshTokenCookieMaxAgeMs,
     });
+
+    const csrfToken = this.issueCsrfToken(res);
 
     res.json({
       success: true,
       data: {
         accessToken: tokens.accessToken,
+        csrfToken,
       },
     });
   });
@@ -113,6 +132,7 @@ class AuthController {
 
     // Clear refresh token cookie
     res.clearCookie('refreshToken');
+    res.clearCookie('csrfToken');
 
     res.json({
       success: true,
@@ -135,6 +155,7 @@ class AuthController {
 
     // Clear refresh token cookie (user will need to login again)
     res.clearCookie('refreshToken');
+    res.clearCookie('csrfToken');
 
     res.json({
       success: true,

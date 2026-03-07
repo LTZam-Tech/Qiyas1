@@ -28,3 +28,5 @@ export const PAGES = {
   approvals: "approvals",
   analytics: "analytics",
 };
+
+export const APP_LOADING_DELAY_MS = 320;

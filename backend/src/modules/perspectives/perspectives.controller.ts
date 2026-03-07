@@ -1,9 +1,9 @@
 import { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import perspectivesService from './perspectives.service';
-import { AuthRequest } from '@/middleware/auth';
+import { AuthRequest, canEditPerspective, canViewPerspective } from '@/middleware/auth';
 import { asyncHandler } from '@/utils/errors';
-import { ValidationError } from '@/utils/errors';
+import { ValidationError, ForbiddenError } from '@/utils/errors';
 
 const createPerspectiveSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -35,6 +35,11 @@ class PerspectivesController {
   // GET /api/v1/perspectives/:id
   getPerspectiveById = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
     const perspectiveId = req.params.id as string;
+    const canView = await canViewPerspective(req.user!.id, perspectiveId);
+    if (!canView) {
+      throw new ForbiddenError('You do not have access to this perspective');
+    }
+
     const perspective = await perspectivesService.getPerspectiveById(perspectiveId);
 
     res.json({
@@ -62,6 +67,11 @@ class PerspectivesController {
   // PUT /api/v1/perspectives/:id
   updatePerspective = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
     const perspectiveId = req.params.id as string;
+    const canEdit = await canEditPerspective(req.user!.id, perspectiveId);
+    if (!canEdit) {
+      throw new ForbiddenError('You do not have permission to edit this perspective');
+    }
+
     const validation = updatePerspectiveSchema.safeParse(req.body);
     
     if (!validation.success) {
@@ -79,6 +89,11 @@ class PerspectivesController {
   // DELETE /api/v1/perspectives/:id
   deletePerspective = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
     const perspectiveId = req.params.id as string;
+    const canEdit = await canEditPerspective(req.user!.id, perspectiveId);
+    if (!canEdit) {
+      throw new ForbiddenError('You do not have permission to delete this perspective');
+    }
+
     await perspectivesService.deletePerspective(perspectiveId, req.user!.id);
 
     res.json({

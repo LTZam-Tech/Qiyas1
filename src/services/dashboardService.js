@@ -1,6 +1,7 @@
 import { request } from '../lib/httpClient.js';
 import { AXES, PERSPECTIVES, RECENT_ACTIVITIES, STANDARDS_HIERARCHY } from '../utils/data.js';
 import { calculateHierarchyWeights } from '../utils/complianceWeights.js';
+import errorLogger from './errorLogger.js';
 
 const getMockDashboard = () => {
   const hierarchy = calculateHierarchyWeights({
@@ -28,11 +29,14 @@ export async function getDashboardSummary() {
     if (response.success && response.data) {
       return response.data;
     }
-    
-    console.warn('Invalid response structure, using mock data');
+
+    errorLogger.logWarning('Dashboard API returned invalid structure, using mock data', 'backend');
     return getMockDashboard();
   } catch (err) {
-    console.warn('Dashboard API failed, using mock data:', err);
+    errorLogger.logWarning('Dashboard API failed, using mock data fallback', 'backend', {
+      message: err?.message,
+      status: err?.status,
+    });
     return getMockDashboard();
   }
 }

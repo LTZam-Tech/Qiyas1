@@ -159,18 +159,18 @@
 }
 
 .severityError {
-  background-color: #fecaca;
-  color: #991b1b;
+  background-color: #fee2e2;
+  color: #7f1d1d;
 }
 
 .severityWarning {
-  background-color: #fde68a;
-  color: #92400e;
+  background-color: #fef3c7;
+  color: #78350f;
 }
 
 .severityInfo {
-  background-color: #bfdbfe;
-  color: #1e40af;
+  background-color: #dbeafe;
+  color: #1e3a8a;
 }
 
 .errorMessage {

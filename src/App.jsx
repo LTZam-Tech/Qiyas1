@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { C } from './utils/theme.js';
 import { NAV_ITEMS } from './utils/data.js';
 import { filterNavByRole, canAccessPage } from './utils/permissions.js';
-import { BREAKPOINTS, PAGES } from './constants/index.js';
+import { APP_LOADING_DELAY_MS, BREAKPOINTS, PAGES } from './constants/index.js';
 import useResponsive from './hooks/useResponsive.js';
 import usePageLoad from './hooks/usePageLoad.js';
 import useAuth from './context/useAuth.js';
@@ -17,6 +17,7 @@ import EvidencePage from './pages/EvidencePage.jsx';
 import ReviewPage from './pages/ReviewPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import ErrorLogPage from './pages/ErrorLogPage.jsx';
+import { getNotifications } from './services/notificationsService.js';
 
 const PAGE_COMPONENTS = {
   dashboard: DashboardPage,
@@ -29,6 +30,11 @@ const PAGE_COMPONENTS = {
   approvals: ReviewPage,
   analytics: ReportsPage,
   'error-logs': ErrorLogPage,
+};
+
+const getDefaultExpandedGroups = () => {
+  const firstGroup = NAV_ITEMS.find((item) => item.isGroup);
+  return firstGroup ? new Set([firstGroup.key]) : new Set();
 };
 
 export default function App() {
@@ -65,17 +71,40 @@ export default function App() {
   const [lang, setLang] = useState(getLanguageFromPath);
   const [page, setPage] = useState(getPageFromQuery);
   const [sideOpen, setSideOpen] = useState(vw > BREAKPOINTS.tablet);
-  const [expandedGroups, setExpandedGroups] = useState(new Set(['management']));
+  const [expandedGroups, setExpandedGroups] = useState(getDefaultExpandedGroups);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDark, setIsDark] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [notifications, setNotifications] = useState([]);
 
   usePageLoad(page);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 320);
+    const timer = setTimeout(() => setIsLoading(false), APP_LOADING_DELAY_MS);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadNotifications = async () => {
+      try {
+        const result = await getNotifications();
+        if (isMounted) {
+          setNotifications(Array.isArray(result) ? result : []);
+        }
+      } catch {
+        if (isMounted) {
+          setNotifications([]);
+        }
+      }
+    };
+
+    loadNotifications();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Sync URL with language and page state (also handles initial redirect from root)
@@ -111,7 +140,7 @@ export default function App() {
     document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
   }, [isDark]);
 
-  const toggleGroup = (groupKey) => {
+  const toggleGroup = useCallback((groupKey) => {
     setExpandedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(groupKey)) {
@@ -121,9 +150,9 @@ export default function App() {
       }
       return next;
     });
-  };
+  }, []);
 
-  const navigateTo = (item) => {
+  const navigateTo = useCallback((item) => {
     // Check if user has access to this page
     if (!canAccessPage(item.key, user?.role)) {
       console.warn(`Access denied to page: ${item.key}`);
@@ -136,13 +165,13 @@ export default function App() {
       setSideOpen(false);
     }
     setShowNotifications(false);
-  };
+  }, [isMobile, user?.role]);
 
-  const toggleLanguage = () => {
+  const toggleLanguage = useCallback(() => {
     const newLang = lang === 'ar' ? 'en' : 'ar';
     setLang(newLang);
     // URL will be updated by the useEffect that watches [lang, page]
-  };
+  }, [lang]);
 
   // Filter navigation based on user role
   const roleBasedNavItems = useMemo(() => {
@@ -194,11 +223,13 @@ export default function App() {
     NAV_ITEMS.flatMap((item) => [item, ...(item.children || [])]).find((item) => item.key === page) ||
     NAV_ITEMS[0];
 
-  const notifications = [
-    lang === 'ar' ? 'تم رفع شاهد جديد للمعيار 5.10.3' : 'New evidence uploaded for standard 5.10.3',
-    lang === 'ar' ? '3 مهام تقترب من الموعد النهائي' : '3 tasks are close to deadline',
-    lang === 'ar' ? 'تم اعتماد شاهد من قبل المراجع' : 'Evidence approved by reviewer',
-  ];
+  const localizedNotifications = useMemo(
+    () => notifications.map((item) => ({
+      id: item.id,
+      text: lang === 'ar' ? item.message_ar : item.message_en,
+    })),
+    [notifications, lang]
+  );
 
   const PageComponent = PAGE_COMPONENTS[page] || DashboardPage;
 
@@ -233,16 +264,16 @@ export default function App() {
         onToggleTheme={() => setIsDark((prev) => !prev)}
         onToggleLanguage={toggleLanguage}
         onToggleNotifications={() => setShowNotifications((prev) => !prev)}
-        notificationCount={notifications.length}
+        notificationCount={localizedNotifications.length}
         lang={lang}
       />
 
       {showNotifications && (
         <div className={styles.notifications} role="status" aria-live="polite">
           <h4>{lang === 'ar' ? 'التنبيهات' : 'Notifications'}</h4>
-          {notifications.map((note) => (
-            <div key={note} className={styles.notificationItem}>
-              {note}
+          {localizedNotifications.map((note) => (
+            <div key={note.id} className={styles.notificationItem}>
+              {note.text}
             </div>
           ))}
         </div>

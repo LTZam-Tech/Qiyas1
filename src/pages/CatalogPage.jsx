@@ -1,23 +1,20 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { PERSPECTIVES, AXES, STANDARD_DETAILS } from '../utils/data.js';
 import { Icons } from '../utils/icons.jsx';
 import styles from './CatalogPage.module.css';
 
+const AXES_BY_PERSPECTIVE = AXES.reduce((acc, axis) => {
+  if (!acc[axis.perspId]) acc[axis.perspId] = [];
+  acc[axis.perspId].push(axis);
+  return acc;
+}, {});
+
 const CatalogPage = ({ lang }) => {
   const [selectedPerspective, setSelectedPerspective] = useState(null);
   const [selectedAxis, setSelectedAxis] = useState(null);
 
-  const axesByPerspective = useMemo(
-    () => AXES.reduce((acc, axis) => {
-      if (!acc[axis.perspId]) acc[axis.perspId] = [];
-      acc[axis.perspId].push(axis);
-      return acc;
-    }, {}),
-    []
-  );
-
-  const currentAxes = selectedPerspective ? (axesByPerspective[selectedPerspective] || []) : [];
+  const currentAxes = selectedPerspective ? (AXES_BY_PERSPECTIVE[selectedPerspective] || []) : [];
   const currentPerspective = PERSPECTIVES.find((p) => p.id === selectedPerspective);
 
   const handlePerspectiveClick = (perspId) => {

@@ -23,7 +23,7 @@ export default function Header({
         {isTablet && (
           <button
             type="button"
-            aria-label="Toggle sidebar"
+            aria-label={lang === 'ar' ? 'تبديل الشريط الجانبي' : 'Toggle sidebar'}
             aria-expanded={!isMobile}
             className={`${styles.headerBtn} ${styles.mobileMenuBtn}`}
             onClick={onToggleSidebar}
@@ -31,7 +31,10 @@ export default function Header({
             {Icons.menuIcon}
           </button>
         )}
-        <span style={{ color: C.white, display: 'flex', alignItems: 'center' }}>{Icons.bookIcon}</span>
+        <span style={{ color: C.white, display: 'flex', alignItems: 'center' }} aria-hidden="true">{Icons.bookIcon}</span>
+        <span style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }}>
+          {lang === 'ar' ? 'بوابة قياس' : 'Qiyas Portal'}
+        </span>
         <span className={styles.headerTitle}>{title}</span>
       </div>
 

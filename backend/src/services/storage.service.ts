@@ -2,6 +2,7 @@ import { Client } from 'minio';
 import config from '@/config';
 import logger from '@/utils/logger';
 import { unlink } from 'fs/promises';
+import path from 'path';
 
 class StorageService {
   private client: Client;
@@ -50,7 +51,8 @@ class StorageService {
                        bucket === 'reports' ? this.reportsBucket :
                        this.templatesBucket;
 
-    const objectName = `${Date.now()}-${fileName}`;
+    const safeName = path.basename(fileName).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const objectName = `${Date.now()}-${safeName}`;
 
     try {
       await this.client.fPutObject(bucketName, objectName, filePath, {

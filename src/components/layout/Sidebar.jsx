@@ -32,7 +32,7 @@ export default function Sidebar({
                 type="button"
                 className={`${styles.navBtn} ${active ? styles.navBtnActive : ''}`}
                 onClick={() => (item.isGroup ? onToggleGroup(item.key) : onNavigate(item))}
-                aria-expanded={item.isGroup ? expandedGroups.has(item.key) : undefined}
+                {...(item.isGroup ? { 'aria-expanded': expandedGroups.has(item.key) } : {})}
                 aria-label={label}
               >
                 <span aria-hidden="true">{Icons[item.iconKey]}</span>
