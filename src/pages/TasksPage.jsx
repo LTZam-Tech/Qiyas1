@@ -85,7 +85,6 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
             </button>
           )}
         </div>
-        <h2 className={styles.heading}>{lang === 'ar' ? 'إدارة المهام' : 'Task Management'}</h2>
       </div>
 
       <div className={styles.tableContainer}>
