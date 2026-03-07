@@ -177,6 +177,7 @@ export default function App() {
         onToggleLanguage={() => setLang((prev) => (prev === 'ar' ? 'en' : 'ar'))}
         onToggleNotifications={() => setShowNotifications((prev) => !prev)}
         notificationCount={notifications.length}
+        lang={lang}
       />
 
       {showNotifications && (

@@ -26,21 +26,21 @@ const ReviewPage = ({ isMobile, lang }) => {
           pendingReviews.map((task) => (
             <div key={task.id} className={styles.row}>
               <div className={styles.rowActions}>
-                <button type="button" aria-label={`اعتماد ${task.req}`} className={`${styles.actionButton} ${styles.approve}`}>
-                  اعتماد
+                <button type="button" aria-label={lang === 'ar' ? `اعتماد ${task.req_ar}` : `Approve ${task.req_en}`} className={`${styles.actionButton} ${styles.approve}`}>
+                  {lang === 'ar' ? 'اعتماد' : 'Approve'}
                 </button>
-                <button type="button" aria-label={`طلب مراجعة ${task.req}`} className={`${styles.actionButton} ${styles.revise}`}>
-                  مراجعة
+                <button type="button" aria-label={lang === 'ar' ? `طلب مراجعة ${task.req_ar}` : `Request Review ${task.req_en}`} className={`${styles.actionButton} ${styles.revise}`}>
+                  {lang === 'ar' ? 'مراجعة' : 'Review'}
                 </button>
-                <button type="button" aria-label={`رفض ${task.req}`} className={`${styles.actionButton} ${styles.reject}`}>
-                  رفض
+                <button type="button" aria-label={lang === 'ar' ? `رفض ${task.req_ar}` : `Reject ${task.req_en}`} className={`${styles.actionButton} ${styles.reject}`}>
+                  {lang === 'ar' ? 'رفض' : 'Reject'}
                 </button>
               </div>
 
               <div className={styles.rowBody}>
-                <div className={styles.rowTitle}>{task.req}</div>
+                <div className={styles.rowTitle}>{lang === 'ar' ? task.req_ar : task.req_en}</div>
                 <div className={styles.rowMeta}>
-                  المعيار: {task.code} | المسؤول: {task.assignee}
+                  {lang === 'ar' ? 'المعيار' : 'Standard'}: {task.code} | {lang === 'ar' ? 'المسؤول' : 'Responsible'}: {task.assignee}
                 </div>
               </div>
 

@@ -63,8 +63,8 @@ const DashboardPage = ({ isMobile, lang }) => {
                 <div key={a.id} className={`${styles.activityRow} ${isLast ? styles.activityRowLast : ''}`}>
                   <div className={`${styles.activityDot} ${dotClass}`} />
                   <div className={styles.activityText}>
-                    <div className={styles.activityMain}><strong>{a.user}</strong> — {a.action}</div>
-                    <div className={styles.activityMeta}>{lang === 'ar' ? 'المعيار' : 'Standard'} {a.standard} | {a.time}</div>
+                    <div className={styles.activityMain}><strong>{a.user}</strong> — {lang === 'ar' ? a.action_ar : a.action_en}</div>
+                    <div className={styles.activityMeta}>{lang === 'ar' ? 'المعيار' : 'Standard'} {a.standard} | {lang === 'ar' ? a.time_ar : a.time_en}</div>
                   </div>
                 </div>
               );

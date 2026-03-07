@@ -29,22 +29,22 @@ export const STANDARDS_SAMPLE = [
 ];
 
 export const RECENT_ACTIVITIES = [
-  { id: 1, action: "رفع شاهد", user: "أحمد الشمري", standard: "5.10.1", time: "منذ 12 دقيقة", type: "upload" },
-  { id: 2, action: "اعتماد شاهد", user: "سارة القحطاني", standard: "5.14.3", time: "منذ 45 دقيقة", type: "approve" },
-  { id: 3, action: "طلب مراجعة", user: "خالد المطيري", standard: "5.10.3", time: "منذ ساعتين", type: "revision" },
-  { id: 4, action: "رفض شاهد", user: "نورة العتيبي", standard: "5.22.2", time: "منذ 3 ساعات", type: "reject" },
-  { id: 5, action: "رفع شاهد", user: "محمد الدوسري", standard: "5.9.1", time: "منذ 5 ساعات", type: "upload" },
+  { id: 1, action_ar: "رفع شاهد", action_en: "Evidence Uploaded", user: "أحمد الشمري", standard: "5.10.1", time_ar: "منذ 12 دقيقة", time_en: "12 minutes ago", type: "upload" },
+  { id: 2, action_ar: "اعتماد شاهد", action_en: "Evidence Approved", user: "سارة القحطاني", standard: "5.14.3", time_ar: "منذ 45 دقيقة", time_en: "45 minutes ago", type: "approve" },
+  { id: 3, action_ar: "طلب مراجعة", action_en: "Review Requested", user: "خالد المطيري", standard: "5.10.3", time_ar: "منذ ساعتين", time_en: "2 hours ago", type: "revision" },
+  { id: 4, action_ar: "رفض شاهد", action_en: "Evidence Rejected", user: "نورة العتيبي", standard: "5.22.2", time_ar: "منذ 3 ساعات", time_en: "3 hours ago", type: "reject" },
+  { id: 5, action_ar: "رفع شاهد", action_en: "Evidence Uploaded", user: "محمد الدوسري", standard: "5.9.1", time_ar: "منذ 5 ساعات", time_en: "5 hours ago", type: "upload" },
 ];
 
 export const TASKS_DATA = [
-  { id: 1, code: "5.10.1", req: "تقرير شهري معتمد — Monthly Operations Report", assignee: "أحمد الشمري", due: "2025-04-15", status: "submitted", priority: "high" },
-  { id: 2, code: "5.10.1", req: "لقطة Report History — 3 أشهر متتالية", assignee: "أحمد الشمري", due: "2025-04-15", status: "revision", priority: "high" },
-  { id: 3, code: "5.10.3", req: "سياسة إدارة الوثائق — Document Management Policy", assignee: "فهد العنزي", due: "2025-04-20", status: "active", priority: "critical" },
-  { id: 4, code: "5.10.3", req: "لقطات نظام الأرشفة — DMS Screenshots", assignee: "فهد العنزي", due: "2025-04-22", status: "active", priority: "critical" },
-  { id: 5, code: "5.10.4", req: "وثيقة تكامل CRM-ITSM — Integration Document", assignee: "سارة القحطاني", due: "2025-04-18", status: "approved", priority: "medium" },
-  { id: 6, code: "5.13.5", req: "تسجيل المنصات في رقمي — Raqmi Registration", assignee: "خالد المطيري", due: "2025-04-25", status: "active", priority: "critical" },
-  { id: 7, code: "5.22.2", req: "وثيقة ورش Design Thinking", assignee: "نورة العتيبي", due: "2025-05-01", status: "active", priority: "high" },
-  { id: 8, code: "5.9.1", req: "ميثاق لجنة BCM — BCM Charter", assignee: "محمد الدوسري", due: "2025-04-10", status: "approved", priority: "medium" },
+  { id: 1, code: "5.10.1", req_ar: "تقرير شهري معتمد", req_en: "Monthly Operations Report", assignee: "أحمد الشمري", due: "2025-04-15", status: "submitted", priority: "high" },
+  { id: 2, code: "5.10.1", req_ar: "لقطة Report History — 3 أشهر متتالية", req_en: "Report History Screenshots - 3 Consecutive Months", assignee: "أحمد الشمري", due: "2025-04-15", status: "revision", priority: "high" },
+  { id: 3, code: "5.10.3", req_ar: "سياسة إدارة الوثائق", req_en: "Document Management Policy", assignee: "فهد العنزي", due: "2025-04-20", status: "active", priority: "critical" },
+  { id: 4, code: "5.10.3", req_ar: "لقطات نظام الأرشفة", req_en: "DMS Screenshots", assignee: "فهد العنزي", due: "2025-04-22", status: "active", priority: "critical" },
+  { id: 5, code: "5.10.4", req_ar: "وثيقة تكامل CRM-ITSM", req_en: "Integration Document", assignee: "سارة القحطاني", due: "2025-04-18", status: "approved", priority: "medium" },
+  { id: 6, code: "5.13.5", req_ar: "تسجيل المنصات في رقمي", req_en: "Raqmi Registration", assignee: "خالد المطيري", due: "2025-04-25", status: "active", priority: "critical" },
+  { id: 7, code: "5.22.2", req_ar: "وثيقة ورش Design Thinking", req_en: "Design Thinking Workshop Document", assignee: "نورة العتيبي", due: "2025-05-01", status: "active", priority: "high" },
+  { id: 8, code: "5.9.1", req_ar: "ميثاق لجنة BCM", req_en: "BCM Charter", assignee: "محمد الدوسري", due: "2025-04-10", status: "approved", priority: "medium" },
 ];
 
 export const BADGE_MAP = {

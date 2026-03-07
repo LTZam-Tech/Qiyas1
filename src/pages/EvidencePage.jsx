@@ -48,12 +48,12 @@ const EvidencePage = ({ isMobile, lang }) => {
         </div>
       ) : null}
 
-      <button type="button" aria-label="رفع شاهد جديد" className={styles.uploader}>
+      <button type="button" aria-label={lang === 'ar' ? 'رفع شاهد جديد' : 'Upload New Evidence'} className={styles.uploader}>
         <div className={styles.uploaderIcon}>{Icons.upload}</div>
         <div className={styles.uploaderTitle}>{lang === 'ar' ? 'رفع شاهد جديد' : 'Upload New Evidence'}</div>
         <div className={styles.uploaderHint}>{lang === 'ar' ? 'اسحب الملفات هنا أو اضغط للاختيار' : 'Drag files here or click to select'} - PDF, PNG, XLSX, DOCX</div>
         <div className={styles.uploaderPattern}>
-          تسمية الملف: [StandardCode]_[SystemName]_[ScreenName]_[YYYYMMDD].ext
+          {lang === 'ar' ? 'تسمية الملف' : 'File name'}: [StandardCode]_[SystemName]_[ScreenName]_[YYYYMMDD].ext
         </div>
       </button>
     </div>

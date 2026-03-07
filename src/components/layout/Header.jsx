@@ -15,6 +15,7 @@ export default function Header({
   onToggleLanguage,
   onToggleNotifications,
   notificationCount,
+  lang = 'ar',
 }) {
   return (
     <header className={styles.header}>
@@ -42,7 +43,7 @@ export default function Header({
       >
         <input
           type="text"
-          placeholder="ابحث عن صفحة او عنصر..."
+          placeholder={lang === 'ar' ? 'ابحث عن صفحة او عنصر...' : 'Search for page or item...'}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
         />
@@ -95,4 +96,5 @@ Header.propTypes = {
   onToggleLanguage: PropTypes.func.isRequired,
   onToggleNotifications: PropTypes.func.isRequired,
   notificationCount: PropTypes.number.isRequired,
+  lang: PropTypes.oneOf(['ar', 'en']),
 };

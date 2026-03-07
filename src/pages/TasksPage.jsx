@@ -15,7 +15,7 @@ const TABLE_HEADERS = {
   ar: ['الأولوية', 'الحالة', 'الموعد النهائي', 'المسؤول', 'الشاهد المطلوب', 'المعيار'],
   en: ['Priority', 'Status', 'Due Date', 'Responsible', 'Evidence Type', 'Standard'],
 };
-const TASK_CREATE_ROLES = new Set(['dean', 'consultant', 'عميد', 'مستشار']);
+const TASK_CREATE_ROLES = new Set(['dean', 'consultant']);
 
 const collectRoleCandidates = (user) => {
   if (!user) return [];
@@ -61,11 +61,11 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.filters}>
-            {FILTERS.map(([key, label]) => (
+            {FILTERS[lang].map(([key, label]) => (
               <button
                 type="button"
                 key={key}
-                aria-label={`فلترة المهام: ${label}`}
+                aria-label={lang === 'ar' ? `فلترة المهام: ${label}` : `Filter tasks: ${label}`}
                 className={`${styles.filterButton} ${filter === key ? styles.filterButtonActive : ''}`}
                 onClick={() => setFilter(key)}
               >
@@ -77,9 +77,11 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
             <button
               type="button"
               className={styles.createButton}
-              onClick={() => setIsModalOpen(true)}            title={lang === 'ar' ? 'إنشاء مهمة جديدة' : 'Create New Task'}              aria-label="إنشاء مهمة جديدة"
+              onClick={() => setIsModalOpen(true)}
+              title={lang === 'ar' ? 'إنشاء مهمة جديدة' : 'Create New Task'}
+              aria-label={lang === 'ar' ? 'إنشاء مهمة جديدة' : 'Create New Task'}
             >
-              + مهمة جديدة
+              {lang === 'ar' ? '+ مهمة جديدة' : '+ New Task'}
             </button>
           )}
         </div>
@@ -133,7 +135,7 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
                     </td>
                     <td className={styles.dueCell}>{task.due}</td>
                     <td className={styles.textCell}>{task.assignee}</td>
-                    <td className={styles.textCell}>{task.req}</td>
+                    <td className={styles.textCell}>{lang === 'ar' ? task.req_ar : task.req_en}</td>
                     <td className={styles.codeCell}>{task.code}</td>
                   </tr>
                 ))

@@ -39,7 +39,6 @@ export default function Sidebar({
                 {sideOpen && (
                   <span className={styles.navText}>
                     <span>{label}</span>
-                    <span className={styles.navTextEn}>{lang === 'ar' ? item.labelEn : item.label}</span>
                   </span>
                 )}
               </button>
