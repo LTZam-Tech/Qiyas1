@@ -64,6 +64,7 @@ const ReportsPage = ({ isMobile, lang }) => {
 
 ReportsPage.propTypes = {
   isMobile: PropTypes.bool.isRequired,
+  lang: PropTypes.oneOf(['ar', 'en']).isRequired,
 };
 
 export default ReportsPage;

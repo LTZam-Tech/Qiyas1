@@ -13,7 +13,7 @@ class Database {
       database: config.database.database,
       user: config.database.user,
       password: config.database.password,
-      ssl: config.database.ssl ? { rejectUnauthorized: false } : false,
+      ssl: config.database.ssl ? { rejectUnauthorized: config.env === 'production' } : false,
       min: config.database.poolMin,
       max: config.database.poolMax,
       idleTimeoutMillis: 30000,

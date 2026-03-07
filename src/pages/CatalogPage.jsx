@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
 import { PERSPECTIVES, AXES, STANDARD_DETAILS } from '../utils/data.js';
 import { Icons } from '../utils/icons.jsx';
 import styles from './CatalogPage.module.css';
@@ -176,6 +177,10 @@ const CatalogPage = ({ lang }) => {
       )}
     </div>
   );
+};
+
+CatalogPage.propTypes = {
+  lang: PropTypes.oneOf(['ar', 'en']).isRequired,
 };
 
 export default CatalogPage;

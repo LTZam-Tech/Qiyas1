@@ -11,9 +11,9 @@ function renderApp() {
 }
 
 describe('App', () => {
-  it('renders portal content area', async () => {
+  it('renders login page when user is not authenticated', async () => {
     renderApp();
-    const content = await screen.findByRole('main', { name: /portal content/i });
-    expect(content).toBeInTheDocument();
+    const loginButton = await screen.findByRole('button', { name: /Login|تسجيل الدخول/i });
+    expect(loginButton).toBeInTheDocument();
   });
 });

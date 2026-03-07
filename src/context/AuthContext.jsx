@@ -128,53 +128,23 @@ export function AuthProvider({ children }) {
         throw err;
       }
 
-      console.group('🔐 LOGIN ATTEMPT');
-      console.log('Credentials:', { email: credentials.email, password: '***' });
-      console.log('API Base URL:', env.apiBaseUrl);
-      
       const response = await request('/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
       });
-
-      console.log('✅ Raw Login response:', response);
-      console.log('Response structure:', {
-        success: response.success,
-        hasData: !!response.data,
-        data: response.data,
-      });
       
       if (response.success && response.data) {
         const { accessToken, user: userData } = response.data;
-        console.log('✅ Extracted data:', {
-          hasAccessToken: !!accessToken,
-          tokenPreview: accessToken ? accessToken.substring(0, 20) + '...' : 'none',
-          userData: userData,
-        });
         setAccessToken(accessToken);
         setUser({
           ...userData,
           token: accessToken,
         });
-        console.log('✅ User state updated successfully');
-        console.groupEnd();
         return { success: true };
       } else {
-        console.error('❌ Invalid response structure:', response);
-        console.groupEnd();
         throw new Error(response.error?.message || 'Login failed');
       }
     } catch (error) {
-      console.error('❌ Login error:', error);
-      console.error('Error type:', error.constructor.name);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.status,
-        body: error.body,
-        stack: error.stack,
-      });
-      if (!env.useMockApi) console.groupEnd();
-      
       // Log to error logger
       errorLogger.logFrontendError(
         `Login failed: ${error.message}`,

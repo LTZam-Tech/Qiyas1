@@ -167,6 +167,17 @@ if (config.env === 'production') {
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
+
+  // Prevent use of default secrets in production
+  if (config.jwt.accessSecret === 'change-this-secret-in-production') {
+    throw new Error('JWT_ACCESS_SECRET must be changed from default value in production');
+  }
+  if (config.jwt.refreshSecret === 'change-this-refresh-secret') {
+    throw new Error('JWT_REFRESH_SECRET must be changed from default value in production');
+  }
+  if (config.database.password === 'change_me') {
+    throw new Error('POSTGRES_PASSWORD must be changed from default value in production');
+  }
 }
 
 export default config;

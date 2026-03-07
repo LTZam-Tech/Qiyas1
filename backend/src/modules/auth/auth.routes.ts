@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import authController from './auth.controller';
-import { authenticate } from '@/middleware/auth';
+import { authenticate, authorize } from '@/middleware/auth';
 
 const router = Router();
 
@@ -14,6 +14,6 @@ router.use(authenticate); // All routes below require authentication
 
 router.get('/me', authController.getCurrentUser);
 router.post('/change-password', authController.changePassword);
-router.post('/register', authController.register); // Admin only (checked via permissions in controller)
+router.post('/register', authorize('user:manage'), authController.register);
 
 export default router;

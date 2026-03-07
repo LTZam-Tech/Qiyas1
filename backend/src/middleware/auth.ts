@@ -121,7 +121,7 @@ export const authorize = (...requiredPermissions: string[]) => {
 };
 
 // Object-level authorization helpers
-export const canViewPerspective = async (_userId: number, perspectiveId: number): Promise<boolean> => {
+export const canViewPerspective = async (_userId: string, perspectiveId: string): Promise<boolean> => {
   const result = await db.query(`
     SELECT 1 FROM perspectives WHERE id = $1
   `, [perspectiveId]);
@@ -169,7 +169,7 @@ export const canViewTask = async (userId: string, taskId: string): Promise<boole
   return false;
 };
 
-export const canSubmitEvidence = async (userId: number, taskId: number): Promise<boolean> => {
+export const canSubmitEvidence = async (userId: string, taskId: string): Promise<boolean> => {
   const result = await db.query(`
     SELECT assigned_to, status FROM tasks WHERE id = $1
   `, [taskId]);

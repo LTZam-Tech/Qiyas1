@@ -61,7 +61,7 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.filters}>
-            {FILTERS[lang].map(([key, label]) => (
+            {(FILTERS[lang] || FILTERS.ar).map(([key, label]) => (
               <button
                 type="button"
                 key={key}
@@ -91,7 +91,7 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
         <table className={`${styles.table} ${isMobile ? styles.tableMobile : ''}`}>
           <thead>
             <tr className={styles.tableHeadRow}>
-              {TABLE_HEADERS[lang].map((header) => (
+              {(TABLE_HEADERS[lang] || TABLE_HEADERS.ar).map((header) => (
                 <th key={header} className={styles.tableHeaderCell}>
                   {header}
                 </th>
