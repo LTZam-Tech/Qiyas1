@@ -37,12 +37,10 @@
   max-width: 383px;
   min-height: 143px;
   justify-content: space-between;
-  direction: rtl;
 }
 
 .cardBody {
   flex: 1;
-  text-align: right;
   min-width: 0;
 }
 
