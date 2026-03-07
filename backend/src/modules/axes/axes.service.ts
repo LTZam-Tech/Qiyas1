@@ -1,6 +1,6 @@
 import { BaseRepository } from '@/db/repository';
 import db from '@/db';
-import { NotFoundError } from '@/utils/errors';
+import { NotFoundError, BusinessLogicError } from '@/utils/errors';
 
 interface Axis {
   id: string;
@@ -121,12 +121,12 @@ class AxesService extends BaseRepository<Axis> {
   async deleteAxis(axisId: string, deletedBy: string) {
     await this.getAxisById(axisId);
 
-    const standardsResult = await db.query('SELECT COUNT(*) as count FROM standards WHERE axis_id = $1', [axisId]);
+    const standardsResult = await db.query('SELECT COUNT(*) as count FROM standards WHERE axis_id = $1 AND deleted_at IS NULL', [axisId]);
     if (parseInt(standardsResult.rows[0].count) > 0) {
-      throw new Error('Cannot delete axis with existing standards');
+      throw new BusinessLogicError('Cannot delete axis with existing standards');
     }
 
-    await db.query('DELETE FROM axes WHERE id = $1', [axisId]);
+    await db.query('UPDATE axes SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1', [axisId]);
     await this.logAudit(deletedBy, 'delete_axis', 'axis', axisId, {});
 
     return true;

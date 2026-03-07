@@ -1,6 +1,6 @@
 import { BaseRepository } from '@/db/repository';
 import db from '@/db';
-import { NotFoundError } from '@/utils/errors';
+import { NotFoundError, BusinessLogicError } from '@/utils/errors';
 
 interface Standard {
   id: string;
@@ -125,12 +125,12 @@ class StandardsService extends BaseRepository<Standard> {
   async deleteStandard(standardId: string, deletedBy: string) {
     await this.getStandardById(standardId);
 
-    const reqsResult = await db.query('SELECT COUNT(*) as count FROM evidence_requirements WHERE standard_id = $1', [standardId]);
+    const reqsResult = await db.query('SELECT COUNT(*) as count FROM evidence_requirements WHERE standard_id = $1 AND deleted_at IS NULL', [standardId]);
     if (parseInt(reqsResult.rows[0].count) > 0) {
-      throw new Error('Cannot delete standard with existing evidence requirements');
+      throw new BusinessLogicError('Cannot delete standard with existing evidence requirements');
     }
 
-    await db.query('DELETE FROM standards WHERE id = $1', [standardId]);
+    await db.query('UPDATE standards SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1', [standardId]);
     await this.logAudit(deletedBy, 'delete_standard', 'standard', standardId, {});
 
     return true;

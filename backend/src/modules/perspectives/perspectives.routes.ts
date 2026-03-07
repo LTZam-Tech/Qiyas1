@@ -12,12 +12,12 @@ router.get('/', perspectivesController.getPerspectives);
 router.get('/:id', perspectivesController.getPerspectiveById);
 
 // POST /api/v1/perspectives - Create perspective (admin/dean)
-router.post('/', authorize('manage_hierarchy'), perspectivesController.createPerspective);
+router.post('/', authorize('perspective:manage'), perspectivesController.createPerspective);
 
 // PUT /api/v1/perspectives/:id - Update perspective (admin/dean)
-router.put('/:id', authorize('manage_hierarchy'), perspectivesController.updatePerspective);
+router.put('/:id', authorize('perspective:manage'), perspectivesController.updatePerspective);
 
 // DELETE /api/v1/perspectives/:id - Delete perspective (admin)
-router.delete('/:id', authorize('manage_hierarchy'), perspectivesController.deletePerspective);
+router.delete('/:id', authorize('perspective:manage'), perspectivesController.deletePerspective);
 
 export default router;

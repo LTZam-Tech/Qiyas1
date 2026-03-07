@@ -7,6 +7,6 @@ router.use(authenticate);
 
 router.get('/', reviewsController.getReviews);
 router.get('/:id', reviewsController.getReviewById);
-router.post('/', authorize('review_evidence'), reviewsController.createReview);
+router.post('/', authorize('evidence:review'), reviewsController.createReview);
 
 export default router;

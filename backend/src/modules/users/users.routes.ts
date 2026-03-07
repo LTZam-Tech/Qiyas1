@@ -8,8 +8,8 @@ router.use(authenticate);
 // GET /api/v1/users - List users (admin/dean)
 router.get('/', authorize('user:manage', 'task:assign'), usersController.getUsers);
 
-// GET /api/v1/users/:id - Get user by ID
-router.get('/:id', usersController.getUserById);
+// GET /api/v1/users/:id - Get user by ID (admin only)
+router.get('/:id', authorize('user:manage'), usersController.getUserById);
 
 // POST /api/v1/users - Create user (admin)
 router.post('/', authorize('user:manage'), usersController.createUser);

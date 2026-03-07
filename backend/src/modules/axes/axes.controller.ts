@@ -1,7 +1,25 @@
 import { Response, NextFunction } from 'express';
+import { z } from 'zod';
 import axesService from './axes.service';
 import { AuthRequest } from '@/middleware/auth';
-import { asyncHandler } from '@/utils/errors';
+import { asyncHandler, ValidationError } from '@/utils/errors';
+
+const createAxisSchema = z.object({
+  perspectiveId: z.string().uuid('Invalid perspective ID'),
+  name: z.string().min(1, 'Name is required'),
+  code: z.string().min(1, 'Code is required'),
+  description: z.string().optional(),
+  weight: z.number().min(0).max(100, 'Weight must be between 0 and 100'),
+  displayOrder: z.number().int().min(0),
+});
+
+const updateAxisSchema = z.object({
+  name: z.string().min(1).optional(),
+  code: z.string().min(1).optional(),
+  description: z.string().optional(),
+  weight: z.number().min(0).max(100).optional(),
+  displayOrder: z.number().int().min(0).optional(),
+});
 
 class AxesController {
   getAxes = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
@@ -17,13 +35,21 @@ class AxesController {
   });
 
   createAxis = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
-    const axis = await axesService.createAxis(req.body, req.user!.id);
+    const validation = createAxisSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ValidationError('Validation failed', validation.error.issues);
+    }
+    const axis = await axesService.createAxis(validation.data, req.user!.id);
     res.status(201).json({ success: true, data: { axis } });
   });
 
   updateAxis = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
     const axisId = req.params.id as string;
-    const axis = await axesService.updateAxis(axisId, req.body, req.user!.id);
+    const validation = updateAxisSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ValidationError('Validation failed', validation.error.issues);
+    }
+    const axis = await axesService.updateAxis(axisId, validation.data, req.user!.id);
     res.json({ success: true, data: { axis } });
   });
 

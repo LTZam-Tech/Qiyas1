@@ -47,7 +47,7 @@ class UsersService extends BaseRepository<User> {
       FROM users u
       LEFT JOIN user_roles ur ON u.id = ur.user_id
       LEFT JOIN roles r ON ur.role_id = r.id
-      WHERE 1=1
+      WHERE 1=1 AND u.deleted_at IS NULL
     `;
     const params: any[] = [];
     let paramIndex = 1;
@@ -96,7 +96,7 @@ class UsersService extends BaseRepository<User> {
        LEFT JOIN roles r ON ur.role_id = r.id
        LEFT JOIN role_permissions rp ON r.id = rp.role_id
        LEFT JOIN permissions p ON rp.permission_id = p.id
-       WHERE u.id = $1
+       WHERE u.id = $1 AND u.deleted_at IS NULL
        GROUP BY u.id`,
       [userId]
     );
@@ -110,7 +110,7 @@ class UsersService extends BaseRepository<User> {
 
   async createUser(data: CreateUserDto, createdBy: string) {
     // Check if email exists
-    const existing = await db.query('SELECT id FROM users WHERE email = $1', [data.email]);
+    const existing = await db.query('SELECT id FROM users WHERE email = $1 AND deleted_at IS NULL', [data.email]);
     if (existing.rows.length > 0) {
       throw new ConflictError('Email already exists');
     }
@@ -183,7 +183,7 @@ class UsersService extends BaseRepository<User> {
   async deleteUser(userId: string, deletedBy: string) {
     await this.getUserById(userId); // Check exists
 
-    await db.query('UPDATE users SET is_active = FALSE, updated_at = NOW() WHERE id = $1', [userId]);
+    await db.query('UPDATE users SET is_active = FALSE, deleted_at = NOW(), updated_at = NOW() WHERE id = $1', [userId]);
 
     // Audit log
     await this.logAudit(deletedBy, 'delete_user', 'user', userId, {});

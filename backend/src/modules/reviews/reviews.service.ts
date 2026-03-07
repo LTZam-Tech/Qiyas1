@@ -20,7 +20,7 @@ class ReviewsService extends BaseRepository<ReviewDecision> {
     let query = `
       SELECT 
         rd.*,
-        u.full_name as reviewer_name,
+        u.name as reviewer_name,
         es.id as submission_id,
         t.title as task_title
       FROM review_decisions rd
@@ -54,10 +54,10 @@ class ReviewsService extends BaseRepository<ReviewDecision> {
     const result = await db.query(`
       SELECT 
         rd.*,
-        u.full_name as reviewer_name,
+        u.name as reviewer_name,
         u.email as reviewer_email,
         es.id as submission_id,
-        es.submission_notes,
+        es.notes as submission_notes,
         t.title as task_title
       FROM review_decisions rd
       LEFT JOIN users u ON rd.reviewer_id = u.id
@@ -86,14 +86,14 @@ class ReviewsService extends BaseRepository<ReviewDecision> {
 
     const submission = submissionResult.rows[0];
 
-    if (submission.status !== 'pending_review') {
-      throw new ForbiddenError('Submission is not pending review');
+    if (submission.status !== 'submitted' && submission.status !== 'under_review') {
+      throw new ForbiddenError('Submission is not available for review');
     }
 
     return db.transaction(async (client) => {
-      // Create review
+      // Create review (DB column is 'reason', not 'feedback')
       const reviewResult = await client.query(`
-        INSERT INTO review_decisions (submission_id, reviewer_id, decision, feedback, reviewed_at)
+        INSERT INTO review_decisions (submission_id, reviewer_id, decision, reason, reviewed_at)
         VALUES ($1, $2, $3, $4, NOW())
         RETURNING *
       `, [data.submissionId, reviewerId, data.decision, data.feedback]);
@@ -101,18 +101,18 @@ class ReviewsService extends BaseRepository<ReviewDecision> {
       const review = reviewResult.rows[0];
 
       // Update submission status
-      let newStatus = 'pending_review';
-      let taskStatus = 'in_progress';
+      let newStatus = 'under_review';
+      let taskStatus = 'under_review';
 
       if (data.decision === 'approved') {
         newStatus = 'approved';
-        taskStatus = 'completed';
+        taskStatus = 'approved';
       } else if (data.decision === 'rejected') {
         newStatus = 'rejected';
-        taskStatus = 'pending';
+        taskStatus = 'rejected';
       } else if (data.decision === 'revision_requested') {
-        newStatus = 'revision_requested';
-        taskStatus = 'in_progress';
+        newStatus = 'resubmission_required';
+        taskStatus = 'resubmission_required';
       }
 
       await client.query(

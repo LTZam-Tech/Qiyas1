@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import logger from '@/utils/logger';
 
 export class AppError extends Error {
   public statusCode: number;
@@ -89,8 +90,8 @@ export const errorHandler = (
     return res.status(err.statusCode).json(problemDetail);
   }
 
-  // Unhandled errors
-  console.error('Unhandled error:', err);
+  // Unhandled errors — use structured logger, never console
+  logger.error('Unhandled error', { message: err.message, stack: err.stack });
   const problemDetail: ProblemDetail = {
     success: false,
     error: {

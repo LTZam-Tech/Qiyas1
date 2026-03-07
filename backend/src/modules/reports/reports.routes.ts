@@ -34,6 +34,6 @@ const generateReport = asyncHandler(async (req: AuthRequest, res: Response, _nex
   return;
 });
 
-router.post('/generate', authorize('view_reports'), generateReport);
+router.post('/generate', authorize('report:generate'), generateReport);
 
 export default router;
