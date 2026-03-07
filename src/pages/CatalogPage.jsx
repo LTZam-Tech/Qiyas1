@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react';
-import PropTypes from 'prop-types';
 import { PERSPECTIVES, AXES, STANDARDS_HIERARCHY } from '../utils/data.js';
 import styles from './CatalogPage.module.css';
 
-const CatalogPage = ({ isMobile }) => {
+const CatalogPage = () => {
   const [selectedPerspective, setSelectedPerspective] = useState(null);
 
   const { axesByPerspective, standardsByAxis } = useMemo(() => {
@@ -130,10 +129,6 @@ const CatalogPage = ({ isMobile }) => {
       )}
     </div>
   );
-};
-
-CatalogPage.propTypes = {
-  isMobile: PropTypes.bool.isRequired,
 };
 
 export default CatalogPage;

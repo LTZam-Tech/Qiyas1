@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import AuthContext from './authContextObject.js';
 import { clearAccessToken, getAccessToken, setAccessToken } from '../lib/authStorage.js';
@@ -92,7 +92,7 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     if (env.useMockApi) {
       localStorage.removeItem(MOCK_USER_KEY);
       clearAccessToken();
@@ -108,9 +108,9 @@ export function AuthProvider({ children }) {
       clearAccessToken();
       setUser(null);
     }
-  };
+  }, []);
 
-  const login = async (credentials) => {
+  const login = useCallback(async (credentials) => {
     setIsAuthenticating(true);
     try {
       if (env.useMockApi) {
@@ -189,11 +189,11 @@ export function AuthProvider({ children }) {
     } finally {
       setIsAuthenticating(false);
     }
-  };
+  }, []);
 
   const value = useMemo(
     () => ({ user, logout, login, isLoading, isAuthenticating }),
-    [user, isLoading, isAuthenticating]
+    [user, logout, login, isLoading, isAuthenticating]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
