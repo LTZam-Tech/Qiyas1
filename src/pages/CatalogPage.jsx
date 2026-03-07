@@ -57,8 +57,7 @@ const CatalogPage = ({ lang }) => {
             >
               <div className={styles.domainIcon}>{Icons.layersIcon}</div>
               <div className={styles.domainCode}>{perspective.code}</div>
-              <div className={styles.domainTitle}>{perspective.name}</div>
-              <div className={styles.domainSubtitle}>{perspective.nameEn}</div>
+              <div className={styles.domainTitle}>{lang === 'ar' ? perspective.name : perspective.nameEn}</div>
               <div className={styles.domainStats}>
                 <span>{perspective.axes} {lang === 'ar' ? 'محاور' : 'axes'}</span>
                 <span>•</span>
@@ -140,9 +139,8 @@ const CatalogPage = ({ lang }) => {
                 {Icons.layersIcon}
                 <div>
                   <h3 className={styles.perspectiveTitle}>
-                    {currentPerspective.code} - {currentPerspective.name}
+                    {currentPerspective.code} - {lang === 'ar' ? currentPerspective.name : currentPerspective.nameEn}
                   </h3>
-                  <p className={styles.perspectiveMeta}>{currentPerspective.nameEn}</p>
                 </div>
               </div>
             </div>

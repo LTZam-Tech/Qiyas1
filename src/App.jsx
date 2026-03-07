@@ -40,11 +40,33 @@ export default function App() {
     [],
   );
   const user = authUser ?? MOCK_USER;
-  const [page, setPage] = useState(PAGES.dashboard);
+  
+  // Read language from URL path (/en/ or /ar/)
+  const getLanguageFromPath = () => {
+    const path = window.location.pathname;
+    if (path.startsWith('/en/') || path === '/en') return 'en';
+    if (path.startsWith('/ar/') || path === '/ar') return 'ar';
+    
+    // If at root path, detect browser language or default to Arabic
+    if (path === '/' || path === '') {
+      const browserLang = navigator.language?.toLowerCase();
+      return browserLang?.startsWith('ar') ? 'ar' : 'ar'; // default to Arabic
+    }
+    
+    return 'ar'; // default to Arabic
+  };
+
+  // Read page from query params (?page=tasks)
+  const getPageFromQuery = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('page') || PAGES.dashboard;
+  };
+
+  const [lang, setLang] = useState(getLanguageFromPath);
+  const [page, setPage] = useState(getPageFromQuery);
   const [sideOpen, setSideOpen] = useState(vw > BREAKPOINTS.tablet);
   const [expandedGroups, setExpandedGroups] = useState(new Set(['management']));
   const [searchQuery, setSearchQuery] = useState('');
-  const [lang, setLang] = useState('ar');
   const [isDark, setIsDark] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +76,35 @@ export default function App() {
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 320);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Sync URL with language and page state (also handles initial redirect from root)
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    const newPath = `/${lang}/`;
+    const params = page !== PAGES.dashboard ? `?page=${page}` : '';
+    const newUrl = newPath + params;
+    
+    // Use replace for initial load at root, push for subsequent changes
+    const isRootPath = currentPath === '/' || currentPath === '';
+    if (window.location.pathname + window.location.search !== newUrl) {
+      if (isRootPath) {
+        window.history.replaceState({}, '', newUrl);
+      } else {
+        window.history.pushState({}, '', newUrl);
+      }
+    }
+  }, [lang, page]);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      setLang(getLanguageFromPath());
+      setPage(getPageFromQuery());
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   useEffect(() => {
@@ -80,10 +131,17 @@ export default function App() {
     }
     
     setPage(item.key);
+    // URL will be updated by the useEffect that watches [lang, page]
     if (isMobile) {
       setSideOpen(false);
     }
     setShowNotifications(false);
+  };
+
+  const toggleLanguage = () => {
+    const newLang = lang === 'ar' ? 'en' : 'ar';
+    setLang(newLang);
+    // URL will be updated by the useEffect that watches [lang, page]
   };
 
   // Filter navigation based on user role
@@ -174,7 +232,7 @@ export default function App() {
         onSearchSubmit={onSearchSubmit}
         onToggleSidebar={() => setSideOpen((prev) => !prev)}
         onToggleTheme={() => setIsDark((prev) => !prev)}
-        onToggleLanguage={() => setLang((prev) => (prev === 'ar' ? 'en' : 'ar'))}
+        onToggleLanguage={toggleLanguage}
         onToggleNotifications={() => setShowNotifications((prev) => !prev)}
         notificationCount={notifications.length}
         lang={lang}

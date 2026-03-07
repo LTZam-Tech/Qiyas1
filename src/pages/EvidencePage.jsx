@@ -33,11 +33,10 @@ const EvidencePage = ({ isMobile, lang }) => {
                     <Badge status={item.status} lang={lang} />
                     <span className={styles.code}>{item.code}</span>
                   </div>
-                  <div className={styles.title}>{item.title}</div>
-                  <div className={styles.titleEn}>{item.titleEn}</div>
+                  <div className={styles.title}>{lang === 'ar' ? item.title : item.titleEn}</div>
                   <ProgressBar value={pct} height={6} />
                   <div className={styles.meta}>
-                    {item.approved} / {item.reqCount} شاهد معتمد - {pct}%
+                    {item.approved} / {item.reqCount} {lang === 'ar' ? 'شاهد معتمد' : 'approved'} - {pct}%
                   </div>
                 </article>
               );

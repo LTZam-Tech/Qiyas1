@@ -103,7 +103,7 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
             {isLoading ? (
               <tr>
                 <td colSpan={6} className={styles.loadingState}>
-                  جاري تحميل المهام...
+                  {lang === 'ar' ? 'جاري تحميل المهام...' : 'Loading tasks...'}
                 </td>
               </tr>
             ) : null}
@@ -119,7 +119,7 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
             {!isLoading && !error && tasks.length === 0 ? (
               <tr>
                 <td colSpan={6} className={styles.emptyState}>
-                  لا توجد مهام لهذه الفلترة
+                  {lang === 'ar' ? 'لا توجد مهام لهذه الفلترة' : 'No tasks for this filter'}
                 </td>
               </tr>
             ) : null}
