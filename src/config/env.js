@@ -13,15 +13,3 @@ export const env = {
   requestTimeoutMs: toNumber(import.meta.env.VITE_API_TIMEOUT_MS, 10000),
   useMockApi: toBool(import.meta.env.VITE_USE_MOCK_API, true),
 };
-
-// Log configuration on load
-console.log('📋 Environment Configuration:', {
-  apiBaseUrl: env.apiBaseUrl,
-  requestTimeoutMs: env.requestTimeoutMs,
-  useMockApi: env.useMockApi,
-  raw: {
-    VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
-    VITE_USE_MOCK_API: import.meta.env.VITE_USE_MOCK_API,
-    VITE_API_TIMEOUT_MS: import.meta.env.VITE_API_TIMEOUT_MS,
-  }
-});

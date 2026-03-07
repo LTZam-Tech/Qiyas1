@@ -72,13 +72,6 @@ export async function request(path, options = {}, query = {}) {
       },
     });
 
-    console.group(`📤 HTTP ${options.method || 'GET'} ${path}`);
-    console.log('Full URL:', config.url);
-    console.log('API Base:', env.apiBaseUrl);
-    console.log('Headers:', config.options.headers);
-    console.log('Body:', options.body || 'none');
-    console.log('Timeout:', env.requestTimeoutMs, 'ms');
-
     const response = await fetch(config.url, {
       headers: {
         'Content-Type': 'application/json',
@@ -88,26 +81,10 @@ export async function request(path, options = {}, query = {}) {
       signal: controller.signal,
     });
 
-    console.log(`📥 Response Status: ${response.status} ${response.statusText}`);
-    console.log('Response Headers:', {
-      contentType: response.headers.get('content-type'),
-      contentLength: response.headers.get('content-length'),
-    });
-    console.log('Response OK:', response.ok);
-
     const parsed = await parseResponse(response);
-    console.log('✅ Parsed Response:', parsed);
-    console.groupEnd();
     
     return applyResponseInterceptors(parsed);
   } catch (error) {
-    console.error('❌ Request Failed');
-    console.error('Error Name:', error.name);
-    console.error('Error Message:', error.message);
-    console.error('Error Status:', error.status);
-    console.error('Error Body:', error.body);
-    console.groupEnd();
-    
     // Log to error logger
     errorLogger.logBackendError(
       error.message || 'Request failed',

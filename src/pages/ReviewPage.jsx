@@ -54,6 +54,7 @@ const ReviewPage = ({ isMobile, lang }) => {
 
 ReviewPage.propTypes = {
   isMobile: PropTypes.bool.isRequired,
+  lang: PropTypes.oneOf(['ar', 'en']).isRequired,
 };
 
 export default ReviewPage;

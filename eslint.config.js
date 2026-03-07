@@ -42,6 +42,7 @@ export default defineConfig([
       globals: {
         ...globals.browser,
         ...globals.node,
+        vi: 'readonly',
         describe: 'readonly',
         it: 'readonly',
         expect: 'readonly',

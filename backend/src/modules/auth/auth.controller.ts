@@ -4,6 +4,7 @@ import authService from './auth.service';
 import { AuthRequest } from '@/middleware/auth';
 import { asyncHandler } from '@/utils/errors';
 import { ValidationError } from '@/utils/errors';
+import logger from '@/utils/logger';
 
 // Validation schemas
 const loginSchema = z.object({
@@ -31,28 +32,17 @@ const changePasswordSchema = z.object({
 class AuthController {
   // POST /api/v1/auth/login
   login = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
-    console.log('🔐 Login request received');
-    console.log('Request body:', { email: req.body.email, password: '***' });
-    console.log('Request IP:', req.ip);
-    
     const validation = loginSchema.safeParse(req.body);
     
     if (!validation.success) {
-      console.error('❌ Validation failed:', validation.error.issues);
       throw new ValidationError('Validation failed', validation.error.issues);
     }
 
     const { email, password } = validation.data;
     const ipAddress = req.ip || 'unknown';
 
-    console.log('✅ Validation passed, calling auth service...');
     const result = await authService.login(email, password, ipAddress);
-    console.log('✅ Auth service returned:', { 
-      userId: result.user.id, 
-      email: result.user.email,
-      hasAccessToken: !!result.tokens.accessToken,
-      hasRefreshToken: !!result.tokens.refreshToken,
-    });
+    logger.info('User logged in', { userId: result.user.id, email: result.user.email });
 
     // Set refresh token as httpOnly cookie
     res.cookie('refreshToken', result.tokens.refreshToken, {
@@ -62,7 +52,6 @@ class AuthController {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
-    console.log('✅ Sending success response to client');
     res.json({
       success: true,
       data: {

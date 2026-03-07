@@ -1,7 +1,8 @@
 import { BaseRepository } from '@/db/repository';
 import db from '@/db';
+import config from '@/config';
 import storageService from '@/services/storage.service';
-import { NotFoundError } from '@/utils/errors';
+import { NotFoundError, ValidationError } from '@/utils/errors';
 import { createHash } from 'crypto';
 import path from 'path';
 
@@ -85,6 +86,17 @@ class SubmissionsService extends BaseRepository<Submission> {
   }
 
   async createSubmission(data: { taskId: string; submissionNotes: string }, files: any[], submittedBy: string) {
+    // Validate uploaded files
+    const maxFileSize = config.upload.maxFileSizeMB * 1024 * 1024;
+    for (const file of files) {
+      if (file.size > maxFileSize) {
+        throw new ValidationError(`File "${file.originalname}" exceeds maximum size of ${config.upload.maxFileSizeMB}MB`);
+      }
+      if (!config.upload.allowedMimeTypes.includes(file.mimetype)) {
+        throw new ValidationError(`File type "${file.mimetype}" is not allowed for "${file.originalname}"`);
+      }
+    }
+
     const evidenceRequirementId = await this.resolveEvidenceRequirementId(data.taskId);
 
     // Create submission

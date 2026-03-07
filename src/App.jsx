@@ -50,7 +50,7 @@ export default function App() {
     // If at root path, detect browser language or default to Arabic
     if (path === '/' || path === '') {
       const browserLang = navigator.language?.toLowerCase();
-      return browserLang?.startsWith('ar') ? 'ar' : 'ar'; // default to Arabic
+      return browserLang?.startsWith('ar') ? 'ar' : 'en'; // default to English for non-Arabic browsers
     }
     
     return 'ar'; // default to Arabic
