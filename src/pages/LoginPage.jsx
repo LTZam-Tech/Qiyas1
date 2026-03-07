@@ -121,8 +121,10 @@ const LoginPage = ({ onLogin, isLoading }) => {
         <div className={styles.demoCredentials}>
           <p><strong>Demo Credentials:</strong></p>
           <div>
+            <p>🔑 Admin: admin@university.edu / AdminPass123</p>
             <p>👤 Dean: dean@university.edu / DeanPass123</p>
             <p>📋 Consultant: consultant@qiyas.sa / ConsultPass123</p>
+            <p>👥 User: user@department.edu / UserPass123</p>
           </div>
         </div>
       </div>

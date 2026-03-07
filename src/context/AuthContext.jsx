@@ -6,6 +6,31 @@ import { setAuthTokenGetter, setUnauthorizedHandler, request } from '../lib/http
 import { env } from '../config/env.js';
 import errorLogger from '../services/errorLogger.js';
 
+const MOCK_USER_KEY = 'qiyas_mock_user';
+
+/**
+ * Demo-only credentials. These are for development/testing use ONLY.
+ * Remove or replace with real authentication when connecting to a production backend.
+ */
+const MOCK_USERS = {
+  'admin@university.edu': {
+    password: 'AdminPass123',
+    user: { id: 1, email: 'admin@university.edu', fullName: 'Admin User', role: 'admin' },
+  },
+  'dean@university.edu': {
+    password: 'DeanPass123',
+    user: { id: 2, email: 'dean@university.edu', fullName: 'Dean User', role: 'dean' },
+  },
+  'consultant@qiyas.sa': {
+    password: 'ConsultPass123',
+    user: { id: 3, email: 'consultant@qiyas.sa', fullName: 'Consultant User', role: 'consultant' },
+  },
+  'user@department.edu': {
+    password: 'UserPass123',
+    user: { id: 4, email: 'user@department.edu', fullName: 'Regular User', role: 'user' },
+  },
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -16,20 +41,34 @@ export function AuthProvider({ children }) {
     const checkAuth = async () => {
       const token = getAccessToken();
       if (token) {
-        try {
-          // Verify token with backend (assuming /api/v1/auth/me endpoint)
-          const response = await request('/auth/me');
-          if (response.success && response.data) {
-            setUser({
-              ...response.data.user,
-              token,
-            });
-          } else {
+        if (env.useMockApi) {
+          // Restore user from localStorage in mock mode
+          try {
+            const storedUser = JSON.parse(localStorage.getItem(MOCK_USER_KEY) || 'null');
+            if (storedUser) {
+              setUser({ ...storedUser, token });
+            } else {
+              clearAccessToken();
+            }
+          } catch {
             clearAccessToken();
           }
-        } catch (error) {
-          console.error('Token validation failed:', error);
-          clearAccessToken();
+        } else {
+          try {
+            // Verify token with backend
+            const response = await request('/auth/me');
+            if (response.success && response.data) {
+              setUser({
+                ...response.data.user,
+                token,
+              });
+            } else {
+              clearAccessToken();
+            }
+          } catch (error) {
+            console.error('Token validation failed:', error);
+            clearAccessToken();
+          }
         }
       }
       setIsLoading(false);
@@ -54,6 +93,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = async () => {
+    if (env.useMockApi) {
+      localStorage.removeItem(MOCK_USER_KEY);
+      clearAccessToken();
+      setUser(null);
+      return;
+    }
     try {
       // Call logout endpoint to invalidate refresh token
       await request('/auth/logout', { method: 'POST' });
@@ -68,6 +113,21 @@ export function AuthProvider({ children }) {
   const login = async (credentials) => {
     setIsAuthenticating(true);
     try {
+      if (env.useMockApi) {
+        // Mock authentication — validate against demo users
+        const mockEntry = MOCK_USERS[credentials.email];
+        if (mockEntry && mockEntry.password === credentials.password) {
+          const accessToken = crypto.randomUUID();
+          localStorage.setItem(MOCK_USER_KEY, JSON.stringify(mockEntry.user));
+          setAccessToken(accessToken);
+          setUser({ ...mockEntry.user, token: accessToken });
+          return { success: true };
+        }
+        const err = new Error('Invalid email or password');
+        err.status = 401;
+        throw err;
+      }
+
       console.group('🔐 LOGIN ATTEMPT');
       console.log('Credentials:', { email: credentials.email, password: '***' });
       console.log('API Base URL:', env.apiBaseUrl);
@@ -113,7 +173,7 @@ export function AuthProvider({ children }) {
         body: error.body,
         stack: error.stack,
       });
-      console.groupEnd();
+      if (!env.useMockApi) console.groupEnd();
       
       // Log to error logger
       errorLogger.logFrontendError(
