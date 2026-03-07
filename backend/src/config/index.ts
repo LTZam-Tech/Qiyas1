@@ -169,6 +169,7 @@ const config: Config = {
     origin: process.env.CORS_ORIGIN?.split(',') || [
       'http://localhost:4200',
       'http://127.0.0.1:4200',
+      'http://194.163.172.141',
     ],
     credentials: true,
   },
@@ -183,7 +184,6 @@ const requiredEnvVars = [
   'POSTGRES_PASSWORD',
   'REDIS_HOST',
   'REDIS_PORT',
-  'REDIS_DB',
   'MINIO_ENDPOINT',
   'MINIO_PORT',
   'MINIO_ROOT_USER',
@@ -209,12 +209,11 @@ if (config.env === 'production') {
     throw new Error('POSTGRES_PASSWORD must be changed from default value in production');
   }
 
-  if (config.jwt.algorithm !== 'RS256') {
-    throw new Error('JWT_ALGORITHM must be RS256 in production');
-  }
-
-  if (!config.jwt.accessPrivateKey || !config.jwt.accessPublicKey) {
-    throw new Error('JWT_ACCESS_PRIVATE_KEY and JWT_ACCESS_PUBLIC_KEY are required when using RS256 in production');
+  // If RS256 algorithm is selected, require key files
+  if (config.jwt.algorithm === 'RS256') {
+    if (!config.jwt.accessPrivateKey || !config.jwt.accessPublicKey) {
+      throw new Error('JWT_ACCESS_PRIVATE_KEY and JWT_ACCESS_PUBLIC_KEY are required when using RS256');
+    }
   }
 }
 

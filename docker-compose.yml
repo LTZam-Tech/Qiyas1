@@ -5,25 +5,37 @@ services:
     image: postgres:15-alpine
     container_name: qiyas_db
     environment:
-      POSTGRES_DB: qiyas_platform
-      POSTGRES_USER: qiyas_user
-      POSTGRES_PASSWORD: qiyas_secure_password
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env.production}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env.production}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/db/migrations:/docker-entrypoint-initdb.d:ro
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - qiyas_network
 
   redis:
     image: redis:7-alpine
     container_name: qiyas_redis
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     networks:
       - qiyas_network
 
@@ -31,64 +43,54 @@ services:
     image: minio/minio:latest
     container_name: qiyas_minio
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: qiyas_secure_minio
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env.production}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env.production}
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
-      - "9001:9001" # MinIO Admin Console
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - minio_data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - qiyas_network
 
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: qiyas_backend
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
       - PORT=8000
-      - APP_URL=https://qiyas.iltizamtech.com
-      - API_PREFIX=/api/v1
-      
-      # Database
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=qiyas_platform
-      - POSTGRES_USER=qiyas_user
-      - POSTGRES_PASSWORD=qiyas_secure_password
-      - POSTGRES_SSL=false
-      
-      # Redis
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - QUEUE_CONNECTION=redis
-      - CACHE_CONNECTION=redis
-      
-      # MinIO Object Storage
+      - REDIS_DB=0
       - MINIO_ENDPOINT=minio
       - MINIO_PORT=9000
       - MINIO_USE_SSL=false
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=qiyas_secure_minio
-      
-      # Security (JWT)
-      - JWT_ACCESS_SECRET=qiyas_secure_access_secret_change_me_in_prod
-      - JWT_REFRESH_SECRET=qiyas_secure_refresh_secret_change_me_in_prod
-      
-      # General settings
-      - CORS_ORIGIN=https://qiyas.iltizamtech.com
+      - QUEUE_CONNECTION=redis
+      - CACHE_CONNECTION=redis
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - backend_uploads:/app/uploads
     depends_on:
-      - db
-      - redis
-      - minio
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - qiyas_network
@@ -98,8 +100,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        # Nginx config proxies /api/ frontend calls to the backend container
-        - VITE_API_BASE_URL=/api/v1
+        VITE_API_BASE_URL: /api/v1
     container_name: qiyas_frontend
     ports:
       - "80:80"
