@@ -29,3 +29,6 @@ backend/secrets/
 backend/**/*.pem
 backend/**/*.key
 dist
+
+# Production secrets (NEVER commit)
+.env.production
