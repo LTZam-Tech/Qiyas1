@@ -1,36 +1,21 @@
 import { useMemo, useState } from 'react';
-import { PERSPECTIVES, AXES, STANDARDS_HIERARCHY } from '../utils/data.js';
+import { PERSPECTIVES, AXES } from '../utils/data.js';
 import styles from './CatalogPage.module.css';
 
 const CatalogPage = () => {
   const [selectedPerspective, setSelectedPerspective] = useState(null);
 
-  const { axesByPerspective, standardsByAxis } = useMemo(() => {
-    const axesMap = AXES.reduce((acc, axis) => {
+  const axesByPerspective = useMemo(
+    () => AXES.reduce((acc, axis) => {
       if (!acc[axis.perspId]) acc[axis.perspId] = [];
       acc[axis.perspId].push(axis);
       return acc;
-    }, {});
-
-    const standardsMap = STANDARDS_HIERARCHY.reduce((acc, standard) => {
-      if (!acc[standard.axisId]) acc[standard.axisId] = [];
-      acc[standard.axisId].push(standard);
-      return acc;
-    }, {});
-
-    return { axesByPerspective: axesMap, standardsByAxis: standardsMap };
-  }, []);
+    }, {}),
+    []
+  );
 
   const currentAxes = selectedPerspective ? (axesByPerspective[selectedPerspective] || []) : [];
   const currentPerspective = PERSPECTIVES.find((p) => p.id === selectedPerspective);
-
-  // Badge color classes
-  const getBadgeClass = (count, total) => {
-    const ratio = count / total;
-    if (ratio === 1) return styles.badgeGreen;
-    if (ratio >= 0.5) return styles.badgeOrange;
-    return styles.badgeRed;
-  };
 
   const handlePerspectiveClick = (perspId) => {
     setSelectedPerspective(perspId === selectedPerspective ? null : perspId);
@@ -83,47 +68,17 @@ const CatalogPage = () => {
 
           {currentAxes.length > 0 ? (
             <div className={styles.axesGrid}>
-              {currentAxes.map((axis) => {
-                const standards = standardsByAxis[axis.id] || [];
-
-                return (
-                  <section key={axis.id} className={styles.axisSection}>
-                    <div className={styles.axisHeader}>
-                      <div className={styles.axisTitle}>{axis.name}</div>
-                      <div className={styles.axisLabel}>المحور</div>
-                    </div>
-
-                    <div className={styles.standardsList}>
-                      {standards.length > 0 ? (
-                        standards.map((standard) => (
-                          <div key={standard.id} className={styles.standardCard}>
-                            <div className={styles.standardTitle}>{standard.title}</div>
-                            <div className={styles.badgesRow}>
-                              <span className={`${styles.badge} ${getBadgeClass(standard.metrics.approved, standard.metrics.total)}`}>
-                                {standard.metrics.approved}
-                              </span>
-                              <span className={`${styles.badge} ${styles.badgeBlue}`}>
-                                {standard.metrics.pending}
-                              </span>
-                              <span className={`${styles.badge} ${styles.badgeRed}`}>
-                                {standard.metrics.rejected}
-                              </span>
-                              <span className={`${styles.badge} ${styles.badgeGray}`}>
-                                {standard.metrics.total}
-                              </span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className={styles.emptyAxis}>لا توجد معايير</div>
-                      )}
-                    </div>
-                  </section>
-                );
-              })}
+              {currentAxes.map((axis) => (
+                <section key={axis.id} className={styles.axisSection}>
+                  <div className={styles.axisHeader}>
+                    <div className={styles.axisTitle}>{axis.name}</div>
+                    <div className={styles.axisLabel}>عنصر</div>
+                  </div>
+                </section>
+              ))}
             </div>
           ) : (
-            <div className={styles.emptyState}>لا توجد محاور في هذا المنظور</div>
+            <div className={styles.emptyState}>لا توجد عناصر في هذا المجال</div>
           )}
         </div>
       )}

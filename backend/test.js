@@ -1,12 +1,15 @@
-console.log('Starting simple test...');
+describe('Backend smoke tests', () => {
+  it('runs Jest successfully', () => {
+    expect(true).toBe(true);
+  });
 
-// Test basic require
-try {
-  console.log('Testing require of dist/config...');
-  const config = require('./dist/config');
-  console.log('Config loaded:', config.default.port);
-} catch (error) {
-  console.error('Error loading config:', error.message);
-}
+  it('loads compiled config module when available', () => {
+    let config;
 
-console.log('Test complete');
+    expect(() => {
+      config = require('./dist/config');
+    }).not.toThrow();
+
+    expect(config).toBeDefined();
+  });
+});

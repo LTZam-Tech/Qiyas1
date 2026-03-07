@@ -1,16 +1,16 @@
 import { C } from './theme.js';
 
 export const PERSPECTIVES = [
-  { id: 1, code: "D1", name: "الاستراتيجية والتخطيط", nameEn: "Strategy & Planning", axes: 3, standards: 7, completion: 65 },
-  { id: 2, code: "D2", name: "المصلحة ومنافعها", nameEn: "Interest & Benefits", axes: 2, standards: 3, completion: 72 },
-  { id: 3, code: "D3", name: "العمليات والتشغيل", nameEn: "Operations & Execution", axes: 2, standards: 4, completion: 58 },
-  { id: 4, code: "D4", name: "إدارة المظاهر واستراتيجية الأصول", nameEn: "Aspects Management & Assets Strategy", axes: 3, standards: 5, completion: 70 },
-  { id: 5, code: "D5", name: "هيئة المعلومات", nameEn: "Information Authority", axes: 2, standards: 4, completion: 55 },
-  { id: 6, code: "D6", name: "الهيكلية الشاملة", nameEn: "Comprehensive Structure", axes: 2, standards: 3, completion: 68 },
-  { id: 7, code: "D7", name: "الأفراد والتحليلات", nameEn: "Individuals & Analytics", axes: 2, standards: 4, completion: 62 },
-  { id: 8, code: "D8", name: "مركزية الاستعداد", nameEn: "Centralized Preparedness", axes: 2, standards: 3, completion: 48 },
-  { id: 9, code: "D9", name: "البيانات الحكومية", nameEn: "Government Data", axes: 1, standards: 2, completion: 75 },
-  { id: 10, code: "D10", name: "البحث والتكرار", nameEn: "Research & Iteration", axes: 2, standards: 3, completion: 52 },
+  { id: 1, code: "D1", name: "الاستراتيجية والتخطيط", nameEn: "Strategy & Planning", axes: 3, standards: 3, completion: 0 },
+  { id: 2, code: "D2", name: "المنظمة والثقافة", nameEn: "Organization & Culture", axes: 3, standards: 3, completion: 0 },
+  { id: 3, code: "D3", name: "العمليات والتشغيل", nameEn: "Operations & Execution", axes: 1, standards: 1, completion: 0 },
+  { id: 4, code: "D4", name: "إدارة المخاطر واستمرارية الأعمال", nameEn: "Risk Management & Business Continuity", axes: 2, standards: 2, completion: 0 },
+  { id: 5, code: "D5", name: "تقنية المعلومات", nameEn: "Information Technology", axes: 3, standards: 3, completion: 0 },
+  { id: 6, code: "D6", name: "الحكومة الشاملة", nameEn: "Whole-of-Government", axes: 1, standards: 1, completion: 0 },
+  { id: 7, code: "D7", name: "القنوات والخدمات", nameEn: "Channels & Services", axes: 2, standards: 2, completion: 0 },
+  { id: 8, code: "D8", name: "مركزية المستفيد", nameEn: "Beneficiary-Centricity", axes: 3, standards: 3, completion: 0 },
+  { id: 9, code: "D9", name: "البيانات الحكومية", nameEn: "Government Data", axes: 3, standards: 3, completion: 0 },
+  { id: 10, code: "D10", name: "البحث والابتكار", nameEn: "Research & Innovation", axes: 2, standards: 2, completion: 0 },
 ];
 
 export const STANDARDS_SAMPLE = [
@@ -61,48 +61,40 @@ export const BADGE_MAP = {
   medium: { bg: "#E3F2FD", color: "#1565C0", label: "متوسط" },
 };
 
-// Axes - intermediate level between perspectives and standards
+// Sub-items under each domain in Standards Catalog Navigator
 export const AXES = [
-  // Perspective 1 - الاستراتيجية والتخطيط (3 axes)
-  { id: 1, code: "A1.1", name: "التخطيط الاستراتيجي", nameEn: "Strategic Planning", perspId: 1 },
-  { id: 2, code: "A1.2", name: "تنفيذ الاستراتيجية", nameEn: "Strategy Implementation", perspId: 1 },
-  { id: 3, code: "A1.3", name: "المراجعة والتقييم", nameEn: "Review & Evaluation", perspId: 1 },
-  
-  // Perspective 2 - المصلحة ومنافعها (2 axes)
-  { id: 4, code: "A2.1", name: "تحديد المصالح", nameEn: "Interest Identification", perspId: 2 },
-  { id: 5, code: "A2.2", name: "إدارة المنافع", nameEn: "Benefits Management", perspId: 2 },
-  
-  // Perspective 3 - العمليات والتشغيل (2 axes)
-  { id: 6, code: "A3.1", name: "العمليات التشغيلية", nameEn: "Operational Processes", perspId: 3 },
-  { id: 7, code: "A3.2", name: "إدارة الأداء", nameEn: "Performance Management", perspId: 3 },
-  
-  // Perspective 4 - إدارة المظاهر واستراتيجية الأصول (3 axes)
-  { id: 8, code: "A4.1", name: "إدارة المظاهر", nameEn: "Aspects Management", perspId: 4 },
-  { id: 9, code: "A4.2", name: "استراتيجية الأصول", nameEn: "Assets Strategy", perspId: 4 },
-  { id: 10, code: "A4.3", name: "التخطيط والتنفيذ", nameEn: "Planning & Execution", perspId: 4 },
-  
-  // Perspective 5 - هيئة المعلومات (2 axes)
-  { id: 11, code: "A5.1", name: "إدارة المعلومات", nameEn: "Information Management", perspId: 5 },
-  { id: 12, code: "A5.2", name: "أمن المعلومات", nameEn: "Information Security", perspId: 5 },
-  
-  // Perspective 6 - الهيكلية الشاملة (2 axes)
-  { id: 13, code: "A6.1", name: "البنية التنظيمية", nameEn: "Organizational Structure", perspId: 6 },
-  { id: 14, code: "A6.2", name: "الحوكمة والرقابة", nameEn: "Governance & Control", perspId: 6 },
-  
-  // Perspective 7 - الأفراد والتحليلات (2 axes)
-  { id: 15, code: "A7.1", name: "إدارة الموارد البشرية", nameEn: "Human Resources Management", perspId: 7 },
-  { id: 16, code: "A7.2", name: "التحليلات والتطوير", nameEn: "Analytics & Development", perspId: 7 },
-  
-  // Perspective 8 - مركزية الاستعداد (2 axes)
-  { id: 17, code: "A8.1", name: "التخطيط للاستعداد", nameEn: "Preparedness Planning", perspId: 8 },
-  { id: 18, code: "A8.2", name: "إدارة الطوارئ", nameEn: "Emergency Management", perspId: 8 },
-  
-  // Perspective 9 - البيانات الحكومية (1 axis)
-  { id: 19, code: "A9.1", name: "إدارة البيانات", nameEn: "Data Management", perspId: 9 },
-  
-  // Perspective 10 - البحث والتكرار (2 axes)
-  { id: 20, code: "A10.1", name: "البحث والتطوير", nameEn: "Research & Development", perspId: 10 },
-  { id: 21, code: "A10.2", name: "التحسين المستمر", nameEn: "Continuous Improvement", perspId: 10 },
+  { id: 1, code: "A1.1", name: "التخطيط للتحول الرقمي", nameEn: "Digital Transformation Planning", perspId: 1 },
+  { id: 2, code: "A1.2", name: "حوكمة التحول الرقمي", nameEn: "Digital Transformation Governance", perspId: 1 },
+  { id: 3, code: "A1.3", name: "البنية المؤسسية", nameEn: "Enterprise Architecture", perspId: 1 },
+
+  { id: 4, code: "A2.1", name: "الثقافة والبيئة الرقمية", nameEn: "Digital Culture & Environment", perspId: 2 },
+  { id: 5, code: "A2.2", name: "تطوير قيادات التحول الرقمي", nameEn: "Digital Transformation Leadership Development", perspId: 2 },
+  { id: 6, code: "A2.3", name: "بناء الكفاءات", nameEn: "Capability Building", perspId: 2 },
+
+  { id: 7, code: "A3.1", name: "إجراءات العمل", nameEn: "Work Procedures", perspId: 3 },
+
+  { id: 8, code: "A4.1", name: "إدارة المخاطر", nameEn: "Risk Management", perspId: 4 },
+  { id: 9, code: "A4.2", name: "استمرارية الأعمال", nameEn: "Business Continuity", perspId: 4 },
+
+  { id: 10, code: "A5.1", name: "الأنظمة الداعمة للتحول الرقمي", nameEn: "Digital Transformation Supporting Systems", perspId: 5 },
+  { id: 11, code: "A5.2", name: "البنية التحتية للخدمات التقنية", nameEn: "Technical Services Infrastructure", perspId: 5 },
+  { id: 12, code: "A5.3", name: "البنية السحابية", nameEn: "Cloud Infrastructure", perspId: 5 },
+
+  { id: 13, code: "A6.1", name: "منصات الحكومة الشاملة", nameEn: "Whole-of-Government Platforms", perspId: 6 },
+
+  { id: 14, code: "A7.1", name: "جودة الخدمات الرقمية", nameEn: "Digital Service Quality", perspId: 7 },
+  { id: 15, code: "A7.2", name: "القنوات والخدمات الرقمية", nameEn: "Digital Channels & Services", perspId: 7 },
+
+  { id: 16, code: "A8.1", name: "مشاركة المستفيد", nameEn: "Beneficiary Engagement", perspId: 8 },
+  { id: 17, code: "A8.2", name: "تعزيز العلاقة مع المستفيد", nameEn: "Strengthening Beneficiary Relationship", perspId: 8 },
+  { id: 18, code: "A8.3", name: "تجربة المستفيد", nameEn: "Beneficiary Experience", perspId: 8 },
+
+  { id: 19, code: "A9.1", name: "حوكمة وإدارة البيانات", nameEn: "Data Governance & Management", perspId: 9 },
+  { id: 20, code: "A9.2", name: "استخدام وإتاحة البيانات", nameEn: "Data Use & Availability", perspId: 9 },
+  { id: 21, code: "A9.3", name: "البيانات المفتوحة", nameEn: "Open Data", perspId: 9 },
+
+  { id: 22, code: "A10.1", name: "البتكار المؤسسي", nameEn: "Institutional Innovation", perspId: 10 },
+  { id: 23, code: "A10.2", name: "الحلول البتكارية", nameEn: "Innovative Solutions", perspId: 10 },
 ];
 
 // Enhanced standards with metrics

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import Badge from '../components/Badge.jsx';
 import TaskModal from '../components/TaskModal.jsx';
 import useTasksData from '../hooks/useTasksData.js';
-import { useAuth } from '../context/useAuth.js';
+import useAuth from '../context/useAuth.js';
 import styles from './TasksPage.module.css';
 
 const FILTERS = [
@@ -15,15 +15,41 @@ const FILTERS = [
 ];
 
 const TABLE_HEADERS = ['الأولوية', 'الحالة', 'الموعد النهائي', 'المسؤول', 'الشاهد المطلوب', 'المعيار'];
+const TASK_CREATE_ROLES = new Set(['dean', 'consultant', 'عميد', 'مستشار']);
 
-const TasksPage = ({ isMobile }) => {
+const collectRoleCandidates = (user) => {
+  if (!user) return [];
+
+  const direct = [
+    user.role,
+    user.roleName,
+    user.role_name,
+    user.userRole,
+    user.user_role,
+  ];
+
+  const fromRolesArray = Array.isArray(user.roles)
+    ? user.roles.flatMap((r) => [r, r?.name, r?.role, r?.label])
+    : [];
+
+  const values = [...direct, ...fromRolesArray]
+    .map((value) => String(value || '').trim().toLowerCase())
+    .filter(Boolean);
+
+  return Array.from(new Set(values));
+};
+
+const TasksPage = ({ isMobile, user: pageUser }) => {
   const [filter, setFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { data: tasks, isLoading, error, refetch } = useTasksData(filter);
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
+
+  const effectiveUser = pageUser || authUser;
+  const roleCandidates = collectRoleCandidates(effectiveUser);
 
   // Check if user has permission to create tasks (dean or consultant)
-  const canCreateTask = user?.role === 'dean' || user?.role === 'consultant';
+  const canCreateTask = roleCandidates.some((role) => TASK_CREATE_ROLES.has(role));
 
   const handleTaskCreated = () => {
     // Refresh the tasks list after creating a new task
@@ -128,6 +154,9 @@ const TasksPage = ({ isMobile }) => {
 
 TasksPage.propTypes = {
   isMobile: PropTypes.bool.isRequired,
+  user: PropTypes.shape({
+    role: PropTypes.string,
+  }),
 };
 
 export default TasksPage;

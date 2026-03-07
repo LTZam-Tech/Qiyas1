@@ -206,7 +206,7 @@ export default function App() {
         />
 
         <main className={styles.content} role="main" aria-label="Portal content">
-          <PageComponent isMobile={isMobile} isTablet={isTablet} lang={lang} />
+          <PageComponent isMobile={isMobile} isTablet={isTablet} lang={lang} user={user} />
         </main>
       </div>
     </div>
