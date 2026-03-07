@@ -23,7 +23,7 @@ echo "Branch:  ${BRANCH}"
 echo ""
 
 # --- Deploy via SSH ----------------------------------------------------------
-ssh -o StrictHostKeyChecking=no "${SERVER_USER}@${SERVER_IP}" bash -s <<REMOTE_SCRIPT
+ssh "${SERVER_USER}@${SERVER_IP}" bash -s <<REMOTE_SCRIPT
 set -euo pipefail
 
 echo "[1/5] Pulling latest code..."
@@ -47,7 +47,7 @@ fi
 echo "[3/5] Building and starting containers..."
 cd "${APP_DIR}"
 docker compose --env-file .env.production down --remove-orphans 2>/dev/null || true
-docker compose --env-file .env.production build --no-cache
+docker compose --env-file .env.production build
 docker compose --env-file .env.production up -d
 
 echo "[4/5] Waiting for services to be healthy..."
