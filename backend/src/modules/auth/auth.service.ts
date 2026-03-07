@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 import db from '@/db';
 // import redis from '@/db/redis'; // Reserved for future caching
 import config from '@/config';
@@ -25,7 +25,11 @@ class AuthService {
   // Generate refresh token (random, 30 days)
   async generateRefreshToken(userId: string): Promise<string> {
     const refreshToken = randomBytes(32).toString('hex');
-    const tokenHash = await bcrypt.hash(refreshToken, 10);
+    // Use SHA-256 for storage to allow efficient DB lookup.
+    // bcrypt is not needed here because the refresh token is already a
+    // cryptographically random 32-byte value (256 bits of entropy), which
+    // makes brute-force attacks infeasible regardless of hash speed.
+    const tokenHash = createHash('sha256').update(refreshToken).digest('hex');
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
@@ -144,17 +148,17 @@ class AuthService {
 
   // Refresh access token
   async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
-    // Hash the provided token to compare with stored hash
+    // Hash the provided token for DB lookup
+    const tokenHash = createHash('sha256').update(refreshToken).digest('hex');
+
     const result = await db.query(
-      `SELECT rt.id, rt.user_id, rt.token_hash, rt.expires_at, rt.revoked_at, u.is_active, r.name as role
+      `SELECT rt.id, rt.user_id, rt.expires_at, rt.revoked_at, u.is_active, r.name as role
        FROM refresh_tokens rt
        JOIN users u ON rt.user_id = u.id
        LEFT JOIN user_roles ur ON u.id = ur.user_id
        LEFT JOIN roles r ON ur.role_id = r.id
-       WHERE rt.expires_at > NOW() AND rt.revoked_at IS NULL
-       ORDER BY rt.created_at DESC
-       LIMIT 1`,
-      []
+       WHERE rt.token_hash = $1 AND rt.expires_at > NOW() AND rt.revoked_at IS NULL`,
+      [tokenHash]
     );
 
     if (result.rows.length === 0) {
@@ -163,17 +167,8 @@ class AuthService {
 
     const tokenData = result.rows[0];
 
-    // Verify the token hash
-    const isValid = await bcrypt.compare(refreshToken, tokenData.token_hash);
-    if (!isValid) {
-      throw new UnauthorizedError('Invalid refresh token');
-    }
-
     // Check user status
     if (!tokenData.is_active) {
-      throw new UnauthorizedError('Account is not active');
-    }
-    if (tokenData.status !== 'active') {
       throw new UnauthorizedError('Account is not active');
     }
 
@@ -197,9 +192,10 @@ class AuthService {
 
   // Logout (revoke refresh token)
   async logout(refreshToken: string): Promise<void> {
+    const tokenHash = createHash('sha256').update(refreshToken).digest('hex');
     await db.query(
-      `UPDATE refresh_tokens SET revoked_at = NOW() WHERE token = $1`,
-      [refreshToken]
+      `UPDATE refresh_tokens SET revoked_at = NOW() WHERE token_hash = $1`,
+      [tokenHash]
     );
   }
 

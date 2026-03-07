@@ -6,32 +6,30 @@ ALTER TABLE users
   ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ;
 
--- Create demo users with bcrypt-hashed passwords
--- Password for all: respective role + "Pass123" (e.g., AdminPass123)
--- Bcrypt hash for "AdminPass123": $2b$12$LQv3c1yqBWVHxkd.IKpvMOLkBq6f8LqI8Y3qF.VZoI8jX8Y6gEL9O
--- Bcrypt hash for "DeanPass123": $2b$12$HnvXzB4zHKvY.fQZ8qFJU.rJYK5nYR4ZqFJU.rJYK5nYR4ZqFJU.u
--- Bcrypt hash for "ConsultPass123": $2b$12$rJYK5nYR4ZqFJU.rJYK5nYR4ZqFJU.rJYK5nYR4ZqFJU.rJYK5a
--- Bcrypt hash for "UserPass123": $2b$12$FJU.rJYK5nYR4ZqFJU.rJYK5nYR4ZqFJU.rJYK5nYR4ZqFJUb
-
--- Note: We'll generate the real hashes using Node.js bcrypt
+-- WARNING: FOR DEVELOPMENT / DEMO USE ONLY.
+-- These passwords must be changed before deploying to any production environment.
+-- Passwords: AdminPass123, DeanPass123, ConsultPass123, UserPass123
+-- Hashes generated with bcrypt rounds=12 (verified valid)
 INSERT INTO users (id, name, name_ar, email, password_hash, is_active, phone, department, job_title)
 VALUES 
   (gen_random_uuid(), 'System Admin', 'مسؤول النظام', 'admin@university.edu', 
-   '$2b$12$LQv3c1yqBWVHxkd0IKpvMueykIL9K91FxHJgIRqcP4vZn8p51XLWS', -- AdminPass123
+   '$2b$12$b6IM.PHya1.msVBrYRYcGecAmOYvoTHxf0D4.6r4iLFTU5ZJkaN7K', -- AdminPass123
    true, '+966501234567', 'IT Department', 'System Administrator'),
   
   (gen_random_uuid(), 'Dr. Ahmed Al-Qahtani', 'د. أحمد القحطاني', 'dean@university.edu',
-   '$2b$12$Pj7CrG9yJ5qP8F6tRHnRd.M0X9YQzL5vK8NwZ3pG4xH2jT6yC8lKS', -- DeanPass123
+   '$2b$12$/d9/oiu7gGMHUDX8lqCvzewGvDvgLg39wdHYr8z38q4t0ou1Twxw2', -- DeanPass123
    true, '+966502345678', 'Academic Affairs', 'Dean'),
   
   (gen_random_uuid(), 'Dr. Fatima Al-Harbi', 'د. فاطمة الحربي', 'consultant@qiyas.sa',
-   '$2b$12$9kJ8nH6gF4dT2cR1pS7mLOX4vY8zQ6wN5bM3aC1jH9fT7gK2eL0nG', -- ConsultPass123
+   '$2b$12$Y15dKXU2JyXlNnTluaJcQul7xEJGIO/qBrwMBVfpIiJcVvSl3hbDi', -- ConsultPass123
    true, '+966503456789', 'Quality Assurance', 'External Consultant'),
   
   (gen_random_uuid(), 'Sara Al-Mutairi', 'سارة المطيري', 'user@department.edu',
-   '$2b$12$3aB4cD5eF6gH7iJ8kL9mN0O1pQ2rS3tU4vW5xY6zA7bC8dE9fG0hI', -- UserPass123
+   '$2b$12$XG7ohwzuT0t8NalQWp6eEOhOKV9hDlOvCv/y41ss29FzOLhJbJUfq', -- UserPass123
    true, '+966504567890', 'Computer Science', 'Department Coordinator')
-RETURNING id, name, email;
+ON CONFLICT (email) DO UPDATE SET
+  password_hash = EXCLUDED.password_hash,
+  is_active = EXCLUDED.is_active;
 
 -- Assign roles to users using user_roles table
 WITH user_role_mapping AS (
