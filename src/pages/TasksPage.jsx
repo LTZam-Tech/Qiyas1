@@ -6,15 +6,15 @@ import useTasksData from '../hooks/useTasksData.js';
 import useAuth from '../context/useAuth.js';
 import styles from './TasksPage.module.css';
 
-const FILTERS = [
-  ['all', 'الكل'],
-  ['active', 'نشط'],
-  ['submitted', 'مقدم'],
-  ['revision', 'مراجعة'],
-  ['approved', 'معتمد'],
-];
+const FILTERS = {
+  ar: [['all', 'الكل'], ['active', 'نشط'], ['submitted', 'مُقدَّم'], ['revision', 'مراجعة'], ['approved', 'معتمد']],
+  en: [['all', 'All'], ['active', 'Active'], ['submitted', 'Submitted'], ['revision', 'Review'], ['approved', 'Approved']],
+};
 
-const TABLE_HEADERS = ['الأولوية', 'الحالة', 'الموعد النهائي', 'المسؤول', 'الشاهد المطلوب', 'المعيار'];
+const TABLE_HEADERS = {
+  ar: ['الأولوية', 'الحالة', 'الموعد النهائي', 'المسؤول', 'الشاهد المطلوب', 'المعيار'],
+  en: ['Priority', 'Status', 'Due Date', 'Responsible', 'Evidence Type', 'Standard'],
+};
 const TASK_CREATE_ROLES = new Set(['dean', 'consultant', 'عميد', 'مستشار']);
 
 const collectRoleCandidates = (user) => {
@@ -77,21 +77,20 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
             <button
               type="button"
               className={styles.createButton}
-              onClick={() => setIsModalOpen(true)}
-              aria-label="إنشاء مهمة جديدة"
+              onClick={() => setIsModalOpen(true)}            title={lang === 'ar' ? 'إنشاء مهمة جديدة' : 'Create New Task'}              aria-label="إنشاء مهمة جديدة"
             >
               + مهمة جديدة
             </button>
           )}
         </div>
-        <h2 className={styles.heading}>إدارة المهام - Task Management</h2>
+        <h2 className={styles.heading}>{lang === 'ar' ? 'إدارة المهام' : 'Task Management'}</h2>
       </div>
 
       <div className={styles.tableContainer}>
         <table className={`${styles.table} ${isMobile ? styles.tableMobile : ''}`}>
           <thead>
             <tr className={styles.tableHeadRow}>
-              {TABLE_HEADERS.map((header) => (
+              {TABLE_HEADERS[lang].map((header) => (
                 <th key={header} className={styles.tableHeaderCell}>
                   {header}
                 </th>
@@ -127,10 +126,10 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
               ? tasks.map((task) => (
                   <tr key={task.id} className={styles.tableRow}>
                     <td className={styles.centerCell}>
-                      <Badge status={task.priority} />
+                      <Badge status={task.priority} lang={lang} />
                     </td>
                     <td className={styles.centerCell}>
-                      <Badge status={task.status} />
+                      <Badge status={task.status} lang={lang} />
                     </td>
                     <td className={styles.dueCell}>{task.due}</td>
                     <td className={styles.textCell}>{task.assignee}</td>
@@ -158,6 +157,7 @@ TasksPage.propTypes = {
   user: PropTypes.shape({
     role: PropTypes.string,
   }),
+  lang: PropTypes.oneOf(['ar', 'en']).isRequired,
 };
 
 export default TasksPage;

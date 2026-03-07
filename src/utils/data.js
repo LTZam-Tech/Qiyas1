@@ -48,17 +48,17 @@ export const TASKS_DATA = [
 ];
 
 export const BADGE_MAP = {
-  full: { bg: C.greenLight, color: C.green, label: "التزام كلي" },
-  partial: { bg: C.orangeLight, color: C.orange, label: "التزام جزئي" },
-  non: { bg: C.redLight, color: C.red, label: "عدم التزام" },
-  approved: { bg: C.greenLight, color: C.green, label: "معتمد" },
-  submitted: { bg: "#E3F2FD", color: "#1565C0", label: "مُقدَّم" },
-  revision: { bg: C.orangeLight, color: C.orange, label: "مراجعة" },
-  active: { bg: C.light, color: C.primary, label: "نشط" },
-  reject: { bg: C.redLight, color: C.red, label: "مرفوض" },
-  critical: { bg: C.redLight, color: C.red, label: "حرج" },
-  high: { bg: C.orangeLight, color: C.orange, label: "عالي" },
-  medium: { bg: "#E3F2FD", color: "#1565C0", label: "متوسط" },
+  full: { bg: C.greenLight, color: C.green, label_ar: "التزام كلي", label_en: "Full" },
+  partial: { bg: C.orangeLight, color: C.orange, label_ar: "التزام جزئي", label_en: "Partial" },
+  non: { bg: C.redLight, color: C.red, label_ar: "عدم التزام", label_en: "Non" },
+  approved: { bg: C.greenLight, color: C.green, label_ar: "معتمد", label_en: "Approved" },
+  submitted: { bg: "#E3F2FD", color: "#1565C0", label_ar: "مُقدَّم", label_en: "Submitted" },
+  revision: { bg: C.orangeLight, color: C.orange, label_ar: "مراجعة", label_en: "Review" },
+  active: { bg: C.light, color: C.primary, label_ar: "نشط", label_en: "Active" },
+  reject: { bg: C.redLight, color: C.red, label_ar: "مرفوض", label_en: "Rejected" },
+  critical: { bg: C.redLight, color: C.red, label_ar: "حرج", label_en: "Critical" },
+  high: { bg: C.orangeLight, color: C.orange, label_ar: "عالي", label_en: "High" },
+  medium: { bg: "#E3F2FD", color: "#1565C0", label_ar: "متوسط", label_en: "Medium" },
 };
 
 // Sub-items under each domain in Standards Catalog Navigator

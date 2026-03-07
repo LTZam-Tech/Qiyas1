@@ -5,22 +5,22 @@ import Badge from '../components/Badge.jsx';
 import StatCard from '../components/StatCard.jsx';
 import styles from './ReviewPage.module.css';
 
-const ReviewPage = ({ isMobile }) => {
+const ReviewPage = ({ isMobile, lang }) => {
   const pendingReviews = TASKS_DATA.filter((task) => task.status === 'submitted' || task.status === 'revision');
 
   return (
     <div className={styles.page}>
-      <h2 className={styles.heading}>المراجعة والاعتماد - Review & Approval</h2>
+      <h2 className={styles.heading}>{lang === 'ar' ? 'المراجعة والاعتماد' : 'Review & Approval'}</h2>
 
       <div className={`${styles.kpiGrid} ${isMobile ? styles.kpiGridMobile : styles.kpiGridDesktop}`}>
-        <StatCard label="بانتظار المراجعة" value="18" gradient={cardGradients.accent} icon="clock" />
-        <StatCard label="معتمد هذا الأسبوع" value="12" gradient={cardGradients.green} icon="check" change={2.0} />
-        <StatCard label="طلب مراجعة" value="7" gradient={cardGradients.purple} icon="review" />
-        <StatCard label="مرفوض" value="3" gradient={cardGradients.pink} icon="x" />
+        <StatCard label={lang === 'ar' ? 'بانتظار المراجعة' : 'Pending Review'} value="18" gradient={cardGradients.accent} icon="clock" lang={lang} />
+        <StatCard label={lang === 'ar' ? 'معتمد هذا الأسبوع' : 'Approved This Week'} value="12" gradient={cardGradients.green} icon="check" change={2.0} lang={lang} />
+        <StatCard label={lang === 'ar' ? 'طلب مراجعة' : 'Review Request'} value="7" gradient={cardGradients.purple} icon="review" lang={lang} />
+        <StatCard label={lang === 'ar' ? 'مرفوض' : 'Rejected'} value="3" gradient={cardGradients.pink} icon="x" lang={lang} />
       </div>
 
       <section className={styles.panel}>
-        <h3 className={styles.panelTitle}>قائمة المراجعات المعلقة - Pending Reviews Queue</h3>
+        <h3 className={styles.panelTitle}>{lang === 'ar' ? 'قائمة المراجعات المعلقة' : 'Pending Reviews Queue'}</h3>
 
         {pendingReviews.length > 0 ? (
           pendingReviews.map((task) => (
@@ -44,11 +44,11 @@ const ReviewPage = ({ isMobile }) => {
                 </div>
               </div>
 
-              <Badge status={task.status} />
+              <Badge status={task.status} lang={lang} />
             </div>
           ))
         ) : (
-          <div className={styles.emptyState}>لا توجد مراجعات معلقة</div>
+          <div className={styles.emptyState}>{lang === 'ar' ? 'لا توجد مراجعات معلقة' : 'No pending reviews'}</div>
         )}
       </section>
     </div>

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Icons } from '../utils/icons.jsx';
 import styles from './StatCard.module.css';
 
-const StatCard = ({ label, value, icon, gradient, change }) => {
+const StatCard = ({ label, value, icon, gradient, change, lang = 'ar' }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const gradientBg = gradient || 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)';
   const hasNumericChange = typeof change === 'number' && !Number.isNaN(change);
@@ -42,7 +42,7 @@ const StatCard = ({ label, value, icon, gradient, change }) => {
 
         <div className={`${styles.face} ${styles.back}`} style={{ background: gradientBg }}>
           <div className={styles.backTop}>
-            <span className={styles.backLabel}>نسبة التغير</span>
+            <span className={styles.backLabel}>{lang === 'ar' ? 'نسبة التغير' : 'Change Rate'}</span>
             <div className={styles.icon}>{Icons[icon]}</div>
           </div>
 
@@ -66,6 +66,7 @@ StatCard.propTypes = {
   icon: PropTypes.string.isRequired,
   gradient: PropTypes.string,
   change: PropTypes.number,
+  lang: PropTypes.oneOf(['ar', 'en']),
 };
 
 export default StatCard;

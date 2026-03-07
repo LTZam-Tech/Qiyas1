@@ -3,7 +3,7 @@ import { PERSPECTIVES, AXES, STANDARD_DETAILS } from '../utils/data.js';
 import { Icons } from '../utils/icons.jsx';
 import styles from './CatalogPage.module.css';
 
-const CatalogPage = () => {
+const CatalogPage = ({ lang }) => {
   const [selectedPerspective, setSelectedPerspective] = useState(null);
   const [selectedAxis, setSelectedAxis] = useState(null);
 
@@ -42,7 +42,7 @@ const CatalogPage = () => {
     <div className={styles.page}>
       <h2 className={styles.heading}>
         {Icons.bookmarkIcon}
-        <span>فهرس المقاييس - Standards Catalog Navigator</span>
+        <span>{lang === 'ar' ? 'فهرس المقاييس' : 'Standards Catalog Navigator'}</span>
       </h2>
 
       {!selectedPerspective ? (
@@ -60,9 +60,9 @@ const CatalogPage = () => {
               <div className={styles.domainTitle}>{perspective.name}</div>
               <div className={styles.domainSubtitle}>{perspective.nameEn}</div>
               <div className={styles.domainStats}>
-                <span>{perspective.axes} محاور</span>
+                <span>{perspective.axes} {lang === 'ar' ? 'محاور' : 'axes'}</span>
                 <span>•</span>
-                <span>{perspective.standards} معيار</span>
+                <span>{perspective.standards} {lang === 'ar' ? 'معيار' : 'standard'}</span>
               </div>
             </button>
           ))}
@@ -72,7 +72,7 @@ const CatalogPage = () => {
         <div className={styles.standardsView}>
           <button type="button" onClick={handleBackClick} className={styles.backButton}>
             {Icons.arrowLeft}
-            <span>العودة للعناصر</span>
+            <span>{lang === 'ar' ? 'العودة للعناصر' : 'Back to Items'}</span>
           </button>
 
           {currentAxis && (
@@ -89,7 +89,7 @@ const CatalogPage = () => {
               <div className={styles.standardSection}>
                 <h4 className={styles.sectionHeading}>
                   {Icons.target}
-                  <span>الهدف</span>
+                  <span>{lang === 'ar' ? 'الهدف' : 'Goal'}</span>
                 </h4>
                 <p className={styles.sectionContent}>{standardDetail.goal}</p>
               </div>
@@ -97,7 +97,7 @@ const CatalogPage = () => {
               <div className={styles.standardSection}>
                 <h4 className={styles.sectionHeading}>
                   {Icons.checklistIcon}
-                  <span>متطلبات التطبيق</span>
+                  <span>{lang === 'ar' ? 'متطلبات التطبيق' : 'Application Requirements'}</span>
                 </h4>
                 {standardDetail.requirements.map((req, idx) => (
                   <div key={idx} className={styles.requirementBlock}>
@@ -116,7 +116,7 @@ const CatalogPage = () => {
               <div className={styles.standardSection}>
                 <h4 className={styles.sectionHeading}>
                   {Icons.clipboardIcon}
-                  <span>مستندات الإثبات</span>
+                  <span>{lang === 'ar' ? 'مستندات الإثبات' : 'Evidence Documentation'}</span>
                 </h4>
                 <ul className={styles.evidenceList}>
                   {standardDetail.evidence.map((item, idx) => (
@@ -132,7 +132,7 @@ const CatalogPage = () => {
         <div className={styles.standardsView}>
           <button type="button" onClick={handleBackClick} className={styles.backButton}>
             {Icons.arrowLeft}
-            <span>العودة للمجالات</span>
+            <span>{lang === 'ar' ? 'العودة للمجالات' : 'Back to Domains'}</span>
           </button>
 
           {currentPerspective && (
@@ -165,7 +165,7 @@ const CatalogPage = () => {
                   </div>
                   {STANDARD_DETAILS[axis.id] && (
                     <div className={styles.axisPreview}>
-                      <span>انقر لعرض التفاصيل</span>
+                      <span>{lang === 'ar' ? 'انقر لعرض التفاصيل' : 'Click to view details'}</span>
                       {Icons.arrowRight}
                     </div>
                   )}
@@ -173,7 +173,7 @@ const CatalogPage = () => {
               ))}
             </div>
           ) : (
-            <div className={styles.emptyState}>لا توجد عناصر في هذا المجال</div>
+            <div className={styles.emptyState}>{lang === 'ar' ? 'لا توجد عناصر في هذا المجال' : 'No items in this domain'}</div>
           )}
         </div>
       )}

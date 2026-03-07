@@ -34,10 +34,10 @@ const REPORT_ITEMS = [
   },
 ];
 
-const ReportsPage = ({ isMobile }) => {
+const ReportsPage = ({ isMobile, lang }) => {
   return (
     <div className={styles.page}>
-      <h2 className={styles.heading}>التقارير وحزم التدقيق - Reports & Audit Packs</h2>
+      <h2 className={styles.heading}>{lang === 'ar' ? 'التقارير وحزم التدقيق' : 'Reports & Audit Packs'}</h2>
       <div className={`${styles.grid} ${isMobile ? styles.gridMobile : styles.gridDesktop}`}>
         {REPORT_ITEMS.length > 0 ? (
           REPORT_ITEMS.map((report) => (
@@ -50,7 +50,7 @@ const ReportsPage = ({ isMobile }) => {
             </article>
           ))
         ) : (
-          <div className={styles.emptyState}>لا توجد تقارير جاهزة حاليا</div>
+          <div className={styles.emptyState}>{lang === 'ar' ? 'لا توجد تقارير جاهزة حاليا' : 'No reports available'}</div>
         )}
       </div>
     </div>

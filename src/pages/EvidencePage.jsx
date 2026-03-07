@@ -5,7 +5,7 @@ import ProgressBar from '../components/ProgressBar.jsx';
 import useEvidenceData from '../hooks/useEvidenceData.js';
 import styles from './EvidencePage.module.css';
 
-const EvidencePage = ({ isMobile }) => {
+const EvidencePage = ({ isMobile, lang }) => {
   const { data, isLoading, error } = useEvidenceData();
   const items = data.slice(0, 6);
 
@@ -17,9 +17,9 @@ const EvidencePage = ({ isMobile }) => {
 
   return (
     <div className={styles.page}>
-      <h2 className={styles.heading}>خزنة الأدلة - Evidence Locker</h2>
+      <h2 className={styles.heading}>{lang === 'ar' ? 'خزنة الأدلة' : 'Evidence Locker'}</h2>
 
-      {isLoading ? <div className={styles.loadingState}>جاري تحميل الأدلة...</div> : null}
+      {isLoading ? <div className={styles.loadingState}>{lang === 'ar' ? 'جاري تحميل الأدلة...' : 'Loading evidence...'}</div> : null}
       {!isLoading && error ? <div className={styles.errorState}>{error}</div> : null}
 
       {!isLoading && !error ? (
@@ -30,7 +30,7 @@ const EvidencePage = ({ isMobile }) => {
               return (
                 <article key={item.code} className={`${styles.card} ${cardStatusClass(item.status)}`}>
                   <div className={styles.cardHead}>
-                    <Badge status={item.status} />
+                    <Badge status={item.status} lang={lang} />
                     <span className={styles.code}>{item.code}</span>
                   </div>
                   <div className={styles.title}>{item.title}</div>
@@ -43,15 +43,15 @@ const EvidencePage = ({ isMobile }) => {
               );
             })
           ) : (
-            <div className={styles.emptyState}>لا توجد أدلة مرفوعة حاليا</div>
+            <div className={styles.emptyState}>{lang === 'ar' ? 'لا توجد أدلة مرفوعة' : 'No evidence uploaded'}</div>
           )}
         </div>
       ) : null}
 
       <button type="button" aria-label="رفع شاهد جديد" className={styles.uploader}>
         <div className={styles.uploaderIcon}>{Icons.upload}</div>
-        <div className={styles.uploaderTitle}>رفع شاهد جديد - Upload New Evidence</div>
-        <div className={styles.uploaderHint}>اسحب الملفات هنا أو اضغط للاختيار - PDF, PNG, XLSX, DOCX</div>
+        <div className={styles.uploaderTitle}>{lang === 'ar' ? 'رفع شاهد جديد' : 'Upload New Evidence'}</div>
+        <div className={styles.uploaderHint}>{lang === 'ar' ? 'اسحب الملفات هنا أو اضغط للاختيار' : 'Drag files here or click to select'} - PDF, PNG, XLSX, DOCX</div>
         <div className={styles.uploaderPattern}>
           تسمية الملف: [StandardCode]_[SystemName]_[ScreenName]_[YYYYMMDD].ext
         </div>

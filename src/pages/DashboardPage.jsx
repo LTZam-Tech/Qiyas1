@@ -6,7 +6,7 @@ import { Icons } from '../utils/icons.jsx';
 import useDashboardData from '../hooks/useDashboardData.js';
 import styles from './DashboardPage.module.css';
 
-const DashboardPage = ({ isMobile }) => {
+const DashboardPage = ({ isMobile, lang }) => {
   const { data, isLoading, error } = useDashboardData();
   const totalStd = data?.kpis?.totalStandards ?? 0;
   const full = data?.kpis?.fullCompliance ?? 0;
@@ -26,17 +26,17 @@ const DashboardPage = ({ isMobile }) => {
 
   return (
     <div className={styles.page}>
-      <h2 className={styles.heading}>المؤشرات الرئيسية للأداء — Key Performance Indicators</h2>
+      <h2 className={styles.heading}>{lang === 'ar' ? 'المؤشرات الرئيسية للأداء' : 'Key Performance Indicators'}</h2>
       <div className={`${styles.kpiGrid} ${isMobile ? styles.kpiGridMobile : styles.kpiGridDesktop}`}>
-        <StatCard label="إجمالي المعايير" value={totalStd} gradient={cardGradients.purple} icon="catalog" change={0} />
-        <StatCard label="التزام كلي" value={full} gradient={cardGradients.green} icon="check" change={12.3} />
-        <StatCard label="التزام جزئي" value={partial} gradient={cardGradients.accent} icon="clock" change={8.5} />
-        <StatCard label="عدم الالتزام" value={`${non}`} gradient={cardGradients.teal} icon="x" change={5.2} />
+        <StatCard label={lang === 'ar' ? 'إجمالي المعايير' : 'Total Standards'} value={totalStd} gradient={cardGradients.purple} icon="catalog" change={0} lang={lang} />
+        <StatCard label={lang === 'ar' ? 'التزام كلي' : 'Full Compliance'} value={full} gradient={cardGradients.green} icon="check" change={12.3} lang={lang} />
+        <StatCard label={lang === 'ar' ? 'التزام جزئي' : 'Partial Compliance'} value={partial} gradient={cardGradients.accent} icon="clock" change={8.5} lang={lang} />
+        <StatCard label={lang === 'ar' ? 'عدم الالتزام' : 'Non-Compliance'} value={`${non}`} gradient={cardGradients.teal} icon="x" change={5.2} lang={lang} />
       </div>
 
       <div className={`${styles.panelGrid} ${isMobile ? styles.panelGridMobile : styles.panelGridDesktop}`}>
         <div className={styles.panel}>
-          <h3 className={styles.panelTitle}>نسبة الإنجاز حسب المنظور — Completion by Perspective</h3>
+          <h3 className={styles.panelTitle}>{lang === 'ar' ? 'نسبة الإنجاز حسب المنظور' : 'Completion by Perspective'}</h3>
           <div className={styles.rows}>
             {perspectives.length > 0 ? perspectives.map((p) => (
               <div key={p.id} className={styles.row}>
@@ -45,13 +45,13 @@ const DashboardPage = ({ isMobile }) => {
                 <span className={styles.perspectiveLabel}>{p.name}</span>
               </div>
             )) : (
-              <p className={styles.emptyState}>لا توجد بيانات للمناظير حاليا</p>
+              <p className={styles.emptyState}>{lang === 'ar' ? 'لا توجد بيانات للمناظير حاليا' : 'No perspective data available'}</p>
             )}
           </div>
         </div>
 
         <div className={styles.panel}>
-          <h3 className={styles.panelTitle}>النشاطات الأخيرة — Recent Activity</h3>
+          <h3 className={styles.panelTitle}>{lang === 'ar' ? 'النشاطات الأخيرة' : 'Recent Activity'}</h3>
           <div className={styles.activityRows}>
             {activities.length > 0 ? activities.map((a, i) => {
               const dotClass = a.type === 'approve' ? styles.activityDotApprove :
@@ -64,12 +64,12 @@ const DashboardPage = ({ isMobile }) => {
                   <div className={`${styles.activityDot} ${dotClass}`} />
                   <div className={styles.activityText}>
                     <div className={styles.activityMain}><strong>{a.user}</strong> — {a.action}</div>
-                    <div className={styles.activityMeta}>المعيار {a.standard} | {a.time}</div>
+                    <div className={styles.activityMeta}>{lang === 'ar' ? 'المعيار' : 'Standard'} {a.standard} | {a.time}</div>
                   </div>
                 </div>
               );
             }) : (
-              <p className={styles.emptyState}>لا توجد نشاطات حديثة</p>
+              <p className={styles.emptyState}>{lang === 'ar' ? 'لا توجد نشاطات حديثة' : 'No recent activities'}</p>
             )}
           </div>
         </div>
@@ -78,7 +78,7 @@ const DashboardPage = ({ isMobile }) => {
       <div className={styles.alertBox}>
         <span className={styles.alertIcon}>{Icons.alert}</span>
         <div className={styles.alertText}>
-          <div className={styles.alertTitle}>تنبيهات الاختناقات — Bottleneck Alerts</div>
+          <div className={styles.alertTitle}>{lang === 'ar' ? 'تنبيهات الاختناقات' : 'Bottleneck Alerts'}</div>
           <div className={styles.alertBody}>
             {alerts.length > 0 ? alerts.join(' — ') : 'لا توجد تنبيهات حالية'}
           </div>
@@ -90,6 +90,7 @@ const DashboardPage = ({ isMobile }) => {
 
 DashboardPage.propTypes = {
   isMobile: PropTypes.bool.isRequired,
+  lang: PropTypes.oneOf(['ar', 'en']).isRequired,
 };
 
 export default DashboardPage;

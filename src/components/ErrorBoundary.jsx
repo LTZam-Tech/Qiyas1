@@ -21,6 +21,7 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      const lang = this.props.lang || 'ar';
       return (
         <section
           role="alert"
@@ -35,7 +36,7 @@ class ErrorBoundary extends React.Component {
           }}
         >
           <div>
-            <h1 style={{ marginBottom: 12, color: "#5C3A73" }}>حدث خطا غير متوقع</h1>
+            <h1 style={{ marginBottom: 12, color: "#5C3A73" }}>{lang === 'ar' ? 'حدث خطا غير متوقع' : 'An Unexpected Error Occurred'}</h1>
             <p style={{ marginBottom: 16, color: "#7A6B8A" }}>{this.state.errorMessage}</p>
             <button
               type="button"
@@ -49,7 +50,7 @@ class ErrorBoundary extends React.Component {
                 cursor: "pointer",
               }}
             >
-              حاول مرة اخرى
+              {lang === 'ar' ? 'حاول مرة اخرى' : 'Try Again'}
             </button>
           </div>
         </section>
@@ -62,6 +63,7 @@ class ErrorBoundary extends React.Component {
 
 ErrorBoundary.propTypes = {
   children: PropTypes.node.isRequired,
+  lang: PropTypes.oneOf(['ar', 'en']),
 };
 
 export default ErrorBoundary;
