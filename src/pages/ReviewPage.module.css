@@ -48,7 +48,7 @@
   flex-wrap: wrap;
 }
 
-[dir="ltr"] .row {
+[dir="rtl"] .row {
   flex-direction: row-reverse;
 }
 

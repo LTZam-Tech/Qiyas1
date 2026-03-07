@@ -25,6 +25,15 @@ const ReviewPage = ({ isMobile, lang }) => {
         {pendingReviews.length > 0 ? (
           pendingReviews.map((task) => (
             <div key={task.id} className={styles.row}>
+              <div className={styles.rowBody}>
+                <div className={styles.rowTitle}>{lang === 'ar' ? task.req_ar : task.req_en}</div>
+                <div className={styles.rowMeta}>
+                  {lang === 'ar' ? 'المعيار' : 'Standard'}: {task.code} | {lang === 'ar' ? 'المسؤول' : 'Responsible'}: {lang === 'ar' ? task.assignee_ar : task.assignee_en}
+                </div>
+              </div>
+
+              <Badge status={task.status} lang={lang} />
+
               <div className={styles.rowActions}>
                 <button type="button" aria-label={lang === 'ar' ? `اعتماد ${task.req_ar}` : `Approve ${task.req_en}`} className={`${styles.actionButton} ${styles.approve}`}>
                   {lang === 'ar' ? 'اعتماد' : 'Approve'}
@@ -36,15 +45,6 @@ const ReviewPage = ({ isMobile, lang }) => {
                   {lang === 'ar' ? 'رفض' : 'Reject'}
                 </button>
               </div>
-
-              <div className={styles.rowBody}>
-                <div className={styles.rowTitle}>{lang === 'ar' ? task.req_ar : task.req_en}</div>
-                <div className={styles.rowMeta}>
-                  {lang === 'ar' ? 'المعيار' : 'Standard'}: {task.code} | {lang === 'ar' ? 'المسؤول' : 'Responsible'}: {lang === 'ar' ? task.assignee_ar : task.assignee_en}
-                </div>
-              </div>
-
-              <Badge status={task.status} lang={lang} />
             </div>
           ))
         ) : (
