@@ -11,7 +11,7 @@ const responseInterceptors = [];
 const createUrl = (path, query = {}) => {
   const base = env.apiBaseUrl.replace(/\/$/, '');
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const url = new URL(`${base}${normalizedPath}`);
+  const url = new URL(`${base}${normalizedPath}`, window.location.origin);
 
   Object.entries(query).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {

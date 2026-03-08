@@ -22,9 +22,14 @@ class SubmissionsController {
   uploadMiddleware = upload.array('files', 10);
 
   getSubmissions = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
+    let taskId = req.query.taskId as string | undefined;
+    if (taskId === 'undefined' || taskId === 'null') taskId = undefined;
+    let status = req.query.status as string | undefined;
+    if (status === 'undefined' || status === 'null') status = undefined;
+
     const filters = {
-      taskId: req.query.taskId as string | undefined,
-      status: req.query.status as string,
+      taskId,
+      status,
     };
 
     const submissions = await submissionsService.getAllSubmissions(filters);

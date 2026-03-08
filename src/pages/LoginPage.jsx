@@ -5,10 +5,10 @@ import { env } from '../config/env.js';
 
 const getBackendPortLabel = () => {
   try {
-    const port = new URL(env.apiBaseUrl).port;
-    return port || 'default';
+    const url = new URL(env.apiBaseUrl, window.location.origin);
+    return url.port || '8082';
   } catch {
-    return 'default';
+    return '8082';
   }
 };
 

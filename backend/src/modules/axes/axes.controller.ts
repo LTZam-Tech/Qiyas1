@@ -23,7 +23,8 @@ const updateAxisSchema = z.object({
 
 class AxesController {
   getAxes = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
-    const perspectiveId = req.query.perspectiveId as string | undefined;
+    let perspectiveId = req.query.perspectiveId as string | undefined;
+    if (perspectiveId === 'undefined' || perspectiveId === 'null') perspectiveId = undefined;
     const axes = await axesService.getAllAxes(perspectiveId);
     res.json({ success: true, data: { axes } });
   });

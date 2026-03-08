@@ -23,7 +23,8 @@ const updateStandardSchema = z.object({
 
 class StandardsController {
   getStandards = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
-    const axisId = req.query.axisId as string | undefined;
+    let axisId = req.query.axisId as string | undefined;
+    if (axisId === 'undefined' || axisId === 'null') axisId = undefined;
     const standards = await standardsService.getAllStandards(axisId);
     res.json({ success: true, data: { standards } });
   });

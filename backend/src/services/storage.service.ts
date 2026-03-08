@@ -31,10 +31,14 @@ class StorageService {
       const buckets = [this.evidenceBucket, this.reportsBucket, this.templatesBucket];
       
       for (const bucket of buckets) {
-        const exists = await this.client.bucketExists(bucket);
-        if (!exists) {
-          await this.client.makeBucket(bucket, 'us-east-1');
-          logger.info(`Created bucket: ${bucket}`);
+        try {
+          const exists = await this.client.bucketExists(bucket);
+          if (!exists) {
+            await this.client.makeBucket(bucket, 'us-east-1');
+            logger.info(`Created bucket: ${bucket}`);
+          }
+        } catch (bucketError) {
+          logger.warn(`Could not verify or create bucket ${bucket}: ${bucketError}`);
         }
       }
     } catch (error) {

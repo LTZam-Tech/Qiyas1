@@ -8,5 +8,11 @@ export default defineConfig({
     port: 4200,
     host: '0.0.0.0',
     allowedHosts: ['qiyas.iltizamtech.com', 'localhost'],
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8082',
+        changeOrigin: true,
+      }
+    }
   },
 })

@@ -7,11 +7,15 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
 
 Write-Host "Adding Windows Firewall Rule to allow incoming traffic on Port 80..."
 
-# Remove existing rule if it exists to avoid duplicates
+# Remove existing rules if they exist to avoid duplicates
 Remove-NetFirewallRule -DisplayName "Qiyas Portal - HTTP (Port 80)" -ErrorAction SilentlyContinue
+Remove-NetFirewallRule -DisplayName "Qiyas API - HTTP (Port 8082)" -ErrorAction SilentlyContinue
+Remove-NetFirewallRule -DisplayName "Qiyas Portal - HTTPS (Port 443)" -ErrorAction SilentlyContinue
 
-# Add the new inbound rule
+# Add the new inbound rules
 New-NetFirewallRule -DisplayName "Qiyas Portal - HTTP (Port 80)" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 80 -Profile Any
+New-NetFirewallRule -DisplayName "Qiyas API - HTTP (Port 8082)" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8082 -Profile Any
+New-NetFirewallRule -DisplayName "Qiyas Portal - HTTPS (Port 443)" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 443 -Profile Any
 
 Write-Host "=================================================="
 Write-Host "SUCCESS! The firewall has been opened."
