@@ -106,15 +106,14 @@ BEGIN
     ALTER TABLE tasks
       ADD CONSTRAINT chk_tasks_target_mapping
       CHECK (
+        (target_type IS NULL AND target_department_id IS NULL AND target_unit_id IS NULL)
+        OR
         (target_type = 'department' AND target_department_id IS NOT NULL AND target_unit_id IS NULL)
         OR
         (target_type = 'unit' AND target_unit_id IS NOT NULL)
       );
   END IF;
 END $$;
-
--- Normalize priority options to required set
-UPDATE tasks SET priority = 'medium' WHERE priority = 'normal';
 
 DO $$
 DECLARE
@@ -129,6 +128,9 @@ BEGIN
   IF c_name IS NOT NULL THEN
     EXECUTE format('ALTER TABLE tasks DROP CONSTRAINT %I', c_name);
   END IF;
+
+  -- Normalize legacy value after removing old priority check.
+  UPDATE tasks SET priority = 'medium' WHERE priority = 'normal';
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint WHERE conname = 'chk_tasks_priority'

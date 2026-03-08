@@ -3,6 +3,7 @@ import config from '@/config';
 import logger from '@/utils/logger';
 import db from '@/db';
 import redis from '@/db/redis';
+import { runPendingMigrations } from '@/db/migrations';
 
 console.log('=== SERVER STARTING ===');
 
@@ -26,6 +27,10 @@ async function startServer() {
       throw new Error('Database connection failed');
     }
     logger.info('Database connected successfully');
+
+    console.log('Applying pending database migrations...');
+    await runPendingMigrations();
+    logger.info('Database migrations checked/applied successfully');
 
     console.log('Testing Redis connection...');
     

@@ -11,7 +11,7 @@ import styles from './TaskModal.module.css';
 const PRIORITY_OPTIONS = [
   ['critical', 'حرج', 'Critical'],
   ['high', 'عالي', 'High'],
-  ['normal', 'متوسط', 'Normal'],
+  ['medium', 'متوسط', 'Medium'],
   ['low', 'منخفض', 'Low'],
 ];
 
@@ -20,8 +20,18 @@ const EVIDENCE_OPTIONS = [
   ['screenshot', 'لقطة شاشة', 'Screenshot'],
 ];
 
-const TITLE_REGEX = /^(?=.{1,50}$)[A-Za-z\u0600-\u06FF\s]+$/u;
-const DESCRIPTION_REGEX = /^(?=.{0,300}$)[A-Za-z0-9\u0600-\u06FF\s]*$/u;
+const TITLE_REGEX = /^(?=.{1,50}$)[\p{L}\p{N}\s\u060C\u061B\u061F.,()\-_/]+$/u;
+const DESCRIPTION_REGEX = /^(?=.{0,300}$)[\p{L}\p{N}\s\u060C\u061B\u061F.,:;()\-_/]*$/u;
+
+const isMockId = (value) => {
+  const normalized = String(value || '');
+  return (
+    normalized.startsWith('user-') ||
+    normalized.startsWith('dept-') ||
+    normalized.startsWith('unit-') ||
+    normalized.startsWith('std-')
+  );
+};
 
 const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
   const [formData, setFormData] = useState({
@@ -33,7 +43,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
     assignedTo: '',
     targetEntity: '',
     dueDate: '',
-    priority: 'normal',
+    priority: 'medium',
     description: '',
   });
 
@@ -144,7 +154,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
       assignedTo: '',
       targetEntity: '',
       dueDate: '',
-      priority: 'normal',
+      priority: 'medium',
       description: '',
     });
     setError('');
@@ -256,6 +266,18 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
     }
 
     const { targetType, targetId } = parseTargetEntity(formData.targetEntity);
+
+    if (
+      isMockId(formData.assignedTo) ||
+      isMockId(formData.standardId) ||
+      isMockId(formData.axisId) ||
+      isMockId(formData.perspectiveId) ||
+      isMockId(targetId)
+    ) {
+      setError(lang === 'ar' ? 'تم تحميل بيانات تجريبية. يرجى تحديث الصفحة والتأكد من اتصال الـ API.' : 'Mock IDs detected. Refresh and ensure API connectivity.');
+      return;
+    }
+
     const selectedStandardTitle = selectedStandard?.name_ar || selectedStandard?.name || selectedStandard?.title;
     if (!selectedStandardTitle) {
       setError(lang === 'ar' ? 'لم يتم العثور على بيانات المعيار المحدد' : 'Selected standard data is missing');

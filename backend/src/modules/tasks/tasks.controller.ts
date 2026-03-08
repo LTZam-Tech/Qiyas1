@@ -5,8 +5,11 @@ import { AuthRequest, canViewTask } from '@/middleware/auth';
 import { asyncHandler } from '@/utils/errors';
 import { ValidationError, ForbiddenError } from '@/utils/errors';
 
-const titleRegex = /^(?=.{1,50}$)[A-Za-z\u0600-\u06FF\s]+$/u;
-const descriptionRegex = /^(?=.{0,300}$)[A-Za-z0-9\u0600-\u06FF\s]*$/u;
+const titleRegex = /^(?=.{1,50}$)[\p{L}\p{N}\s\u060C\u061B\u061F.,()\-_/]+$/u;
+const descriptionRegex = /^(?=.{0,300}$)[\p{L}\p{N}\s\u060C\u061B\u061F.,:;()\-_/]*$/u;
+const prioritySchema = z
+  .enum(['critical', 'high', 'medium', 'low', 'normal'])
+  .transform((value) => (value === 'normal' ? 'medium' : value));
 
 const createTaskSchema = z.object({
   title: z.string().regex(titleRegex, 'Task name must be Arabic/English letters only and max 50 chars'),
@@ -18,14 +21,14 @@ const createTaskSchema = z.object({
   targetType: z.enum(['department', 'unit']),
   targetId: z.string().min(1, 'Target ID is required'),
   dueDate: z.string().min(1, 'Due date is required'),
-  priority: z.enum(['critical', 'high', 'normal', 'low']),
+  priority: prioritySchema,
   description: z.string().regex(descriptionRegex, 'Description must be alphanumeric (Arabic/English) max 300 chars').optional(),
 });
 
 const updateTaskSchema = z.object({
   title: z.string().regex(titleRegex, 'Task name must be Arabic/English letters only and max 50 chars').optional(),
   dueDate: z.string().optional(),
-  priority: z.enum(['critical', 'high', 'normal', 'low']).optional(),
+  priority: prioritySchema.optional(),
   status: z.enum(['draft', 'assigned', 'in_progress', 'submitted', 'under_review', 'approved', 'rejected', 'resubmission_required', 'closed', 'cancelled']).optional(),
   description: z.string().regex(descriptionRegex, 'Description must be alphanumeric (Arabic/English) max 300 chars').optional(),
   completionNotes: z.string().optional(),

@@ -3,55 +3,7 @@ import PropTypes from "prop-types";
 import AuthContext from './authContextObject.js';
 import { clearAccessToken, getAccessToken, setAccessToken } from '../lib/authStorage.js';
 import { setAuthTokenGetter, setUnauthorizedHandler, request } from '../lib/httpClient.js';
-import { env } from '../config/env.js';
 import errorLogger from '../services/errorLogger.js';
-
-const MOCK_USER_KEY = 'qiyas_mock_user';
-
-const getMockRole = (email = '') => {
-  const normalized = String(email).toLowerCase();
-  if (normalized.includes('admin')) return 'admin';
-  if (normalized.includes('dean')) return 'dean';
-  if (normalized.includes('consultant')) return 'consultant';
-  return 'user';
-};
-
-function generateId() {
-  if (globalThis.crypto?.randomUUID) {
-    return globalThis.crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-/**
- * Demo-only credentials. These are for development/testing use ONLY.
- * Remove or replace with real authentication when connecting to a production backend.
- */
-const MOCK_USERS = {
-  'admin@university.edu': {
-    password: 'AdminPass123',
-    user: { id: 1, email: 'admin@university.edu', fullName: 'Admin User', role: 'admin' },
-  },
-  'dean@university.edu': {
-    password: 'DeanPass123',
-    user: { id: 2, email: 'dean@university.edu', fullName: 'Dean User', role: 'dean' },
-  },
-  'consultant@qiyas.sa': {
-    password: 'ConsultPass123',
-    user: { id: 3, email: 'consultant@qiyas.sa', fullName: 'Consultant User', role: 'consultant' },
-  },
-  'employee@test.com': {
-    password: 'UserPass123',
-    user: { id: 4, email: 'employee@test.com', fullName: 'Employee User', role: 'user' },
-  },
-};
-
-const buildMockUser = (email) => ({
-  id: `mock-${Date.now()}`,
-  email,
-  fullName: email.split('@')[0] || 'Mock User',
-  role: getMockRole(email),
-});
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -69,37 +21,21 @@ export function AuthProvider({ children }) {
 
       const token = getAccessToken();
       if (token) {
-        if (env.useMockApi) {
-          // Restore user from localStorage in mock mode
-          try {
-            const storedUser = JSON.parse(localStorage.getItem(MOCK_USER_KEY) || 'null');
-            if (storedUser) {
-              if (!isCancelled && authCheckIdRef.current === currentAuthCheckId) {
-                setUser({ ...storedUser, token });
-              }
-            } else {
-              clearAccessToken();
+        try {
+          // Verify token with backend
+          const response = await request('/auth/me', { timeoutMs: 5000 });
+          if (response.success && response.data) {
+            if (!isCancelled && authCheckIdRef.current === currentAuthCheckId) {
+              setUser({
+                ...response.data.user,
+                token,
+              });
             }
-          } catch {
+          } else {
             clearAccessToken();
           }
-        } else {
-          try {
-            // Verify token with backend
-            const response = await request('/auth/me', { timeoutMs: 5000 });
-            if (response.success && response.data) {
-              if (!isCancelled && authCheckIdRef.current === currentAuthCheckId) {
-                setUser({
-                  ...response.data.user,
-                  token,
-                });
-              }
-            } else {
-              clearAccessToken();
-            }
-          } catch {
-            clearAccessToken();
-          }
+        } catch {
+          clearAccessToken();
         }
       }
       if (!isCancelled && authCheckIdRef.current === currentAuthCheckId) {
@@ -130,12 +66,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    if (env.useMockApi) {
-      localStorage.removeItem(MOCK_USER_KEY);
-      clearAccessToken();
-      setUser(null);
-      return;
-    }
     try {
       // Call logout endpoint to invalidate refresh token
       await request('/auth/logout', { method: 'POST' });
@@ -150,34 +80,6 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (credentials) => {
     setIsAuthenticating(true);
     try {
-      if (env.useMockApi) {
-        const email = String(credentials?.email || '').trim();
-        const password = String(credentials?.password || '');
-        if (!email || !password) {
-          const err = new Error('Invalid email or password');
-          err.status = 401;
-          throw err;
-        }
-
-        // Mock authentication: validate known demo accounts first.
-        const normalizedEmail = email.toLowerCase();
-        const mockEntry = MOCK_USERS[normalizedEmail];
-        if (mockEntry && mockEntry.password === password) {
-          const accessToken = generateId();
-          localStorage.setItem(MOCK_USER_KEY, JSON.stringify(mockEntry.user));
-          setAccessToken(accessToken);
-          setUser({ ...mockEntry.user, token: accessToken });
-          return { success: true };
-        }
-
-        const mockUser = buildMockUser(email);
-        const accessToken = generateId();
-        localStorage.setItem(MOCK_USER_KEY, JSON.stringify(mockUser));
-        setAccessToken(accessToken);
-        setUser({ ...mockUser, token: accessToken });
-        return { success: true };
-      }
-
       const response = await request('/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),

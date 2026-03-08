@@ -1,13 +1,11 @@
-import { env } from '../config/env.js';
 import { httpClient, request } from '../lib/httpClient.js';
-import { TASKS_DATA } from '../utils/data.js';
 import errorLogger from './errorLogger.js';
 import { TASK_EVIDENCE_TYPES, TASK_PRIORITIES } from '../constants/taskValidation.js';
 
 const getResponseData = (response) => response?.data || response || {};
 
-const TITLE_REGEX = /^(?=.{1,50}$)[\p{L}\s]+$/u;
-const DESCRIPTION_REGEX = /^(?=.{0,300}$)[\p{L}\p{N}\s]*$/u;
+const TITLE_REGEX = /^(?=.{1,50}$)[\p{L}\p{N}\s\u060C\u061B\u061F.,()\-_/]+$/u;
+const DESCRIPTION_REGEX = /^(?=.{0,300}$)[\p{L}\p{N}\s\u060C\u061B\u061F.,:;()\-_/]*$/u;
 const VALID_PRIORITIES = new Set(TASK_PRIORITIES);
 const VALID_EVIDENCE_TYPES = new Set(TASK_EVIDENCE_TYPES);
 
@@ -58,68 +56,39 @@ function validateTaskPayload(taskData) {
   }
 }
 
-export async function getTasks(filter = {}) {
-  if (env.useMockApi) {
-    const status = filter.status;
-    if (!status || status === 'all') {
-      return TASKS_DATA;
-    }
-    return TASKS_DATA.filter((task) => task.status === status);
+function normalizePriority(priority) {
+  if (priority === 'normal') {
+    return 'medium';
   }
+  return priority;
+}
 
+export async function getTasks(filter = {}) {
   try {
     const response = await httpClient.get('/tasks', filter);
     const data = getResponseData(response);
     return Array.isArray(data.tasks) ? data.tasks : [];
   } catch (err) {
-    errorLogger.logWarning('Tasks API failed, using mock data fallback', 'backend', {
+    errorLogger.logWarning('Tasks API failed', 'backend', {
       message: err?.message,
       status: err?.status,
     });
-    const status = filter.status;
-    if (!status || status === 'all') {
-      return TASKS_DATA;
-    }
-    return TASKS_DATA.filter((task) => task.status === status);
+    throw err;
   }
 }
 
 // Create new task
 export async function createTask(taskData) {
-  validateTaskPayload(taskData);
+  const normalizedTaskData = {
+    ...taskData,
+    priority: normalizePriority(taskData.priority),
+  };
 
-  if (env.useMockApi) {
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
+  validateTaskPayload(normalizedTaskData);
 
-    const mockTask = {
-      id: Date.now(),
-      code: taskData.standardCode || String(taskData.standardId),
-      req: taskData.evidenceType === 'file' ? 'ملف' : 'لقطة شاشة',
-      assignee: taskData.assignedToName || String(taskData.assignedTo),
-      due: taskData.dueDate,
-      status: 'active',
-      priority: taskData.priority,
-      title: taskData.title,
-      perspectiveId: taskData.perspectiveId,
-      axisId: taskData.axisId,
-      standardId: taskData.standardId,
-      targetType: taskData.targetType,
-      targetId: taskData.targetId,
-      description: taskData.description,
-    };
-
-    TASKS_DATA.unshift(mockTask);
-
-    return {
-      ...mockTask,
-      created_at: new Date().toISOString(),
-    };
-  }
-  
   const response = await request('/tasks', {
     method: 'POST',
-    body: JSON.stringify(taskData),
+    body: JSON.stringify(normalizedTaskData),
   });
   const data = getResponseData(response);
   return data.task || null;

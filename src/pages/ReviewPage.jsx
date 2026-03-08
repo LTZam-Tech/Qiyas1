@@ -1,16 +1,37 @@
-﻿import { useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { cardGradients } from '../utils/theme.js';
-import { TASKS_DATA } from '../utils/data.js';
+import { getTasks } from '../services/tasksService.js';
 import StatCard from '../components/StatCard.jsx';
 import styles from './ReviewPage.module.css';
 
 const ReviewPage = ({ isMobile, lang }) => {
-  const [tasks, setTasks] = useState(TASKS_DATA);
+  const [tasks, setTasks] = useState([]);
   const [actionMessage, setActionMessage] = useState('');
+  const [loadError, setLoadError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadTasks = async () => {
+      try {
+        const result = await getTasks();
+        if (!mounted) return;
+        setTasks(Array.isArray(result) ? result : []);
+      } catch {
+        if (!mounted) return;
+        setLoadError(lang === 'ar' ? 'فشل تحميل المهام من النظام' : 'Failed to load tasks from API');
+      }
+    };
+
+    loadTasks();
+    return () => {
+      mounted = false;
+    };
+  }, [lang]);
 
   const pendingReviews = useMemo(
-    () => tasks.filter((task) => task.status === 'submitted' || task.status === 'revision'),
+    () => tasks.filter((task) => ['submitted', 'under_review', 'resubmission_required', 'revision'].includes(task.status)),
     [tasks]
   );
 
@@ -30,6 +51,7 @@ const ReviewPage = ({ isMobile, lang }) => {
       <h2 className={styles.heading}>{lang === 'ar' ? 'المراجعة والاعتماد' : 'Review & Approval'}</h2>
 
       {actionMessage ? <div className={styles.emptyState}>{actionMessage}</div> : null}
+      {loadError ? <div className={styles.emptyState}>{loadError}</div> : null}
 
       <div className={`${styles.kpiGrid} ${isMobile ? styles.kpiGridMobile : styles.kpiGridDesktop}`}>
         <StatCard label={lang === 'ar' ? 'بانتظار المراجعة' : 'Pending Review'} value="18" gradient={cardGradients.accent} icon="clock" lang={lang} />
@@ -45,9 +67,9 @@ const ReviewPage = ({ isMobile, lang }) => {
           pendingReviews.map((task) => (
             <div key={task.id} className={styles.row}>
               <div className={styles.rowBody}>
-                <div className={styles.rowTitle}>{lang === 'ar' ? task.req_ar : task.req_en}</div>
+                <div className={styles.rowTitle}>{task.title || (lang === 'ar' ? task.req_ar : task.req_en) || '-'}</div>
                 <div className={styles.rowMeta}>
-                  {lang === 'ar' ? 'المعيار' : 'Standard'}: {task.code} | {lang === 'ar' ? 'المسؤول' : 'Responsible'}: {lang === 'ar' ? task.assignee_ar : task.assignee_en}
+                  {lang === 'ar' ? 'المعيار' : 'Standard'}: {task.standard_name || task.code || '-'} | {lang === 'ar' ? 'المسؤول' : 'Responsible'}: {task.assigned_to_name || task.assignee_en || task.assignee_ar || '-'}
                 </div>
               </div>
 

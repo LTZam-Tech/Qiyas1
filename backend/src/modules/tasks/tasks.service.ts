@@ -31,7 +31,7 @@ type CreateTaskInput = {
   targetType: 'department' | 'unit';
   targetId: string;
   dueDate: string;
-  priority: 'critical' | 'high' | 'normal' | 'low';
+  priority: 'critical' | 'high' | 'medium' | 'low' | 'normal';
   description?: string;
 };
 
@@ -39,14 +39,43 @@ type UpdateTaskInput = {
   title?: string;
   description?: string;
   dueDate?: string;
-  priority?: 'critical' | 'high' | 'normal' | 'low';
+  priority?: 'critical' | 'high' | 'medium' | 'low' | 'normal';
   status?: string;
   completionNotes?: string;
 };
 
 class TasksService extends BaseRepository<Task> {
+  private evidenceTypeSchemaChecked = false;
+
   constructor() {
     super('tasks');
+  }
+
+  private async ensureEvidenceTypeColumn(): Promise<void> {
+    if (this.evidenceTypeSchemaChecked) {
+      return;
+    }
+
+    await db.query(`
+      ALTER TABLE tasks
+      ADD COLUMN IF NOT EXISTS evidence_type VARCHAR(50) DEFAULT 'file'
+    `);
+
+    await db.query(`
+      UPDATE tasks
+      SET evidence_type = 'file'
+      WHERE evidence_type IS NULL
+    `);
+
+    this.evidenceTypeSchemaChecked = true;
+  }
+
+  private normalizePriority(priority?: string): 'critical' | 'high' | 'medium' | 'low' {
+    if (!priority || priority === 'normal') {
+      return 'medium';
+    }
+
+    return priority as 'critical' | 'high' | 'medium' | 'low';
   }
 
   async getAllTasks(filters?: { assignedTo?: string; status?: string; priority?: string }, userId?: string, role?: string) {
@@ -131,6 +160,8 @@ class TasksService extends BaseRepository<Task> {
   }
 
   async createTask(data: CreateTaskInput, createdBy: string) {
+    await this.ensureEvidenceTypeColumn();
+
     const mappingResult = await db.query(
       `SELECT s.id AS standard_id, a.id AS axis_id, p.id AS perspective_id
        FROM standards s
@@ -145,6 +176,8 @@ class TasksService extends BaseRepository<Task> {
       throw new BusinessLogicError('Invalid domain-axis-standard mapping');
     }
 
+    const mapping = mappingResult.rows[0];
+
     const assigneeResult = await db.query('SELECT id FROM users WHERE id = $1 AND deleted_at IS NULL', [data.assignedTo]);
     if (assigneeResult.rows.length === 0) {
       throw new BusinessLogicError('Assigned user does not exist');
@@ -152,7 +185,7 @@ class TasksService extends BaseRepository<Task> {
 
     const requirementResult = await db.query(
       'SELECT id FROM evidence_requirements WHERE standard_id = $1 AND deleted_at IS NULL LIMIT 1',
-      [data.standardId]
+      [mapping.standard_id]
     );
 
     if (requirementResult.rows.length === 0) {
@@ -160,19 +193,44 @@ class TasksService extends BaseRepository<Task> {
     }
     const evidenceRequirementId = requirementResult.rows[0].id;
 
-    // Validating targetType department/unit is skipped here because those SQL tables do not exist in the initial 0001_init.sql schema.
+    let targetDepartmentId: string | null = null;
+    let targetUnitId: string | null = null;
 
-    if (data.targetType) {
-      // NOTE: target_department_id and target_unit_id do not exist on the tasks table
-      // You must handle assignments via a different table or ignore them for now.
+    if (data.targetType === 'department') {
+      const departmentResult = await db.query(
+        'SELECT id FROM departments WHERE id = $1 AND deleted_at IS NULL LIMIT 1',
+        [data.targetId]
+      );
+
+      if (departmentResult.rows.length === 0) {
+        throw new BusinessLogicError('Target department does not exist');
+      }
+
+      targetDepartmentId = departmentResult.rows[0].id;
+    } else {
+      const unitResult = await db.query(
+        'SELECT id FROM units WHERE id = $1 AND deleted_at IS NULL LIMIT 1',
+        [data.targetId]
+      );
+
+      if (unitResult.rows.length === 0) {
+        throw new BusinessLogicError('Target unit does not exist');
+      }
+
+      targetUnitId = unitResult.rows[0].id;
     }
 
     const result = await db.query(`
       INSERT INTO tasks (
         evidence_requirement_id,
+        perspective_id,
+        axis_id,
         standard_id,
         assigned_to,
         assigned_by,
+        target_type,
+        target_department_id,
+        target_unit_id,
         title,
         instructions,
         due_date,
@@ -180,17 +238,22 @@ class TasksService extends BaseRepository<Task> {
         status,
         evidence_type
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'assigned', $9)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'assigned', $13)
       RETURNING *
     `, [
       evidenceRequirementId,
-      data.standardId,
+      mapping.perspective_id,
+      mapping.axis_id,
+      mapping.standard_id,
       data.assignedTo,
       createdBy,
+      data.targetType,
+      targetDepartmentId,
+      targetUnitId,
       data.title,
       data.description || null,
       data.dueDate,
-      data.priority || 'normal',
+      this.normalizePriority(data.priority),
       data.evidenceType
     ]);
 
@@ -221,6 +284,13 @@ class TasksService extends BaseRepository<Task> {
     for (const [inputField, dbColumn] of fieldMappings) {
       const value = data[inputField];
       if (value !== undefined && value !== null && value !== '') {
+        if (inputField === 'priority') {
+          updates.push(`${dbColumn} = $${idx}`);
+          values.push(this.normalizePriority(value));
+          idx++;
+          continue;
+        }
+
         updates.push(`${dbColumn} = $${idx}`);
         values.push(value);
         idx++;
