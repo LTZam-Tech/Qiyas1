@@ -31,24 +31,8 @@ CREATE INDEX IF NOT EXISTS idx_departments_status ON departments(status) WHERE d
 CREATE INDEX IF NOT EXISTS idx_units_department ON units(department_id) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_units_status ON units(status) WHERE deleted_at IS NULL;
 
--- Seed minimal org structure for dropdowns (idempotent by code)
-INSERT INTO departments (code, name_en, name_ar)
-VALUES
-  ('DPT-DT', 'Digital Transformation Department', 'إدارة التحول الرقمي'),
-  ('DPT-QC', 'Quality & Compliance Department', 'إدارة الجودة والامتثال'),
-  ('DPT-DA', 'Data & Analytics Department', 'إدارة البيانات والتحليلات')
-ON CONFLICT (code) DO NOTHING;
-
-INSERT INTO units (department_id, code, name_en, name_ar)
-SELECT d.id, x.code, x.name_en, x.name_ar
-FROM (
-  VALUES
-    ('DPT-DT', 'UNT-GOV', 'Digital Governance Unit', 'وحدة الحوكمة الرقمية'),
-    ('DPT-DT', 'UNT-PMO', 'Digital PMO Unit', 'وحدة إدارة المشاريع الرقمية'),
-    ('DPT-QC', 'UNT-EXEC', 'Execution Follow-up Unit', 'وحدة المتابعة والتنفيذ')
-) AS x(dept_code, code, name_en, name_ar)
-JOIN departments d ON d.code = x.dept_code
-ON CONFLICT (code) DO NOTHING;
+-- NOTE: Departments and units are entered by administrators through the application UI.
+-- No mock/seed data is inserted here. Real org structure will be provided.
 
 -- 2) Task workflow columns
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS perspective_id UUID REFERENCES perspectives(id);

@@ -1,3 +1,9 @@
+/**
+ * seed_users.js — Seeds the 4 real system users
+ *
+ * Users: admin, dean, consultant, employee
+ * This is idempotent (safe to run multiple times via ON CONFLICT).
+ */
 const { Client } = require('pg');
 const bcrypt = require('bcrypt');
 
@@ -22,23 +28,23 @@ async function seedUsers() {
       throw new Error("Missing roles! Did you run 0002_seed_rbac.sql?");
     }
 
-    // 2. Define Demo Users
-    const demoUsers = [
-      { name: 'System Admin', email: 'admin@university.edu', password: 'AdminPass123', role: 'admin' },
-      { name: 'Dr. Dean', email: 'dean@university.edu', password: 'DeanPass123', role: 'dean' },
-      { name: 'External Consultant', email: 'consultant@qiyas.sa', password: 'ConsultPass123', role: 'consultant' },
-      { name: 'John Doe Employee', email: 'employee@test.com', password: 'UserPass123', role: 'employee' }
+    // 2. Define the 4 real system users
+    const systemUsers = [
+      { name: 'System Admin',       email: 'admin@university.edu', password: 'AdminPass123',   role: 'admin' },
+      { name: 'Dr. Dean',           email: 'dean@university.edu',  password: 'DeanPass123',    role: 'dean' },
+      { name: 'External Consultant',email: 'consultant@qiyas.sa',  password: 'ConsultPass123', role: 'consultant' },
+      { name: 'Employee',           email: 'employee@test.com',    password: 'UserPass123',    role: 'employee' }
     ];
 
-    console.log('Seeding fake users into users table...');
+    console.log('Seeding system users into users table...');
 
-    for (const u of demoUsers) {
-      const hash = await bcrypt.hash(u.password, 10);
+    for (const u of systemUsers) {
+      const hash = await bcrypt.hash(u.password, 12);
       
       const insertUserRes = await client.query(`
         INSERT INTO users (name, email, password_hash, is_active) 
         VALUES ($1, $2, $3, true)
-        ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash
+        ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, name = EXCLUDED.name
         RETURNING id
       `, [u.name, u.email, hash]);
       
@@ -49,12 +55,15 @@ async function seedUsers() {
         VALUES ($1, $2)
         ON CONFLICT (user_id, role_id) DO NOTHING
       `, [userId, roles[u.role]]);
+
+      console.log(`  ✓ ${u.role}: ${u.email}`);
     }
 
-    console.log('SUCCESS: Default demo users and mapped roles have been restored.');
+    console.log('\nSUCCESS: System users seeded. No mock hierarchy data was inserted.');
 
   } catch (err) {
     console.error('User seed failed:', err.message);
+    process.exit(1);
   } finally {
     await client.end();
   }
