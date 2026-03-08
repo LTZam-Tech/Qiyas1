@@ -41,10 +41,10 @@ export const TASKS_DATA = [
   { id: 2, code: "5.10.1", req_ar: "لقطة Report History — 3 أشهر متتالية", req_en: "Report History Screenshots - 3 Consecutive Months", assignee_ar: "أحمد الشمري", assignee_en: "Ahmed Al-Shammari", due: "2025-04-15", status: "revision", priority: "high" },
   { id: 3, code: "5.10.3", req_ar: "سياسة إدارة الوثائق", req_en: "Document Management Policy", assignee_ar: "فهد العنزي", assignee_en: "Fahad Al-Enezi", due: "2025-04-20", status: "active", priority: "critical" },
   { id: 4, code: "5.10.3", req_ar: "لقطات نظام الأرشفة", req_en: "DMS Screenshots", assignee_ar: "فهد العنزي", assignee_en: "Fahad Al-Enezi", due: "2025-04-22", status: "active", priority: "critical" },
-  { id: 5, code: "5.10.4", req_ar: "وثيقة تكامل CRM-ITSM", req_en: "Integration Document", assignee_ar: "سارة القحطاني", assignee_en: "Sarah Al-Qahtani", due: "2025-04-18", status: "approved", priority: "medium" },
+  { id: 5, code: "5.10.4", req_ar: "وثيقة تكامل CRM-ITSM", req_en: "Integration Document", assignee_ar: "سارة القحطاني", assignee_en: "Sarah Al-Qahtani", due: "2025-04-18", status: "approved", priority: "normal" },
   { id: 6, code: "5.13.5", req_ar: "تسجيل المنصات في رقمي", req_en: "Raqmi Registration", assignee_ar: "خالد المطيري", assignee_en: "Khalid Al-Motairi", due: "2025-04-25", status: "active", priority: "critical" },
   { id: 7, code: "5.22.2", req_ar: "وثيقة ورش Design Thinking", req_en: "Design Thinking Workshop Document", assignee_ar: "نورة العتيبي", assignee_en: "Nora Al-Otaibi", due: "2025-05-01", status: "active", priority: "high" },
-  { id: 8, code: "5.9.1", req_ar: "ميثاق لجنة BCM", req_en: "BCM Charter", assignee_ar: "محمد الدوسري", assignee_en: "Mohammed Al-Dosari", due: "2025-04-10", status: "approved", priority: "medium" },
+  { id: 8, code: "5.9.1", req_ar: "ميثاق لجنة BCM", req_en: "BCM Charter", assignee_ar: "محمد الدوسري", assignee_en: "Mohammed Al-Dosari", due: "2025-04-10", status: "approved", priority: "normal" },
 ];
 
 export const BADGE_MAP = {
@@ -58,7 +58,7 @@ export const BADGE_MAP = {
   reject: { bg: C.redLight, color: C.red, label_ar: "مرفوض", label_en: "Rejected" },
   critical: { bg: C.redLight, color: C.red, label_ar: "حرج", label_en: "Critical" },
   high: { bg: C.orangeLight, color: C.orange, label_ar: "عالي", label_en: "High" },
-  medium: { bg: "#E3F2FD", color: "#1565C0", label_ar: "متوسط", label_en: "Medium" },
+  normal: { bg: "#E3F2FD", color: "#1565C0", label_ar: "متوسط", label_en: "Normal" },
 };
 
 // Sub-items under each domain in Standards Catalog Navigator

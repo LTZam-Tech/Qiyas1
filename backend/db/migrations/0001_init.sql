@@ -199,6 +199,7 @@ CREATE TABLE tasks (
   title VARCHAR(500) NOT NULL,
   instructions TEXT,
   due_date DATE NOT NULL,
+  evidence_type VARCHAR(50) NOT NULL DEFAULT 'file' CHECK (evidence_type IN ('file','screenshot')),
   status VARCHAR(50) NOT NULL DEFAULT 'assigned'
     CHECK (status IN ('draft','assigned','in_progress','submitted','under_review','approved','rejected','resubmission_required','closed','cancelled')),
   priority VARCHAR(20) NOT NULL DEFAULT 'normal' CHECK (priority IN ('low','normal','high','critical')),

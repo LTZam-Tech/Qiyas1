@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 4200,
-    host: 'localhost',
+    host: '0.0.0.0',
+    allowedHosts: ['qiyas.iltizamtech.com', 'localhost'],
   },
 })

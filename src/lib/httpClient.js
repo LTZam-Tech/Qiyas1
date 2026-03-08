@@ -1,5 +1,6 @@
 import { env } from '../config/env.js';
 import errorLogger from '../services/errorLogger.js';
+import { getAccessToken } from './authStorage.js';
 
 let authTokenGetter = null;
 let unauthorizedHandler = null;
@@ -105,7 +106,7 @@ export async function request(path, options = {}, query = {}) {
   );
 
   try {
-    const token = authTokenGetter?.();
+    const token = authTokenGetter?.() || getAccessToken();
     const method = (restOptions.method || 'GET').toUpperCase();
     const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
     const csrfToken = isMutating ? getCsrfToken() : null;

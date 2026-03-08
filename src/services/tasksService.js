@@ -68,7 +68,9 @@ export async function getTasks(filter = {}) {
   }
 
   try {
-    return await httpClient.get('/tasks', filter);
+    const response = await httpClient.get('/tasks', filter);
+    const data = getResponseData(response);
+    return Array.isArray(data.tasks) ? data.tasks : [];
   } catch (err) {
     errorLogger.logWarning('Tasks API failed, using mock data fallback', 'backend', {
       message: err?.message,

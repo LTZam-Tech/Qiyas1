@@ -11,7 +11,7 @@ import styles from './TaskModal.module.css';
 const PRIORITY_OPTIONS = [
   ['critical', 'حرج', 'Critical'],
   ['high', 'عالي', 'High'],
-  ['medium', 'متوسط', 'Medium'],
+  ['normal', 'متوسط', 'Normal'],
   ['low', 'منخفض', 'Low'],
 ];
 
@@ -33,7 +33,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
     assignedTo: '',
     targetEntity: '',
     dueDate: '',
-    priority: 'medium',
+    priority: 'normal',
     description: '',
   });
 
@@ -144,7 +144,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
       assignedTo: '',
       targetEntity: '',
       dueDate: '',
-      priority: 'medium',
+      priority: 'normal',
       description: '',
     });
     setError('');

@@ -128,7 +128,7 @@ class DashboardService {
           COUNT(*) FILTER (WHERE status NOT IN ('approved', 'closed', 'cancelled') AND due_date < NOW()) as overdue,
           COUNT(*) FILTER (WHERE priority = 'critical') as urgent,
           COUNT(*) FILTER (WHERE priority = 'high') as high,
-          COUNT(*) FILTER (WHERE priority = 'medium') as normal,
+          COUNT(*) FILTER (WHERE priority = 'normal') as normal,
           COUNT(*) FILTER (WHERE priority = 'low') as low
         FROM tasks
         WHERE ($1 = 'admin' OR $1 = 'dean') OR assigned_to = $2

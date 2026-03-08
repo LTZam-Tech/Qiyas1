@@ -1,4 +1,4 @@
-﻿import { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import Badge from '../components/Badge.jsx';
 import TaskModal from '../components/TaskModal.jsx';
@@ -141,10 +141,14 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
                     <td className={styles.centerCell}>
                       <Badge status={task.status} lang={lang} />
                     </td>
-                    <td className={styles.dueCell}>{task.due}</td>
-                    <td className={styles.textCell}>{lang === 'ar' ? task.assignee_ar : task.assignee_en}</td>
-                    <td className={styles.textCell}>{lang === 'ar' ? task.req_ar : task.req_en}</td>
-                    <td className={styles.codeCell}>{task.code}</td>
+                    <td className={styles.dueCell}>{task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : task.due}</td>
+                    <td className={styles.textCell}>{task.assigned_to_name || (lang === 'ar' ? task.assignee_ar : task.assignee_en) || '—'}</td>
+                    <td className={styles.textCell}>
+                      {task.evidence_type === 'file' ? (lang === 'ar' ? 'ملف' : 'File') : 
+                       task.evidence_type === 'screenshot' ? (lang === 'ar' ? 'لقطة شاشة' : 'Screenshot') :
+                       task.requirement_title || (lang === 'ar' ? task.req_ar : task.req_en) || '—'}
+                    </td>
+                    <td className={styles.codeCell}>{task.standard_name || task.code || '—'}</td>
                   </tr>
                 ))
               : null}
