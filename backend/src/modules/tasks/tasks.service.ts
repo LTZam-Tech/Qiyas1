@@ -84,7 +84,8 @@ class TasksService extends BaseRepository<Task> {
         t.*,
         u.name as assigned_to_name,
         c.name as assigned_by_name,
-        s.name_ar as standard_name,
+        s.name_ar as standard_name_ar,
+        s.name_en as standard_name_en,
         a.name_ar as axis_name,
         p.name_ar as perspective_name
       FROM tasks t
@@ -139,7 +140,8 @@ class TasksService extends BaseRepository<Task> {
         c.name as assigned_by_name,
         er.title as requirement_title,
         er.description_ar as requirement_description,
-        s.name_ar as standard_name,
+        s.name_ar as standard_name_ar,
+        s.name_en as standard_name_en,
         a.name_ar as axis_name,
         p.name_ar as perspective_name
       FROM tasks t
@@ -236,7 +238,7 @@ class TasksService extends BaseRepository<Task> {
         status,
         evidence_type
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'assigned', $13)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'assigned', $14)
       RETURNING *
     `, [
       evidenceRequirementId,

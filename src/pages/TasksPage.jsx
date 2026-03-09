@@ -148,7 +148,10 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
                        task.evidence_type === 'screenshot' ? (lang === 'ar' ? 'لقطة شاشة' : 'Screenshot') :
                        task.requirement_title || (lang === 'ar' ? task.req_ar : task.req_en) || '—'}
                     </td>
-                    <td className={styles.codeCell}>{task.standard_name || task.code || '—'}</td>
+                    <td className={styles.codeCell}>
+                      {lang === 'ar' ? task.standard_name_ar : task.standard_name_en} 
+                      {!task.standard_name_ar && !task.standard_name_en && (task.standard_name || task.code || '—')}
+                    </td>
                   </tr>
                 ))
               : null}
