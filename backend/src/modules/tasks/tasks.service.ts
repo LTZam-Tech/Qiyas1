@@ -1,6 +1,7 @@
 import { BaseRepository } from '@/db/repository';
 import db from '@/db';
 import { BusinessLogicError, NotFoundError } from '@/utils/errors';
+import notificationService, { NotificationType } from '@/services/notification.service';
 
 interface Task {
   id: string;
@@ -260,7 +261,39 @@ class TasksService extends BaseRepository<Task> {
     const task = result.rows[0];
     await this.logAudit(createdBy, 'create_task', 'task', task.id, data);
 
-    // TODO: Queue notification email
+    // Notifications
+    try {
+      // 1. Notify Assigned Employee
+      await notificationService.createNotification({
+        userId: data.assignedTo,
+        type: NotificationType.TASK_CREATED,
+        title: 'New Task Assigned',
+        body: `You have been assigned a new task: ${task.title}`,
+        data: { taskId: task.id }
+      });
+
+      // 2. Notify Creator (if different from assignee)
+      if (createdBy !== data.assignedTo) {
+        await notificationService.createNotification({
+          userId: createdBy,
+          type: NotificationType.TASK_CREATED,
+          title: 'Task Created Successfully',
+          body: `Task "${task.title}" has been created and assigned.`,
+          data: { taskId: task.id }
+        });
+      }
+
+      // 3. Notify Consultants
+      await notificationService.notifyRoles(['consultant'], {
+        type: NotificationType.TASK_CREATED,
+        title: 'New Task Created',
+        body: `A new task "${task.title}" has been created by ${createdBy}.`,
+        data: { taskId: task.id }
+      });
+    } catch (notifyError) {
+      // Don't leak notification errors to the user, just log them
+      console.error('Failed to send task creation notifications', notifyError);
+    }
 
     return task;
   }

@@ -3,6 +3,7 @@ import { C } from '../../utils/theme.js';
 import { Icons } from '../../utils/icons.jsx';
 import styles from './Layout.module.css';
 import joufLogo from '../../assets/jouf_logo.png';
+import NotificationBell from '../notifications/NotificationBell.jsx';
 
 export default function Header({
   isMobile,
@@ -14,8 +15,6 @@ export default function Header({
   onToggleSidebar,
   onToggleTheme,
   onToggleLanguage,
-  onToggleNotifications,
-  notificationCount,
   lang = 'ar',
 }) {
   return (
@@ -63,28 +62,7 @@ export default function Header({
         <button type="button" className={styles.headerBtn} aria-label="Toggle language" onClick={onToggleLanguage}>
           {Icons.globeIcon}
         </button>
-        <button
-          type="button"
-          className={styles.headerBtn}
-          aria-label="Show notifications"
-          onClick={onToggleNotifications}
-          style={{ position: 'relative' }}
-        >
-          {Icons.bellIcon}
-          {notificationCount > 0 && (
-            <span
-              style={{
-                position: 'absolute',
-                top: 4,
-                ...(lang === 'ar' ? { left: 4 } : { right: 4 }),
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: C.red,
-              }}
-            />
-          )}
-        </button>
+        <NotificationBell lang={lang} />
       </div>
     </header>
   );

@@ -164,7 +164,7 @@ export const canViewPerspective = async (userId: string, perspectiveId: string):
   );
 
   const role = roleResult.rows[0]?.role;
-  if (role === 'admin' || role === 'dean') {
+  if (role === 'admin' || role === 'dean' || role === 'consultant') {
     return true;
   }
 
@@ -196,7 +196,7 @@ export const canEditPerspective = async (userId: string, perspectiveId: string):
   if (perspectiveExists.rows.length === 0) return false;
   
   const role = result.rows[0].name;
-  return role === 'admin' || role === 'dean';
+  return role === 'admin' || role === 'consultant';
 };
 
 export const canViewTask = async (userId: string, taskId: string): Promise<boolean> => {
@@ -216,8 +216,8 @@ export const canViewTask = async (userId: string, taskId: string): Promise<boole
   const task = result.rows[0];
   const role = task.role;
   
-  // Admin and dean can view all tasks
-  if (role === 'admin' || role === 'dean') return true;
+  // Admin, dean and consultant can view all tasks
+  if (role === 'admin' || role === 'dean' || role === 'consultant') return true;
   
   // Assigned user can view their task
   if (task.assigned_to === userId) return true;
@@ -274,8 +274,8 @@ export const canReviewSubmission = async (userId: string, submissionId: string):
   const data = result.rows[0];
   const role = data.role;
   
-  // Only consultants can review
-  if (role !== 'consultant') return false;
+  // Both consultants and admins can review evidence
+  if (role !== 'consultant' && role !== 'admin') return false;
   
   // Submission must be in a reviewable state
   if (data.status !== 'submitted' && data.status !== 'under_review') return false;

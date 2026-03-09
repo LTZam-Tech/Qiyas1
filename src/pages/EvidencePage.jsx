@@ -5,12 +5,16 @@ import Badge from '../components/Badge.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 import EvidenceUploadModal from '../components/EvidenceUploadModal.jsx';
 import useEvidenceData from '../hooks/useEvidenceData.js';
+import useAuth from '../context/useAuth.js';
 import styles from './EvidencePage.module.css';
 
 const EvidencePage = ({ isMobile, lang }) => {
   const { data, isLoading, error, reload } = useEvidenceData();
   const items = (data || []).slice(0, 6);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user } = useAuth();
+  const userRole = user?.role;
+  const canUpload = userRole !== 'dean'; // Only dean is explicitly blocked in requirements for "view only" in evidence locker
 
   const cardStatusClass = (status) => {
     if (status === 'non') return styles.cardNon;
@@ -55,17 +59,19 @@ const EvidencePage = ({ isMobile, lang }) => {
         </div>
       ) : null}
 
-      {/* Upload button — opens modal instead of direct file picker */}
-      <button
-        type="button"
-        aria-label={lang === 'ar' ? 'رفع شاهد جديد' : 'Upload New Evidence'}
-        className={styles.uploader}
-        onClick={() => setIsModalOpen(true)}
-      >
-        <div className={styles.uploaderIcon}>{Icons.upload}</div>
-        <div className={styles.uploaderTitle}>{lang === 'ar' ? 'رفع شاهد جديد' : 'Upload New Evidence'}</div>
-        <div className={styles.uploaderHint}>{lang === 'ar' ? 'اضغط هنا لاختيار المجال والمعيار والملفات' : 'Click here to select domain, standard, and files'}</div>
-      </button>
+      {/* Upload button — only for non-dean roles */}
+      {canUpload && (
+        <button
+          type="button"
+          aria-label={lang === 'ar' ? 'رفع شاهد جديد' : 'Upload New Evidence'}
+          className={styles.uploader}
+          onClick={() => setIsModalOpen(true)}
+        >
+          <div className={styles.uploaderIcon}>{Icons.upload}</div>
+          <div className={styles.uploaderTitle}>{lang === 'ar' ? 'رفع شاهد جديد' : 'Upload New Evidence'}</div>
+          <div className={styles.uploaderHint}>{lang === 'ar' ? 'اضغط هنا لاختيار المجال والمعيار والملفات' : 'Click here to select domain, standard, and files'}</div>
+        </button>
+      )}
 
       {/* Upload modal with Domain → Axis → Standard DDLs */}
       <EvidenceUploadModal

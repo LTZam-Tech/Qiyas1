@@ -1,4 +1,3 @@
-// Role-based navigation access control
 export const ROLE_PERMISSIONS = {
   admin: [
     'dashboard',
@@ -18,26 +17,23 @@ export const ROLE_PERMISSIONS = {
     'tasks',
     'evidence',
     'evidence-list',
+    'reports',
+    'analytics',
+  ],
+  consultant: [
+    'dashboard',
+    'catalog',
+    'tasks',
     'review',
     'approvals',
     'reports',
     'analytics',
-    'error-logs',
-  ],
-  consultant: [
-    'dashboard',
-    'tasks',
-    'review',
-    'approvals',
-    'reports',
-    'error-logs',
-  ],
-  user: [
-    'dashboard',
-    'tasks',
-    'evidence',
     'evidence-list',
-    'error-logs',
+  ],
+  employee: [
+    'dashboard',
+    'tasks',
+    'evidence-list',
   ],
 };
 

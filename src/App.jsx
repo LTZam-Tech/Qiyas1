@@ -14,19 +14,19 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import CatalogPage from './pages/CatalogPage.jsx';
 import TasksPage from './pages/TasksPage.jsx';
 import EvidencePage from './pages/EvidencePage.jsx';
+import EvidenceListPage from './pages/EvidenceListPage.jsx';
 import ReviewPage from './pages/ReviewPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import ErrorLogPage from './pages/ErrorLogPage.jsx';
-import { getNotifications } from './services/notificationsService.js';
 
 const PAGE_COMPONENTS = {
   dashboard: DashboardPage,
   catalog: CatalogPage,
   tasks: TasksPage,
   evidence: EvidencePage,
+  'evidence-list': EvidenceListPage,
   review: ReviewPage,
   reports: ReportsPage,
-  'evidence-list': EvidencePage,
   approvals: ReviewPage,
   analytics: ReportsPage,
   'error-logs': ErrorLogPage,
@@ -74,37 +74,13 @@ export default function App() {
   const [expandedGroups, setExpandedGroups] = useState(getDefaultExpandedGroups);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDark, setIsDark] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [notifications, setNotifications] = useState([]);
 
   usePageLoad(page);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), APP_LOADING_DELAY_MS);
     return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadNotifications = async () => {
-      try {
-        const result = await getNotifications();
-        if (isMounted) {
-          setNotifications(Array.isArray(result) ? result : []);
-        }
-      } catch {
-        if (isMounted) {
-          setNotifications([]);
-        }
-      }
-    };
-
-    loadNotifications();
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   // Sync URL with language and page state (also handles initial redirect from root)
@@ -164,7 +140,6 @@ export default function App() {
     if (isMobile) {
       setSideOpen(false);
     }
-    setShowNotifications(false);
   }, [isMobile, user?.role]);
 
   const toggleLanguage = useCallback(() => {
@@ -223,14 +198,6 @@ export default function App() {
     NAV_ITEMS.flatMap((item) => [item, ...(item.children || [])]).find((item) => item.key === page) ||
     NAV_ITEMS[0];
 
-  const localizedNotifications = useMemo(
-    () => notifications.map((item) => ({
-      id: item.id,
-      text: lang === 'ar' ? item.message_ar : item.message_en,
-    })),
-    [notifications, lang]
-  );
-
   const PageComponent = PAGE_COMPONENTS[page] || DashboardPage;
 
   if (!user) {
@@ -263,21 +230,8 @@ export default function App() {
         onToggleSidebar={() => setSideOpen((prev) => !prev)}
         onToggleTheme={() => setIsDark((prev) => !prev)}
         onToggleLanguage={toggleLanguage}
-        onToggleNotifications={() => setShowNotifications((prev) => !prev)}
-        notificationCount={localizedNotifications.length}
         lang={lang}
       />
-
-      {showNotifications && (
-        <div className={styles.notifications} role="status" aria-live="polite">
-          <h4>{lang === 'ar' ? 'التنبيهات' : 'Notifications'}</h4>
-          {localizedNotifications.map((note) => (
-            <div key={note.id} className={styles.notificationItem}>
-              {note.text}
-            </div>
-          ))}
-        </div>
-      )}
 
       <div className={styles.shell}>
         <Sidebar

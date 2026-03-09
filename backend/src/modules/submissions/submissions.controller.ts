@@ -21,7 +21,7 @@ const upload = multer({
 class SubmissionsController {
   uploadMiddleware = upload.array('files', 10);
 
-  getSubmissions = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
+  getSubmissions = asyncHandler(async (req: any, res: any, _next: any) => {
     let taskId = req.query.taskId as string | undefined;
     if (taskId === 'undefined' || taskId === 'null') taskId = undefined;
     let status = req.query.status as string | undefined;
@@ -36,11 +36,17 @@ class SubmissionsController {
     res.json({ success: true, data: { submissions } });
   });
 
-  getSubmissionById = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
+  getEvidenceFiles = asyncHandler(async (_req: any, res: any, _next: any) => {
+    const files = await submissionsService.getAllEvidenceFiles();
+    res.json({ success: true, data: { files } });
+  });
+
+  getSubmissionById = asyncHandler(async (req: any, res: any, _next: any) => {
+    const authReq = req as AuthRequest;
     const submissionId = req.params.id as string;
     const submission = await submissionsService.getSubmissionById(submissionId);
 
-    const canView = await canViewTask(req.user!.id, submission.task_id);
+    const canView = await canViewTask(authReq.user!.id, submission.task_id);
     if (!canView) {
       throw new ForbiddenError('You do not have access to this submission');
     }
@@ -48,41 +54,49 @@ class SubmissionsController {
     res.json({ success: true, data: { submission } });
   });
 
-  createSubmission = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
+  createSubmission = asyncHandler(async (req: any, res: any, _next: any) => {
+    const authReq = req as AuthRequest;
     const files = (req as any).files;
 
     if (!files || files.length === 0) {
       throw new ValidationError('At least one file is required');
     }
 
-    const { taskId, submissionNotes } = req.body;
+    const { taskId, standardId, submissionNotes } = req.body as any;
 
-    if (!taskId) {
-      throw new ValidationError('Task ID is required');
+    if (!taskId && !standardId) {
+      throw new ValidationError('Task ID or Standard ID is required');
     }
 
-    const canSubmit = await canSubmitEvidence(req.user!.id, taskId as string);
-    if (!canSubmit) {
-      throw new ForbiddenError('You do not have permission to submit evidence for this task');
+    if (taskId && taskId !== 'standalone-upload') {
+      const canSubmit = await canSubmitEvidence(authReq.user!.id, taskId as string);
+      if (!canSubmit) {
+        throw new ForbiddenError('You do not have permission to submit evidence for this task');
+      }
     }
 
     const submission = await submissionsService.createSubmission(
-      { taskId: taskId as string, submissionNotes },
+      { taskId: taskId as string, standardId: standardId as string, submissionNotes },
       files,
-      req.user!.id
+      authReq.user!.id
     );
 
     res.status(201).json({ success: true, data: { submission } });
   });
 
-  downloadFile = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
+  downloadFile = asyncHandler(async (req: any, res: any, _next: any) => {
+    const authReq = req as AuthRequest;
     const submissionId = req.params.id as string;
     const fileId = req.params.fileId as string;
 
     const submission = await submissionsService.getSubmissionById(submissionId);
-    const canView = await canViewTask(req.user!.id, submission.task_id);
-    if (!canView) {
-      throw new ForbiddenError('You do not have access to this file');
+    
+    // If evidence is tied to a specific task, check if the user has permission to view that task
+    if (submission.task_id) {
+      const canView = await canViewTask(authReq.user!.id, submission.task_id);
+      if (!canView) {
+        throw new ForbiddenError('You do not have access to this file');
+      }
     }
 
     const url = await submissionsService.getFileDownloadUrl(submissionId, fileId);

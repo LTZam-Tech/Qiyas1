@@ -21,6 +21,7 @@ import reviewRoutes from '@/modules/reviews/reviews.routes';
 import dashboardRoutes from '@/modules/dashboard/dashboard.routes';
 import reportRoutes from '@/modules/reports/reports.routes';
 import orgStructureRoutes from '@/modules/org-structure/org-structure.routes';
+import notificationRoutes from '@/modules/notifications/notifications.routes';
 
 const app: Application = express();
 
@@ -159,6 +160,7 @@ app.use('/api/v1/submissions', submissionRoutes);
 app.use('/api/v1/reviews', reviewRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/reports', reportRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

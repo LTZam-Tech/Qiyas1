@@ -1,14 +1,18 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { cardGradients } from '../utils/theme.js';
 import { getTasks } from '../services/tasksService.js';
 import StatCard from '../components/StatCard.jsx';
+import useAuth from '../context/useAuth.js';
 import styles from './ReviewPage.module.css';
 
 const ReviewPage = ({ isMobile, lang }) => {
   const [tasks, setTasks] = useState([]);
   const [actionMessage, setActionMessage] = useState('');
   const [loadError, setLoadError] = useState('');
+  const { user } = useAuth();
+  const userRole = user?.role;
+  const canReview = userRole === 'admin' || userRole === 'consultant';
 
   useEffect(() => {
     let mounted = true;
@@ -73,32 +77,34 @@ const ReviewPage = ({ isMobile, lang }) => {
                 </div>
               </div>
 
-              <div className={styles.rowActions}>
-                <button
-                  type="button"
-                  aria-label={lang === 'ar' ? `اعتماد ${task.req_ar}` : `Approve ${task.req_en}`}
-                  className={`${styles.actionButton} ${styles.approve}`}
-                  onClick={() => handleReviewAction(task.id, 'approved')}
-                >
-                  {lang === 'ar' ? 'اعتماد' : 'Approve'}
-                </button>
-                <button
-                  type="button"
-                  aria-label={lang === 'ar' ? `طلب مراجعة ${task.req_ar}` : `Request Review ${task.req_en}`}
-                  className={`${styles.actionButton} ${styles.revise}`}
-                  onClick={() => handleReviewAction(task.id, 'revision')}
-                >
-                  {lang === 'ar' ? 'مراجعة' : 'Review'}
-                </button>
-                <button
-                  type="button"
-                  aria-label={lang === 'ar' ? `رفض ${task.req_ar}` : `Reject ${task.req_en}`}
-                  className={`${styles.actionButton} ${styles.reject}`}
-                  onClick={() => handleReviewAction(task.id, 'reject')}
-                >
-                  {lang === 'ar' ? 'رفض' : 'Reject'}
-                </button>
-              </div>
+              {canReview && (
+                <div className={styles.rowActions}>
+                  <button
+                    type="button"
+                    aria-label={lang === 'ar' ? `اعتماد ${task.req_ar}` : `Approve ${task.req_en}`}
+                    className={`${styles.actionButton} ${styles.approve}`}
+                    onClick={() => handleReviewAction(task.id, 'approved')}
+                  >
+                    {lang === 'ar' ? 'اعتماد' : 'Approve'}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={lang === 'ar' ? `طلب مراجعة ${task.req_ar}` : `Request Review ${task.req_en}`}
+                    className={`${styles.actionButton} ${styles.revise}`}
+                    onClick={() => handleReviewAction(task.id, 'revision')}
+                  >
+                    {lang === 'ar' ? 'مراجعة' : 'Review'}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={lang === 'ar' ? `رفض ${task.req_ar}` : `Reject ${task.req_en}`}
+                    className={`${styles.actionButton} ${styles.reject}`}
+                    onClick={() => handleReviewAction(task.id, 'reject')}
+                  >
+                    {lang === 'ar' ? 'رفض' : 'Reject'}
+                  </button>
+                </div>
+              )}
             </div>
           ))
         ) : (
