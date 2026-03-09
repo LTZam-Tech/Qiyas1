@@ -100,9 +100,14 @@
 .tableHeaderCell {
   padding: 10px 12px;
   color: #ffffff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   text-align: right;
+  white-space: nowrap;
+}
+
+[dir="ltr"] .tableHeaderCell {
+  text-align: left;
 }
 
 .tableRow {
@@ -113,31 +118,48 @@
   background: #f8f6fb;
 }
 
+.tableBody td {
+  padding: 12px;
+  font-size: 13px;
+  color: #2d1b3d;
+  vertical-align: top;
+  line-height: 1.6;
+}
+
 .centerCell {
-  padding: 10px 12px;
   text-align: center;
+  white-space: nowrap;
+  width: 100px;
 }
 
 .dueCell {
-  padding: 10px 12px;
-  font-size: 12px;
-  color: #2d1b3d;
   text-align: center;
+  white-space: nowrap;
+  width: 120px;
 }
 
 .textCell {
-  padding: 10px 12px;
-  font-size: 12px;
-  color: #2d1b3d;
   text-align: right;
+  white-space: normal;
+  word-wrap: break-word;
+  min-width: 120px;
+}
+
+[dir="ltr"] .textCell {
+  text-align: left;
 }
 
 .codeCell {
-  padding: 10px 12px;
-  font-size: 13px;
   font-weight: 700;
   color: #5c3a73;
-  text-align: center;
+  text-align: right;
+  white-space: normal;
+  word-wrap: break-word;
+  min-width: 250px;
+}
+
+[dir="ltr"] .codeCell {
+  text-align: left;
 }
 
 .emptyState,
