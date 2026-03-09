@@ -117,20 +117,41 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
     setIsUploading(true);
     try {
       const formData = new FormData();
-      formData.append('perspectiveId', selectedDomain);
-      formData.append('axisId', selectedAxis);
+      // Note: Assuming the intention is to upload evidence for a specific task.
+      // Since this modal currently queries domains/axes/standards directly, it might be
+      // a standalone upload, or missing the taskId prop. For now, we will pass standardId
+      // and a dummy taskId if not provided.
+      // In a real flow, EvidenceUploadModal should accept a `taskId` prop.
       formData.append('standardId', selectedStandard);
+      formData.append('taskId', 'standalone-upload'); 
+      formData.append('submissionNotes', '');
       files.forEach((file) => formData.append('files', file));
 
-      const response = await fetch('/api/evidence/upload', {
+      // Extract CSRF token from cookie
+      const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return '';
+      };
+      const csrfToken = getCookie('csrfToken') || getCookie('XSRF-TOKEN') || getCookie('_csrf') || '';
+      
+      const token = localStorage.getItem('qiyas_access_token');
+
+      const response = await fetch('/api/v1/submissions', {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          'x-csrf-token': decodeURIComponent(csrfToken),
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: formData,
       });
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData?.message || `Upload failed (${response.status})`);
+        const errMsg = errData?.error?.message || errData?.error?.detail || errData?.message || `Upload failed (${response.status})`;
+        throw new Error(errMsg);
       }
 
       setSuccessMsg(

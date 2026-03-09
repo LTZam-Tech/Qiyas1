@@ -56,6 +56,12 @@ app.use((req, res, next) => {
     return next();
   }
 
+  // Exempt auth routes that are establishing/refreshing the session
+  const exemptPaths = ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh'];
+  if (exemptPaths.some(p => req.path === p)) {
+    return next();
+  }
+
   const hasRefreshCookie = Boolean(req.cookies?.refreshToken);
   if (!hasRefreshCookie) {
     return next();
