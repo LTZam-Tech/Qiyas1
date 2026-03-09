@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { getEvidenceItems } from '../services/evidenceService.js';
 
 export default function useEvidenceData() {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [tick, setTick] = useState(0);
+
+  // Call reload() to re-fetch evidence items (e.g. after upload)
+  const reload = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
     let isMounted = true;
@@ -32,7 +36,7 @@ export default function useEvidenceData() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [tick]);
 
-  return { data, isLoading, error };
+  return { data, isLoading, error, reload };
 }

@@ -1,18 +1,16 @@
-﻿import { useRef, useState } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Icons } from '../utils/icons.jsx';
 import Badge from '../components/Badge.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
+import EvidenceUploadModal from '../components/EvidenceUploadModal.jsx';
 import useEvidenceData from '../hooks/useEvidenceData.js';
 import styles from './EvidencePage.module.css';
 
-const FILE_NAME_PATTERN = /^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+_\d{8}\.[A-Za-z0-9]+$/;
-
 const EvidencePage = ({ isMobile, lang }) => {
-  const { data, isLoading, error } = useEvidenceData();
+  const { data, isLoading, error, reload } = useEvidenceData();
   const items = (data || []).slice(0, 6);
-  const [uploadError, setUploadError] = useState('');
-  const fileInputRef = useRef(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const cardStatusClass = (status) => {
     if (status === 'non') return styles.cardNon;
@@ -20,27 +18,9 @@ const EvidencePage = ({ isMobile, lang }) => {
     return styles.cardFull;
   };
 
-  const handleUploaderClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileSelection = (event) => {
-    const files = Array.from(event.target.files || []);
-    if (files.length === 0) {
-      setUploadError('');
-      return;
-    }
-
-    const invalidFile = files.find((file) => !FILE_NAME_PATTERN.test(file.name));
-    if (invalidFile) {
-      setUploadError(
-        lang === 'ar'
-          ? `اسم الملف غير صالح: ${invalidFile.name}. استخدم النمط المطلوب.`
-          : `Invalid file name: ${invalidFile.name}. Use the required pattern.`
-      );
-    } else {
-      setUploadError('');
-    }
+  const handleUploadSuccess = () => {
+    // Refresh evidence list after a successful upload
+    if (typeof reload === 'function') reload();
   };
 
   return (
@@ -75,30 +55,25 @@ const EvidencePage = ({ isMobile, lang }) => {
         </div>
       ) : null}
 
-      {uploadError ? <div className={styles.errorState}>{uploadError}</div> : null}
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        onChange={handleFileSelection}
-        style={{ display: 'none' }}
-        aria-label={lang === 'ar' ? 'اختيار ملفات الأدلة' : 'Select evidence files'}
-      />
-
+      {/* Upload button — opens modal instead of direct file picker */}
       <button
         type="button"
         aria-label={lang === 'ar' ? 'رفع شاهد جديد' : 'Upload New Evidence'}
         className={styles.uploader}
-        onClick={handleUploaderClick}
+        onClick={() => setIsModalOpen(true)}
       >
         <div className={styles.uploaderIcon}>{Icons.upload}</div>
         <div className={styles.uploaderTitle}>{lang === 'ar' ? 'رفع شاهد جديد' : 'Upload New Evidence'}</div>
-        <div className={styles.uploaderHint}>{lang === 'ar' ? 'اسحب الملفات هنا أو اضغط للاختيار' : 'Drag files here or click to select'} - PDF, PNG, XLSX, DOCX</div>
-        <div className={styles.uploaderPattern}>
-          {lang === 'ar' ? 'تسمية الملف' : 'File name'}: [StandardCode]_[SystemName]_[ScreenName]_[YYYYMMDD].ext
-        </div>
+        <div className={styles.uploaderHint}>{lang === 'ar' ? 'اضغط هنا لاختيار المجال والمعيار والملفات' : 'Click here to select domain, standard, and files'}</div>
       </button>
+
+      {/* Upload modal with Domain → Axis → Standard DDLs */}
+      <EvidenceUploadModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleUploadSuccess}
+        lang={lang}
+      />
     </div>
   );
 };
