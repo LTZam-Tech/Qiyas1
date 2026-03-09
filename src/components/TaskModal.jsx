@@ -189,9 +189,12 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
       setUnits(unitsData);
       setPerspectives(perspectivesData);
 
-      const hasCriticalData = perspectivesData.length > 0 && usersData.length > 0;
-      if (!hasCriticalData) {
-        setError(lang === 'ar' ? 'تعذر تحميل المنظورات. الرجاء المحاولة مرة أخرى.' : 'Failed to load perspectives. Please try again.');
+      if (perspectivesData.length === 0) {
+        setError(
+          lang === 'ar'
+            ? 'لا توجد منظورات بعد. أضف المنظورات والمحاور والمعايير أولاً من إدارة المنظومة، ثم عد لإنشاء المهمة.'
+            : 'No perspectives found. Please add perspectives, axes and standards first, then come back to create a task.'
+        );
       }
     } catch {
       setError(lang === 'ar' ? 'تعذر تحميل بيانات النموذج. الرجاء المحاولة مرة أخرى.' : 'Failed to load form data. Please try again.');
@@ -335,18 +338,6 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
 
         {isLoadingData ? (
           <div className={styles.loadingState}>{lang === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'}</div>
-        ) : error && perspectives.length === 0 ? (
-          <div className={styles.loadingState}>
-            <div>{error}</div>
-            <button
-              type="button"
-              className={styles.submitButton}
-              onClick={loadInitialData}
-              style={{ marginTop: 12 }}
-            >
-              {lang === 'ar' ? 'إعادة المحاولة' : 'Retry'}
-            </button>
-          </div>
         ) : (
           <form className={styles.form} onSubmit={handleSubmit}>
             {error && <div className={styles.error}>{error}</div>}

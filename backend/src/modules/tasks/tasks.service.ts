@@ -183,15 +183,13 @@ class TasksService extends BaseRepository<Task> {
       throw new BusinessLogicError('Assigned user does not exist');
     }
 
+    // evidence_requirement_id is nullable (since migration 0006) — link it if one exists,
+    // but do NOT block task creation when the standard has no requirements yet.
     const requirementResult = await db.query(
       'SELECT id FROM evidence_requirements WHERE standard_id = $1 AND deleted_at IS NULL LIMIT 1',
       [mapping.standard_id]
     );
-
-    if (requirementResult.rows.length === 0) {
-      throw new BusinessLogicError('Selected standard has no valid evidence requirements');
-    }
-    const evidenceRequirementId = requirementResult.rows[0].id;
+    const evidenceRequirementId: string | null = requirementResult.rows[0]?.id ?? null;
 
     let targetDepartmentId: string | null = null;
     let targetUnitId: string | null = null;
