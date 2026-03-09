@@ -1,4 +1,21 @@
-# Master
+# Qiyas
+
+## Recent Updates
+
+| Date (UTC) | Commit | Description |
+|---|---|---|
+| 2026-03-08 08:45 | [`08ead48`](https://github.com/LTZam-Tech/Qiyas/commit/08ead48) | Fix backend task mapping, migrate startup, and remove frontend mock data |
+| 2026-03-08 08:04 | [`5c67058`](https://github.com/LTZam-Tech/Qiyas/commit/5c67058) | Sync additional frontend changes and configurations |
+| 2026-03-08 08:02 | [`d918051`](https://github.com/LTZam-Tech/Qiyas/commit/d918051) | Fix task creation bugs, seeding, and frontend data mapping |
+| 2026-03-07 16:32 | [`a8353d1`](https://github.com/LTZam-Tech/Qiyas/commit/a8353d1) | Merge PR #12 — Production deployment infrastructure |
+| 2026-03-07 11:13 | [`5659a0a`](https://github.com/LTZam-Tech/Qiyas/commit/5659a0a) | Merge PR #11 — Fix critical bugs across backend |
+| 2026-03-07 10:56 | [`85353d6`](https://github.com/LTZam-Tech/Qiyas/commit/85353d6) | Harden auth, validation, and evidence submission flows |
+
+> **Last updated:** March 8, 2026 at 08:45 UTC by [@Inspectoin](https://github.com/Inspectoin)
+
+---
+
+## Layout Notes
 
 Layout polish notes for dashboard pages (header + sidebar)
 
