@@ -64,25 +64,28 @@ class SubmissionsService extends BaseRepository<Submission> {
         ef.original_filename,
         ef.uploaded_at,
         es.id as submission_id,
+        es.status,
+        es.review_comment,
+        es.task_id,
         u.name as uploaded_by_name,
-        COALESCE(s.title, s2.title) as standard_title,
-        COALESCE(s.title_en, s2.title_en) as standard_title_en,
-        COALESCE(ax.title, ax2.title) as axis_title,
-        COALESCE(ax.title_en, ax2.title_en) as axis_title_en,
-        COALESCE(d.title, d2.title) as domain_title,
-        COALESCE(d.title_en, d2.title_en) as domain_title_en
+        COALESCE(s.name_ar, s2.name_ar) as standard_title,
+        COALESCE(s.name_en, s2.name_en) as standard_title_en,
+        COALESCE(ax.name_ar, ax2.name_ar) as axis_title,
+        COALESCE(ax.name_en, ax2.name_en) as axis_title_en,
+        COALESCE(d.name_ar, d2.name_ar) as domain_title,
+        COALESCE(d.name_en, d2.name_en) as domain_title_en
       FROM evidence_files ef
       JOIN evidence_submissions es ON ef.submission_id = es.id
       LEFT JOIN users u ON ef.uploaded_by = u.id
       LEFT JOIN evidence_requirements er ON es.evidence_requirement_id = er.id
       LEFT JOIN standards s ON er.standard_id = s.id
       LEFT JOIN axes ax ON s.axis_id = ax.id
-      LEFT JOIN domains d ON ax.domain_id = d.id
+      LEFT JOIN perspectives d ON ax.perspective_id = d.id
       -- Fallbacks if task is mapped directly to standard without requirement
       LEFT JOIN tasks t ON es.task_id = t.id
       LEFT JOIN standards s2 ON t.standard_id = s2.id
       LEFT JOIN axes ax2 ON s2.axis_id = ax2.id
-      LEFT JOIN domains d2 ON ax2.domain_id = d2.id
+      LEFT JOIN perspectives d2 ON ax2.perspective_id = d2.id
       ORDER BY ef.uploaded_at DESC
     `;
     const result = await db.query(query);
@@ -251,13 +254,16 @@ class SubmissionsService extends BaseRepository<Submission> {
     }
   }
 
-  async updateSubmissionStatus(submissionId: string, status: string, updatedBy: string) {
+  async updateSubmissionStatus(submissionId: string, status: string, updatedBy: string, reviewComment?: string) {
     const submission = await this.getSubmissionById(submissionId);
 
-    await db.query(
-      `UPDATE evidence_submissions SET status = $1, reviewed_by = $2, reviewed_at = NOW(), updated_at = NOW() WHERE id = $3`,
-      [status, updatedBy, submissionId]
-    );
+    const updateQuery = `
+      UPDATE evidence_submissions 
+      SET status = $1, reviewed_by = $2, reviewed_at = NOW(), updated_at = NOW(), review_comment = COALESCE($4, review_comment)
+      WHERE id = $3
+    `;
+    
+    await db.query(updateQuery, [status, updatedBy, submissionId, reviewComment || null]);
 
     // Notifications: Notify the submitter
     try {

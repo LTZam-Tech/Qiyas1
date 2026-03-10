@@ -118,13 +118,12 @@ export default function App() {
 
   const toggleGroup = useCallback((groupKey) => {
     setExpandedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupKey)) {
-        next.delete(groupKey);
-      } else {
-        next.add(groupKey);
+      // Accordion behavior: if it's already open, close it. 
+      // If it's closed, close all others and open this one.
+      if (prev.has(groupKey)) {
+        return new Set();
       }
-      return next;
+      return new Set([groupKey]);
     });
   }, []);
 
@@ -220,32 +219,33 @@ export default function App() {
     <div dir={lang === 'ar' ? 'rtl' : 'ltr'} className={styles.app}>
       {isTablet && sideOpen && <div className={styles.overlay} onClick={() => setSideOpen(false)} />}
 
-      <Header
-        isMobile={isMobile}
+      <Sidebar
+        sideOpen={sideOpen}
         isTablet={isTablet}
-        title={lang === 'ar' ? pageTitle.label : pageTitle.labelEn}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onSearchSubmit={onSearchSubmit}
-        onToggleSidebar={() => setSideOpen((prev) => !prev)}
-        onToggleTheme={() => setIsDark((prev) => !prev)}
-        onToggleLanguage={toggleLanguage}
+        page={page}
         lang={lang}
+        navItems={roleBasedNavItems}
+        expandedGroups={expandedGroups}
+        onToggleGroup={toggleGroup}
+        onNavigate={navigateTo}
+        user={user}
+        onLogout={logout}
+        filteredNavItems={filteredNavItems}
+        onToggleSidebar={() => setSideOpen((prev) => !prev)}
       />
 
-      <div className={styles.shell}>
-        <Sidebar
-          sideOpen={sideOpen}
+      <div className={styles.mainWrapper}>
+        <Header
+          isMobile={isMobile}
           isTablet={isTablet}
-          page={page}
+          title={lang === 'ar' ? pageTitle.label : pageTitle.labelEn}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onSearchSubmit={onSearchSubmit}
+          onToggleSidebar={() => setSideOpen((prev) => !prev)}
+          onToggleTheme={() => setIsDark((prev) => !prev)}
+          onToggleLanguage={toggleLanguage}
           lang={lang}
-          navItems={roleBasedNavItems}
-          expandedGroups={expandedGroups}
-          onToggleGroup={toggleGroup}
-          onNavigate={navigateTo}
-          user={user}
-          onLogout={logout}
-          filteredNavItems={filteredNavItems}
         />
 
         <main className={styles.content} role="main" aria-label="Portal content">

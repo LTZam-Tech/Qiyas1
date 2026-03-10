@@ -19,50 +19,63 @@ export default function Header({
 }) {
   return (
     <header className={styles.header}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* 1. Right Side (in RTL): Page Title */}
+      <div className={styles.headerTitleSide}>
+        <h1 className={styles.headerTitle}>{title}</h1>
+      </div>
+
+      {/* 2. Center: Centered Search Bar */}
+      <div className={styles.searchWrapper}>
+        <form
+          className={styles.headerSearch}
+          role="search"
+          aria-label="Global search"
+          onSubmit={onSearchSubmit}
+        >
+          <input
+            type="text"
+            placeholder={lang === 'ar' ? 'ابحث عن...' : 'Search...'}
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+          <span className={styles.searchIconInside} aria-hidden="true">
+            {Icons.searchIcon}
+          </span>
+        </form>
+      </div>
+
+      {/* 3. Left Side (in RTL): Action Buttons (White Circles) */}
+      <div className={styles.headerActions}>
+        <NotificationBell lang={lang} />
+        
+        <button 
+          type="button" 
+          className={styles.roundBtn} 
+          aria-label="Toggle language" 
+          onClick={onToggleLanguage}
+        >
+          {Icons.globeIcon}
+        </button>
+
+        <button 
+          type="button" 
+          className={styles.roundBtn} 
+          aria-label="Toggle theme" 
+          onClick={onToggleTheme}
+        >
+          {Icons.sunIcon}
+        </button>
+
         {isTablet && (
           <button
             type="button"
             aria-label={lang === 'ar' ? 'تبديل الشريط الجانبي' : 'Toggle sidebar'}
-            aria-expanded={!isMobile}
-            className={`${styles.headerBtn} ${styles.mobileMenuBtn}`}
+            className={styles.roundBtn}
             onClick={onToggleSidebar}
           >
             {Icons.menuIcon}
           </button>
         )}
-        <span style={{ display: 'flex', alignItems: 'center', background: '#fff', padding: '4px', borderRadius: '4px' }} aria-hidden="true">
-          <img src={joufLogo} alt="Jouf University Logo" style={{ height: '32px', width: 'auto' }} />
-        </span>
-        <span style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }}>
-          {lang === 'ar' ? 'بوابة قياس' : 'Qiyas Portal'}
-        </span>
-        <span className={styles.headerTitle} style={{ marginLeft: '12px' }}>{title}</span>
-      </div>
-
-      <form
-        className={styles.headerSearch}
-        role="search"
-        aria-label="Global search"
-        onSubmit={onSearchSubmit}
-      >
-        <input
-          type="text"
-          placeholder={lang === 'ar' ? 'ابحث عن صفحة او عنصر...' : 'Search for page or item...'}
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
-        <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center' }}>{Icons.searchIcon}</span>
-      </form>
-
-      <div className={styles.headerControls}>
-        <button type="button" className={styles.headerBtn} aria-label="Toggle theme" onClick={onToggleTheme}>
-          {Icons.sunIcon}
-        </button>
-        <button type="button" className={styles.headerBtn} aria-label="Toggle language" onClick={onToggleLanguage}>
-          {Icons.globeIcon}
-        </button>
-        <NotificationBell lang={lang} />
       </div>
     </header>
   );

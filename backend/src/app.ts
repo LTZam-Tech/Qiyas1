@@ -5,6 +5,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { timingSafeEqual } from 'crypto';
+import path from 'path';
 import config from '@/config';
 import { errorHandler } from '@/utils/errors';
 import logger from '@/utils/logger';
@@ -147,6 +148,9 @@ app.get('/health', async (_req: Request, res: Response) => {
     },
   });
 });
+
+// Serve local uploads statically through API prefix so reverse proxy reaches backend
+app.use('/api/v1/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // API routes
 app.use('/api/v1/auth', authRoutes);

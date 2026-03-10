@@ -1,48 +1,32 @@
-import { Client } from 'minio';
 import config from '@/config';
 import logger from '@/utils/logger';
-import { unlink } from 'fs/promises';
+import { unlink, mkdir, stat, copyFile } from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
 
 class StorageService {
-  private client: Client;
-  private evidenceBucket: string;
-  private reportsBucket: string;
-  private templatesBucket: string;
+  private baseDir: string;
 
   constructor() {
-    this.client = new Client({
-      endPoint: config.storage.endpoint,
-      port: config.storage.port,
-      useSSL: config.storage.useSSL,
-      accessKey: config.storage.accessKey,
-      secretKey: config.storage.secretKey,
-    });
-
-    this.evidenceBucket = config.storage.buckets.evidence;
-    this.reportsBucket = config.storage.buckets.reports;
-    this.templatesBucket = config.storage.buckets.templates;
-
+    this.baseDir = path.join(process.cwd(), 'uploads');
     this.ensureBuckets();
   }
 
   private async ensureBuckets() {
     try {
-      const buckets = [this.evidenceBucket, this.reportsBucket, this.templatesBucket];
-      
+      const buckets = ['evidence', 'reports', 'templates'];
+      if (!existsSync(this.baseDir)) {
+        await mkdir(this.baseDir, { recursive: true });
+      }
       for (const bucket of buckets) {
-        try {
-          const exists = await this.client.bucketExists(bucket);
-          if (!exists) {
-            await this.client.makeBucket(bucket, 'us-east-1');
-            logger.info(`Created bucket: ${bucket}`);
-          }
-        } catch (bucketError) {
-          logger.warn(`Could not verify or create bucket ${bucket}: ${bucketError}`);
+        const bucketPath = path.join(this.baseDir, bucket);
+        if (!existsSync(bucketPath)) {
+          await mkdir(bucketPath, { recursive: true });
+          logger.info(`Created local bucket folder: ${bucketPath}`);
         }
       }
     } catch (error) {
-      logger.error('Failed to ensure buckets', error);
+      logger.error('Failed to create local upload directories', error);
     }
   }
 
@@ -51,71 +35,51 @@ class StorageService {
     fileName: string,
     bucket: 'evidence' | 'reports' | 'templates' = 'evidence'
   ): Promise<string> {
-    const bucketName = bucket === 'evidence' ? this.evidenceBucket :
-                       bucket === 'reports' ? this.reportsBucket :
-                       this.templatesBucket;
-
     const safeName = path.basename(fileName).replace(/[^a-zA-Z0-9._-]/g, '_');
     const objectName = `${Date.now()}-${safeName}`;
+    const destPath = path.join(this.baseDir, bucket, objectName);
 
     try {
-      try {
-        await this.client.fPutObject(bucketName, objectName, filePath, {
-          'Content-Type': this.getMimeType(fileName),
-        });
-        logger.info(`File uploaded: ${objectName} to bucket ${bucketName}`);
-      } catch (uploadObjError: any) {
-        logger.warn(`MinIO upload failed, simulating successful upload for local dev. Error: ${uploadObjError.message}`);
-      }
-
-      // Delete temp file
-      await unlink(filePath);
+      await copyFile(filePath, destPath);
+      logger.info(`File uploaded locally: ${objectName} to folder ${bucket}`);
+      
+      // Delete temp file from multer
+      await unlink(filePath).catch(() => {});
 
       return objectName;
     } catch (error) {
-      logger.error('File upload failed', error);
+      logger.error('File local copy failed', error);
       throw error;
     }
   }
 
   async getSignedUrl(objectName: string, bucket: 'evidence' | 'reports' | 'templates' = 'evidence', expirySeconds: number = 900): Promise<string> {
-    const bucketName = bucket === 'evidence' ? this.evidenceBucket :
-                       bucket === 'reports' ? this.reportsBucket :
-                       this.templatesBucket;
-
-    try {
-      const url = await this.client.presignedGetObject(bucketName, objectName, expirySeconds);
-      return url;
-    } catch (error) {
-      logger.error('Failed to generate signed URL', error);
-      throw error;
-    }
+    // For local storage, we can simply serve the file from an Express static route.
+    // The backend `server.ts` or routes must have `app.use('/api/v1/uploads', express.static('uploads'))`
+    // Returns a relative URL path to the file prefixed with /api/v1 so Caddy forwards it
+    return `/api/v1/uploads/${bucket}/${objectName}`;
   }
 
   async deleteFile(objectName: string, bucket: 'evidence' | 'reports' | 'templates' = 'evidence'): Promise<void> {
-    const bucketName = bucket === 'evidence' ? this.evidenceBucket :
-                       bucket === 'reports' ? this.reportsBucket :
-                       this.templatesBucket;
-
+    const filePath = path.join(this.baseDir, bucket, objectName);
     try {
-      await this.client.removeObject(bucketName, objectName);
-      logger.info(`File deleted: ${objectName} from bucket ${bucketName}`);
+      if (existsSync(filePath)) {
+        await unlink(filePath);
+        logger.info(`File deleted locally: ${objectName} from folder ${bucket}`);
+      }
     } catch (error) {
-      logger.error('File deletion failed', error);
+      logger.error('File local deletion failed', error);
       throw error;
     }
   }
 
   async getFileMetadata(objectName: string, bucket: 'evidence' | 'reports' | 'templates' = 'evidence') {
-    const bucketName = bucket === 'evidence' ? this.evidenceBucket :
-                       bucket === 'reports' ? this.reportsBucket :
-                       this.templatesBucket;
-
+    const filePath = path.join(this.baseDir, bucket, objectName);
     try {
-      const stat = await this.client.statObject(bucketName, objectName);
-      return stat;
+      const fileStat = await stat(filePath);
+      return fileStat;
     } catch (error) {
-      logger.error('Failed to get file metadata', error);
+      logger.error('Failed to get local file metadata', error);
       throw error;
     }
   }

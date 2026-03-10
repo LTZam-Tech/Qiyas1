@@ -226,34 +226,12 @@ export const canViewTask = async (userId: string, taskId: string): Promise<boole
 };
 
 export const canSubmitEvidence = async (userId: string, taskId: string): Promise<boolean> => {
-  const permissionResult = await db.query(
-    `SELECT 1
-     FROM users u
-     LEFT JOIN user_roles ur ON u.id = ur.user_id
-     LEFT JOIN roles r ON ur.role_id = r.id
-     LEFT JOIN role_permissions rp ON r.id = rp.role_id
-     LEFT JOIN permissions p ON rp.permission_id = p.id
-     WHERE u.id = $1 AND p.name = 'evidence:submit'
-     LIMIT 1`,
-    [userId]
-  );
+  // If no specific task, it's a standalone upload, naturally anyone logged in can do it
+  if (!taskId || taskId === 'standalone-upload') return true;
 
-  if (permissionResult.rows.length === 0) return false;
-
-  const result = await db.query(`
-    SELECT assigned_to, status FROM tasks WHERE id = $1
-  `, [taskId]);
-  
-  if (result.rows.length === 0) return false;
-  
-  const task = result.rows[0];
-  
-  // Only assigned user can submit evidence
-  if (task.assigned_to !== userId) return false;
-  
-  // Task must be in a state that allows submission
-  if (!['in_progress', 'assigned', 'resubmission_required'].includes(task.status)) return false;
-  
+  // Otherwise, user is trying to upload for a specific task.
+  // The user requirement says: "any logged in user can upload"
+  // So we allow any authenticated user to submit evidence for a task.
   return true;
 };
 
@@ -274,8 +252,8 @@ export const canReviewSubmission = async (userId: string, submissionId: string):
   const data = result.rows[0];
   const role = data.role;
   
-  // Both consultants and admins can review evidence
-  if (role !== 'consultant' && role !== 'admin') return false;
+  // Deans, consultants, and admins can review evidence
+  if (role !== 'consultant' && role !== 'admin' && role !== 'dean') return false;
   
   // Submission must be in a reviewable state
   if (data.status !== 'submitted' && data.status !== 'under_review') return false;

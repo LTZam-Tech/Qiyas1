@@ -84,6 +84,34 @@ class SubmissionsController {
     res.status(201).json({ success: true, data: { submission } });
   });
 
+  updateSubmissionStatus = asyncHandler(async (req: any, res: any, _next: any) => {
+    const authReq = req as AuthRequest;
+    const submissionId = req.params.id as string;
+    const { status } = req.body;
+
+    if (!status) {
+      throw new ValidationError('Status is required');
+    }
+
+    const validStatuses = ['approved', 'rejected', 'revision_required', 'under_review'];
+    if (!validStatuses.includes(status)) {
+      throw new ValidationError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+    }
+
+    // Role check logic can use canReviewSubmission if desired
+    // For now we will check in the service layer or rely on route guards,
+    // but the requirement says Dean and Consultant can review, so let's allow it
+    const role = authReq.user!.role;
+    if (role !== 'admin' && role !== 'consultant' && role !== 'dean') {
+       throw new ForbiddenError('You do not have permission to review submissions');
+    }
+
+    const { reviewComment } = req.body;
+
+    const submission = await submissionsService.updateSubmissionStatus(submissionId, status, authReq.user!.id, reviewComment);
+    res.json({ success: true, data: { submission } });
+  });
+
   downloadFile = asyncHandler(async (req: any, res: any, _next: any) => {
     const authReq = req as AuthRequest;
     const submissionId = req.params.id as string;

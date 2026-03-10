@@ -58,7 +58,7 @@
 .dropdown {
   position: absolute;
   top: 50px;
-  left: 0;
+  right: 0; /* Align to right edge in LTR (growing left) */
   width: 320px;
   background: #fff;
   border-radius: 12px;
@@ -70,8 +70,8 @@
 }
 
 [dir="rtl"] .dropdown {
-  left: auto;
-  right: 0;
+  right: auto;
+  left: 0; /* Align to left edge in RTL (growing right) */
 }
 
 @keyframes slideIn {

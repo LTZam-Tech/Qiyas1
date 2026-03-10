@@ -1,0 +1,253 @@
+:root {
+  --sidebar-bg: #3D2650;
+  --sidebar-primary: #80519F;
+  --sidebar-text-dim: rgba(255, 255, 255, 0.7);
+  --sidebar-active-text: #3D2650;
+  --sidebar-card-bg: #ffffff;
+}
+
+.sidebar {
+  width: 280px;
+  background-color: var(--sidebar-bg);
+  height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  color: white;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 100;
+  border-radius: 24px;
+  padding: 24px 16px;
+  gap: 20px;
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px 12px;
+}
+
+.joufLogo {
+  height: 60px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  transition: all 0.3s ease;
+}
+
+.sidebarCollapsed .joufLogo {
+  height: 45px;
+  max-width: 60px;
+}
+
+.nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding-bottom: 20px;
+}
+
+/* All top-level items are white cards */
+.cardWrapper {
+  background-color: white;
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+}
+
+.navBtn {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-active-text);
+  padding: 12px 14px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Icon start, Chevron end */
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.navBtnContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.icon {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  color: var(--sidebar-active-text);
+}
+
+.navLabel {
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.95rem;
+}
+
+.chevron {
+  transition: transform 0.3s ease;
+  opacity: 0.5;
+  color: var(--sidebar-active-text);
+}
+
+.childrenList {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  gap: 4px;
+}
+
+.childBtn {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-active-text);
+  padding: 10px 14px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.childBtnActive {
+  background-color: var(--sidebar-primary);
+  color: white !important;
+}
+
+.footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profileCard {
+  background: white;
+  border-radius: 16px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--sidebar-active-text);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.profileInfo {
+  text-align: right;
+}
+
+.profileName {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.profileRole {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #f0f0f0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* Text on right in RTL */
+  gap: 12px;
+  color: white;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.logoutIcon {
+  color: #ef4444; /* red icon */
+  display: flex;
+}
+
+/* Collapsed State */
+.sidebarCollapsed {
+  width: 90px;
+  padding: 24px 10px;
+}
+
+.sidebarCollapsed .sidebarHeader {
+  justify-content: center;
+}
+
+.sidebarCollapsed .universityInfo,
+.sidebarCollapsed .navLabel,
+.sidebarCollapsed .chevron,
+.sidebarCollapsed .profileInfo,
+.sidebarCollapsed .logoutBtn span:not(.logoutIcon) {
+  display: none;
+}
+
+.sidebarCollapsed .cardWrapper {
+  padding: 0;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebarCollapsed .navBtnContent {
+  justify-content: center;
+  gap: 0;
+}
+
+.sidebarCollapsed .logoutBtn {
+  justify-content: center;
+  width: 100%;
+}
+
+.pullTab {
+  position: absolute;
+  top: 50%;
+  inset-inline-start: 100%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 80px;
+  background-color: var(--sidebar-primary);
+  border-radius: 0 12px 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+  z-index: 50;
+}
+
+[dir="rtl"] .pullTab {
+  border-radius: 12px 0 0 12px;
+}

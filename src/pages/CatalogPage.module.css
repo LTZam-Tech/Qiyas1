@@ -16,7 +16,6 @@
   gap: 12px;
 }
 
-/* Domain Boxes Grid */
 .domainsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -432,9 +431,21 @@
 }
 
 /* Responsive */
+@media (max-width: 1400px) {
+  .domainsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .domainsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 968px) {
   .domainsGrid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .axesGrid {
