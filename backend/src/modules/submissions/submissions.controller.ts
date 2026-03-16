@@ -107,6 +107,10 @@ class SubmissionsController {
     }
 
     const { reviewComment } = req.body;
+      // Enforce comment requirement for revert (revision_required)
+      if (status === 'revision_required' && (!reviewComment || reviewComment.trim() === '')) {
+        throw new ValidationError('A comment is required when reverting evidence to uploader.');
+      }
 
     const submission = await submissionsService.updateSubmissionStatus(submissionId, status, authReq.user!.id, reviewComment);
     res.json({ success: true, data: { submission } });
