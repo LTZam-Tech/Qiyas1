@@ -4,6 +4,7 @@ import perspectivesService from '../services/perspectivesService.js';
 import axesService from '../services/axesService.js';
 import standardsService from '../services/standardsService.js';
 import styles from './EvidenceUploadModal.module.css';
+import { Icons } from '../utils/icons.jsx';
 
 const ACCEPTED_TYPES = '.pdf,.png,.jpg,.jpeg,.xlsx,.docx';
 
@@ -288,7 +289,7 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
                 disabled={isUploading}
                 className={styles.hiddenInput}
               />
-              <span className={styles.filePickerIcon}>📎</span>
+              <span className={styles.filePickerIcon}>{Icons.upload}</span>
               <span className={styles.filePickerText}>
                 {files.length > 0
                   ? t(`${files.length} ملف مختار`, `${files.length} file(s) selected`)
@@ -299,7 +300,7 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
               <ul className={styles.fileList}>
                 {files.map((f, i) => (
                   <li key={i} className={styles.fileItem}>
-                    <span className={styles.fileIcon}>📄</span>
+                    <span className={styles.fileIcon}>{Icons.documentIcon}</span>
                     <span className={styles.fileName}>{f.name}</span>
                     <span className={styles.fileSize}>({(f.size / 1024).toFixed(0)} KB)</span>
                   </li>

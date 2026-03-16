@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import styles from './ErrorLogPage.module.css';
 import errorLogger from '../services/errorLogger.js';
+import { Icons } from '../utils/icons.jsx';
 
 const ErrorLogPage = () => {
   const [errors, setErrors] = useState(() => errorLogger.getAllErrors());
@@ -82,10 +83,10 @@ const ErrorLogPage = () => {
 
   const getSourceBadge = (source) => {
     const badges = {
-      frontend: { emoji: '🖥️', color: '#3b82f6' },
-      backend: { emoji: '⚙️', color: '#10b981' },
-      database: { emoji: '🗄️', color: '#f59e0b' },
-      unknown: { emoji: '❓', color: '#6b7280' },
+      frontend: { icon: Icons.monitor, color: '#3b82f6' },
+      backend: { icon: Icons.settings, color: '#10b981' },
+      database: { icon: Icons.database, color: '#f59e0b' },
+      unknown: { icon: Icons.question, color: '#6b7280' },
     };
     return badges[source] || badges.unknown;
   };
@@ -93,7 +94,7 @@ const ErrorLogPage = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>📊 Error Logs</h1>
+        <h1 className={styles.title}>{Icons.dashboard} Error Logs</h1>
         <button className={styles.clearButton} onClick={handleClearAll} aria-label="Clear all error logs">
           Clear All
         </button>
@@ -143,9 +144,9 @@ const ErrorLogPage = () => {
           onChange={(e) => setFilters({ ...filters, source: e.target.value })}
         >
           <option value="all">All Sources</option>
-          <option value="frontend">🖥️ Frontend</option>
-          <option value="backend">⚙️ Backend</option>
-          <option value="database">🗄️ Database</option>
+          <option value="frontend">Frontend</option>
+          <option value="backend">Backend</option>
+          <option value="database">Database</option>
         </select>
 
         <select
@@ -155,9 +156,9 @@ const ErrorLogPage = () => {
           onChange={(e) => setFilters({ ...filters, severity: e.target.value })}
         >
           <option value="all">All Severities</option>
-          <option value="error">🔴 Error</option>
-          <option value="warning">🟡 Warning</option>
-          <option value="info">🔵 Info</option>
+          <option value="error">Error</option>
+          <option value="warning">Warning</option>
+          <option value="info">Info</option>
         </select>
       </div>
 
@@ -165,7 +166,7 @@ const ErrorLogPage = () => {
         <div className={styles.errorList}>
           {filteredErrors.length === 0 ? (
             <div className={styles.noErrors}>
-              <p>✅ No errors found</p>
+              <p>{Icons.checkLarge} No errors found</p>
               {errors.length > 0 && <p>Try adjusting your filters</p>}
             </div>
           ) : (
@@ -191,7 +192,7 @@ const ErrorLogPage = () => {
                       className={styles.sourceBadge}
                       style={{ backgroundColor: badge.color }}
                     >
-                      {badge.emoji} {error.source}
+                      {badge.icon} {error.source}
                     </span>
                     <span className={`${styles.severityBadge} ${getSeverityClass(error.severity)}`}>
                       {error.severity}
