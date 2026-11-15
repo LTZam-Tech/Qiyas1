@@ -32,7 +32,8 @@ export const PERMISSIONS = [
   'evidence.upload', 'evidence.link', 'evidence.submit', 'evidence.withdraw', 'evidence.view', 'evidence.download',
   'review.decide',
   'submission.view_queue', 'submission.package', 'submission.mark_posted', 'submission.mark_not_posted',
-  'bank.view_current', 'bank.search_history', 'bank.reuse',
+  'bank.view_current', 'bank.search_history', 'bank.reuse', 'bank.import',
+  'library.view', 'library.manage',
   'dashboard.programme', 'dashboard.department', 'dashboard.personal', 'report.generate', 'audit.view',
   'admin.users', 'admin.departments', 'admin.groups', 'admin.roles', 'admin.settings', 'admin.sla_policies',
   'admin.notification_templates',
@@ -60,6 +61,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Matrix = {
     'evidence.upload': 'all', 'evidence.link': 'all', 'evidence.submit': 'all', 'evidence.withdraw': 'all',
     'evidence.view': 'all', 'evidence.download': 'all', 'review.decide': 'all',
     'submission.view_queue': 'all', 'bank.view_current': 'all', 'bank.search_history': 'all', 'bank.reuse': 'all',
+    // folder import of central evidence; the imported files are reviewed by another consultant (D9)
+    'bank.import': 'all', 'library.view': 'all', 'library.manage': 'all',
     'dashboard.programme': 'all', 'dashboard.department': 'all', 'dashboard.personal': 'all',
     'report.generate': 'all', 'audit.view': 'all', 'admin.sla_policies': 'all',
   },
@@ -71,29 +74,32 @@ export const DEFAULT_ROLE_PERMISSIONS: Matrix = {
     'evidence.upload': 'own', 'evidence.link': 'own', 'evidence.submit': 'own', 'evidence.withdraw': 'own',
     'evidence.view': 'dept', 'evidence.download': 'dept', 'bank.view_current': 'dept',
     'dashboard.department': 'dept', 'dashboard.personal': 'own', 'report.generate': 'dept', 'audit.view': 'dept',
+    'library.view': 'all',
   },
   EMP: {
     'framework.view': 'all', 'task.view': 'own', 'task.work': 'own', 'clarification.request': 'own',
     'clarification.view': 'own', 'extension.suggest': 'own', 'escalation.view': 'own',
     'evidence.upload': 'own', 'evidence.link': 'own', 'evidence.submit': 'own', 'evidence.withdraw': 'own',
     'evidence.view': 'own', 'evidence.download': 'own', 'bank.view_current': 'own', 'dashboard.personal': 'own',
+    'library.view': 'all',
   },
   DSO: {
     'framework.view': 'all', 'task.view': 'all', 'evidence.view': 'accepted', 'evidence.download': 'accepted',
     'submission.view_queue': 'all', 'submission.package': 'all', 'submission.mark_posted': 'all',
     'submission.mark_not_posted': 'all', 'bank.view_current': 'accepted', 'bank.search_history': 'accepted',
-    'dashboard.programme': 'all', 'dashboard.personal': 'own', 'report.generate': 'all',
+    'dashboard.programme': 'all', 'dashboard.personal': 'own', 'report.generate': 'all', 'library.view': 'all',
   },
   EXE: {
     'framework.view': 'all', 'task.view': 'all', 'escalation.view': 'all', 'evidence.view': 'accepted',
     'evidence.download': 'accepted', 'submission.view_queue': 'all', 'bank.view_current': 'accepted',
-    'dashboard.programme': 'all', 'dashboard.department': 'all', 'report.generate': 'all',
+    'dashboard.programme': 'all', 'dashboard.department': 'all', 'report.generate': 'all', 'library.view': 'all',
   },
   // No access to evidence content by default (data minimization).
   ADM: {
     'framework.view': 'all', 'framework.import': 'all', 'cycle.manage': 'all', 'audit.view': 'all',
     'admin.users': 'all', 'admin.departments': 'all', 'admin.groups': 'all', 'admin.roles': 'all',
     'admin.settings': 'all', 'admin.sla_policies': 'all', 'admin.notification_templates': 'all',
+    'library.view': 'all', 'library.manage': 'all',
   },
 };
 

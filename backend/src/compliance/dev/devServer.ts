@@ -21,6 +21,8 @@ import { linkEvidence, submitEvidence, uploadEvidence } from '../evidence/eviden
 import { acceptEvidence, claimEvidence } from '../evidence/review';
 import { DevScanner, LocalDiskStorage } from '../evidence/storage';
 import { activateFramework, createCycle, importFramework, transitionCycle } from '../framework/frameworkService';
+import { importCrosswalk } from '../framework/crosswalk';
+import { syncLibrary } from '../library/library';
 import { migrate } from '../db/migrate';
 import { seedRbac } from '../db/seedRbac';
 import { createComplianceRouter } from '../api/router';
@@ -32,6 +34,9 @@ import { existsSync as fileExists, readFileSync } from 'fs';
 const OFFICIAL = path.resolve(__dirname, '../framework/data/dga-v5.0.json');
 const demoFramework = JSON.parse(readFileSync(fileExists(OFFICIAL) ? OFFICIAL : path.resolve(__dirname, 'demo-framework.json'), 'utf8'));
 const official = fileExists(OFFICIAL);
+// Last year's framework and its crosswalk, for the carry-over demo
+const V4 = path.resolve(__dirname, '../framework/data/dga-v4.0.json');
+const CROSSWALK = path.resolve(__dirname, '../framework/data/crosswalk-v4.0-v5.0.json');
 
 const ROOT = path.resolve(__dirname, '../../../.devdata');
 const PG_PORT = Number(process.env.QIYAS_DEV_PG_PORT || 54330);
@@ -120,9 +125,38 @@ async function seedDemo(db: Client): Promise<void> {
       throw e;
     }
   };
+  const year = now.getFullYear();
+  const evidence = { storage: new LocalDiskStorage(path.join(ROOT, 'evidence')), scanner: new DevScanner() };
+  const withV4 = official && fileExists(V4) && fileExists(CROSSWALK);
+  if (withV4) {
+    // Last year's cycle on v4.0, closed, with some accepted evidence to carry over
+    const v4 = await run('alaa', (c) => importFramework(c, JSON.parse(readFileSync(V4, 'utf8'))));
+    await run('alaa', (c) => activateFramework(c, v4.frameworkVersionId));
+    const prev = await run('alaa', (c) => createCycle(c, { frameworkVersionId: v4.frameworkVersionId, year: year - 1, name: `Qiyas ${year - 1} / v4.0`, startsOn: `${year - 1}-01-01`, endsOn: `${year - 1}-12-31` }));
+    await run('alaa', (c) => transitionCycle(c, prev.cycleId, 'open'));
+    const lastYear: Array<[string, string, string, string, string, string]> = [
+      ['5.1.1-R1', it, 'mona', 'ali', 'Digital transformation strategy 2025', 'dt-strategy-2025.pdf'],
+      ['5.8.4-R1', it, 'mona', 'sara', 'Risk management training needs report', 'risk-training-needs.pdf'],
+      ['5.6.1-R1', hr, 'khalid', 'huda', 'Digital capability gap study', 'capability-gap-study.pdf'],
+      ['5.19.1-R1', it, 'mona', 'ali', 'Data governance framework', 'data-governance-framework.pdf'],
+    ];
+    for (const [code, dept, manager, employee, title, filename] of lastYear) {
+      const cr = (await db.query(`SELECT cr.id FROM qiyas.cycle_requirements cr JOIN qiyas.requirements r ON r.id = cr.requirement_id WHERE cr.cycle_id = $1 AND r.code = $2`, [prev.cycleId, code])).rows[0].id;
+      const taskId = await run('alaa', async (c) => publishAssignment(c, await createAssignment(c, {
+        cycleId: prev.cycleId, departmentId: dept, cycleRequirementIds: [cr], title, implementationDueAt: addBusinessDays(now, 5, c.calendar), managerDueAt: addBusinessDays(now, 2, c.calendar),
+      })));
+      await run(manager, (c) => assignTask(c, taskId, ids[employee]));
+      const v = await run(employee, (c) => uploadEvidence(c, evidence, { taskId, title, file: { content: Buffer.from(`%PDF demo ${title}`), filename, mimeType: 'application/pdf' } }));
+      const linkId = await run(employee, (c) => linkEvidence(c, v.versionId, { taskId, cycleRequirementId: cr }));
+      await run(employee, (c) => submitEvidence(c, taskId));
+      await run('ahmad', (c) => claimEvidence(c, linkId));
+      await run('ahmad', (c) => acceptEvidence(c, linkId, 'Approved'));
+    }
+    await run('alaa', (c) => transitionCycle(c, prev.cycleId, 'close', 'Submitted to DGA'));
+  }
   const { frameworkVersionId } = await run('alaa', (c) => importFramework(c, demoFramework));
   await run('alaa', (c) => activateFramework(c, frameworkVersionId));
-  const year = now.getFullYear();
+  if (withV4) await run('alaa', (c) => importCrosswalk(c, JSON.parse(readFileSync(CROSSWALK, 'utf8'))));
   const { cycleId } = await run('alaa', (c) => createCycle(c, { frameworkVersionId, year, name: official ? `Qiyas ${year} / v5.0` : `Qiyas ${year} / v5.0 (demo)`, startsOn: `${year}-01-01`, endsOn: `${year}-12-31` }));
   // Requirement codes used by the sample tasks, in the official or the demo framework
   const C = official
@@ -132,8 +166,8 @@ async function seedDemo(db: Client): Promise<void> {
   const reqs = (await db.query(`SELECT cr.id, r.code FROM qiyas.cycle_requirements cr JOIN qiyas.requirements r ON r.id = cr.requirement_id WHERE cr.cycle_id = $1 ORDER BY r.code`, [cycleId])).rows;
   const req = (code: string) => reqs.find((r) => r.code === code)!.id as string;
   const proof = async (code: string) => (await db.query(`SELECT rp.proof_item_id FROM qiyas.requirement_proof_items rp
-     JOIN qiyas.requirements r ON r.id = rp.requirement_id WHERE r.code = $1 LIMIT 1`, [code])).rows[0]?.proof_item_id as string | undefined;
-  const evidence = { storage: new LocalDiskStorage(path.join(ROOT, 'evidence')), scanner: new DevScanner() };
+     JOIN qiyas.cycle_requirements cr ON cr.requirement_id = rp.requirement_id
+     JOIN qiyas.requirements r ON r.id = rp.requirement_id WHERE r.code = $1 AND cr.cycle_id = $2 LIMIT 1`, [code, cycleId])).rows[0]?.proof_item_id as string | undefined;
   const assign = async (dept: string, codes: string[], title: string, days: number) =>
     run('alaa', async (c) => publishAssignment(c, await createAssignment(c, {
       cycleId, departmentId: dept, cycleRequirementIds: codes.map(req), title, instructions: 'Upload the approved, signed version dated within this cycle.',
@@ -168,6 +202,9 @@ async function main() {
   await migrate(setup);
   await seedRbac(setup);
   await seedDemo(setup);
+  await setup.query('BEGIN');
+  console.log('Regulations library:', await syncLibrary(setup));
+  await setup.query('COMMIT');
   await setup.end();
 
   const pool = new Pool({ connectionString: url, max: 10 });

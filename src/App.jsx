@@ -21,6 +21,7 @@ import ReviewQueuePage from './pages/p1/ReviewQueuePage.jsx';
 import CataloguePage from './pages/p1/CataloguePage.jsx';
 import SubmissionPage from './pages/p1/SubmissionPage.jsx';
 import BankPage from './pages/p1/BankPage.jsx';
+import LibraryPage from './pages/p1/LibraryPage.jsx';
 import AdminPage from './pages/p1/AdminPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import ErrorLogPage from './pages/ErrorLogPage.jsx';
@@ -34,6 +35,7 @@ const PAGE_COMPONENTS = {
   catalogue: CataloguePage,
   submission: SubmissionPage,
   bank: BankPage,
+  library: LibraryPage,
   admin: AdminPage,
   reports: ReportsPage,
   'error-logs': ErrorLogPage,

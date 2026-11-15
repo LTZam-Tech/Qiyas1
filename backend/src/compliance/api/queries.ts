@@ -49,7 +49,7 @@ export async function me(ctx: ServiceContext) {
 export async function listCycles(ctx: ServiceContext) {
   requirePermission(ctx, 'framework.view');
   const { rows } = await ctx.db.query(`SELECT c.id, c.name, c.year, c.status, c.starts_on, c.ends_on, c.internal_target_on,
-      f.document_code, f.version, b.id AS bank_id, b.status AS bank_status
+      f.id AS framework_version_id, f.document_code, f.version, b.id AS bank_id, b.status AS bank_status
      FROM qiyas.measurement_cycles c JOIN qiyas.framework_versions f ON f.id = c.framework_version_id
      JOIN qiyas.evidence_banks b ON b.cycle_id = c.id ORDER BY c.year DESC, c.name`);
   return rows;

@@ -18,6 +18,7 @@ import { PoolLike } from './api/http';
 import { loadCalendar } from './core/context';
 import { migrate } from './db/migrate';
 import { seedRbac } from './db/seedRbac';
+import { syncLibrary } from './library/library';
 import { EvidenceDeps } from './evidence/evidence';
 import { DevScanner, LocalDiskStorage } from './evidence/storage';
 import { Mailer, sendPendingEmails } from './notifications/mailer';
@@ -57,6 +58,15 @@ export async function prepareComplianceDatabase(pool: PoolLike): Promise<string[
   try {
     const ran = await migrate(client);
     await seedRbac(client);
+    // the shipped regulations catalogue and the citations of every imported framework
+    await client.query('BEGIN');
+    try {
+      await syncLibrary(client);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw err;
+    }
     return ran;
   } finally {
     client.release();

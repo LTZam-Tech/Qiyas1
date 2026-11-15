@@ -96,6 +96,14 @@ Note 1: the consultant can attach evidence to any task like a normal employee (D
 | `bank.view_current` | ✅ | 🔸 Dept | 🔸 Own | 🔸 Accepted | 🔸 Accepted | — |
 | `bank.search_history` — search closed cycles | ✅ | — | — | ✅ (read) | — | — |
 | `bank.reuse` — reuse a historical version in the current cycle | ✅ | — | — | — | — | — |
+| `bank.import` — import an evidence folder into the current bank (files are suggestions; another consultant reviews them, D9) | ✅ | — | — | — | — | — |
+
+### Regulations library
+
+| Permission | QC | DM | EMP | DSO | EXE | ADM |
+|---|---|---|---|---|---|---|
+| `library.view` — laws, circulars, DGA controls and guides, with the standards citing them | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `library.manage` — upload the entity's copy of a document; add entity documents | ✅ | — | — | — | — | ✅ |
 
 ### Dashboards, reports, audit
 

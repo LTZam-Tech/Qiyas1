@@ -29,7 +29,7 @@ function evidenceRole(ctx: ServiceContext, task: TaskRow): 'owner' | 'QC' {
   throw new ComplianceError('forbidden', 'Only the task owner or a consultant can work on its evidence');
 }
 
-async function fileRules(db: Db): Promise<typeof DEFAULT_FILE_RULES> {
+export async function fileRules(db: Db): Promise<typeof DEFAULT_FILE_RULES> {
   const row = await one(db, 'SELECT file_rules FROM qiyas.org_settings LIMIT 1');
   return { ...DEFAULT_FILE_RULES, ...(row?.file_rules ?? {}) };
 }

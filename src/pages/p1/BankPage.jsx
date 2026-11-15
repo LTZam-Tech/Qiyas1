@@ -5,6 +5,7 @@ import { makeT } from '../../i18n/index.js';
 import { api } from '../../services/qiyasApi.js';
 import useToast from '../../hooks/useToast.js';
 import { Empty, ErrorNote, Loading, REVIEW_STATUS, StatusBadge, pageProps, useAction, useApi } from './shared.jsx';
+import { CarryOver, FolderImport } from './BankTools.jsx';
 import s from './p1.module.css';
 
 export default function BankPage({ lang }) {
@@ -27,6 +28,8 @@ export default function BankPage({ lang }) {
           <p className="q-page-sub">{t('لكل دورة بنكها المستقل. يمكن إعادة استخدام أدلة سابقة كنقطة بداية، وتُراجع من جديد.', 'Each cycle has its own bank. Earlier evidence can be reused as a starting point, and is reviewed again.', 'ہر دور کا اپنا بینک ہے۔ پرانے ثبوت نقطۂ آغاز کے طور پر دوبارہ استعمال ہو سکتے ہیں، اور ان کا دوبارہ جائزہ ہوتا ہے۔')}</p>
         </div>
       </div>
+      {q.can('bank.import') && q.cycle?.bank_status === 'open' && <FolderImport lang={lang} />}
+      {q.can('bank.reuse') && q.cycle?.bank_status === 'open' && q.cycles.length > 1 && <CarryOver lang={lang} />}
       <form className="q-card q-card-pad" onSubmit={(e) => { e.preventDefault(); setSearch(text); }}>
         <div className={s.row}>
           <select className="q-input" style={{ width: 'auto' }} value={bankCycle} onChange={(e) => setBankCycle(e.target.value)} aria-label={t('الدورة', 'Cycle', 'دور')}>

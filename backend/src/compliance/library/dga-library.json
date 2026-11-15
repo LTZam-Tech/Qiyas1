@@ -1,0 +1,988 @@
+{
+ "format": "qiyas-library/1",
+ "note": "Metadata only. Each client uploads its own copy of the documents.",
+ "documents": [
+  {
+   "code": "law-e-transactions",
+   "kind": "law",
+   "issuer": {
+    "ar": "المرسوم الملكي رقم (م/18) وتاريخ 8/3/1428هـ",
+    "en": "Royal Decree No. (M/18) dated 8/3/1428H"
+   },
+   "title": {
+    "ar": "نظام التعاملات الإلكترونية",
+    "en": "Electronic Transactions Law"
+   },
+   "related": {
+    "5.0": [
+     "5.2",
+     "5.17"
+    ]
+   },
+   "mentions": [
+    "نظام التعاملات الإلكترونية"
+   ]
+  },
+  {
+   "code": "reg-e-transactions",
+   "kind": "regulation",
+   "issuer": {
+    "ar": "هيئة الاتصالات والفضاء والتقنية",
+    "en": "Communications, Space and Technology Commission"
+   },
+   "title": {
+    "ar": "اللائحة التنفيذية لنظام التعاملات الإلكترونية",
+    "en": "Implementing Regulations of the Electronic Transactions Law"
+   },
+   "related": {
+    "5.0": [
+     "5.2",
+     "5.17"
+    ]
+   }
+  },
+  {
+   "code": "reg-dga-organization",
+   "kind": "regulation",
+   "issuer": {
+    "ar": "قرار مجلس الوزراء رقم (418) وتاريخ 25/7/1442هـ",
+    "en": "Council of Ministers Decision No. (418) dated 25/7/1442H"
+   },
+   "title": {
+    "ar": "تنظيم هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority Organization"
+   },
+   "related": {
+    "5.0": [
+     "5.2"
+    ]
+   }
+  },
+  {
+   "code": "reg-dg-works-framework",
+   "kind": "regulation",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الإطار التنظيمي لأعمال الحكومة الرقمية",
+    "en": "Regulatory Framework for Digital Government Works"
+   },
+   "version": "2.0",
+   "related": {
+    "5.0": [
+     "5.2",
+     "5.8"
+    ]
+   }
+  },
+  {
+   "code": "policy-digital-government",
+   "kind": "policy",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "سياسات الحكومة الرقمية",
+    "en": "Digital Government Policies"
+   },
+   "version": "2.0",
+   "related": {
+    "5.0": [
+     "5.1",
+     "5.2"
+    ]
+   }
+  },
+  {
+   "code": "ctl-whole-of-government-platforms",
+   "kind": "controls",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "ضوابط منصات الحكومة الشاملة",
+    "en": "Whole-of-Government Platforms Controls"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.14",
+     "5.15"
+    ]
+   },
+   "topics": [
+    "منصات الحكومة الشاملة"
+   ]
+  },
+  {
+   "code": "ctl-it-governance",
+   "kind": "controls",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "ضوابط حوكمة تقنية المعلومات في الحكومة الرقمية",
+    "en": "Information Technology Governance Controls in Digital Government"
+   },
+   "version": "3.0",
+   "related": {
+    "5.0": [
+     "5.12"
+    ]
+   },
+   "mentions": [
+    "ضوابط حوكمة تقنية المعلومات"
+   ]
+  },
+  {
+   "code": "ctl-content-seo",
+   "kind": "controls",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "ضوابط تطوير جودة المحتوى الرقمي للمواقع والمنصات الحكومية الرقمية لتحسين ظهورها على محركات البحث",
+    "en": "Controls for Developing the Quality of Digital Content of Government Websites and Digital Platforms to Improve their Visibility on Search Engines"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.21",
+     "5.22"
+    ]
+   },
+   "mentions": [
+    "ضوابط تطوير جودة المحتوى الرقمي"
+   ]
+  },
+  {
+   "code": "ctl-e-participation",
+   "kind": "controls",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "ضوابط المشاركة الإلكترونية",
+    "en": "E-Participation Controls"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.18"
+    ]
+   },
+   "topics": [
+    "المشاركة الإلكترونية"
+   ]
+  },
+  {
+   "code": "ctl-cloud",
+   "kind": "controls",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "ضوابط الحوسبة السحابية للجهات الحكومية",
+    "en": "Cloud Computing Controls for Government Entities"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.13"
+    ]
+   }
+  },
+  {
+   "code": "ctl-revenue-sharing-outsourcing",
+   "kind": "controls",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "ضوابط إسناد أعمال الحكومة الرقمية وفق أسلوب المشاركة بالدخل",
+    "en": "Controls for Outsourcing Digital Government Works under the Revenue-Sharing Model"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.8"
+    ]
+   },
+   "topics": [
+    "المشاركة بالدخل"
+   ]
+  },
+  {
+   "code": "ctl-revenue-sharing-qualification",
+   "kind": "controls",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "معايير وإجراءات التأهيل لممارسة أعمال الحكومة الرقمية وفق أسلوب المشاركة بالدخل",
+    "en": "Qualification Criteria and Procedures for Practising Digital Government Works under the Revenue-Sharing Model"
+   },
+   "version": "2.0",
+   "related": {
+    "5.0": [
+     "5.8"
+    ]
+   }
+  },
+  {
+   "code": "ctl-risk-continuity",
+   "kind": "controls",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "ضوابط إدارة المخاطر واستمرارية الأعمال للحكومة الرقمية",
+    "en": "Risk Management and Business Continuity Controls for Digital Government"
+   },
+   "version": "4.0",
+   "related": {
+    "5.0": [
+     "5.9",
+     "5.10"
+    ]
+   }
+  },
+  {
+   "code": "ctl-domains-platforms-registration",
+   "kind": "controls",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "ضوابط تسجيل وإدارة النطاقات والمنصات والخدمات الحكومية الرقمية",
+    "en": "Controls for Registering and Managing Government Domains, Platforms and Digital Services"
+   },
+   "version": "2.0",
+   "related": {
+    "5.0": [
+     "5.15",
+     "5.17"
+    ]
+   },
+   "topics": [
+    "النطاقات"
+   ]
+  },
+  {
+   "code": "gd-ea-establishment",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "دليل تأسيس البنية المؤسسية في الجهات الحكومية",
+    "en": "Guide to Establishing Enterprise Architecture in Government Entities"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.3"
+    ]
+   }
+  },
+  {
+   "code": "gd-national-ea-methodology",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لتطبيق المنهجية الوطنية للبنية المؤسسية",
+    "en": "Guideline for Applying the National Enterprise Architecture Methodology"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.3"
+    ]
+   },
+   "mentions": [
+    "المنهجية الوطنية للبنية المؤسسية"
+   ]
+  },
+  {
+   "code": "gd-dx-maturity-index",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل التعريفي لمؤشر نضج التجربة الرقمية للخدمات الحكومية 2026",
+    "en": "Introductory Guide to the Digital Experience Maturity Index for Government Services 2026"
+   },
+   "version": "5.0",
+   "related": {
+    "5.0": [
+     "5.16",
+     "5.20"
+    ]
+   }
+  },
+  {
+   "code": "gd-website-efficiency-index",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل التعريفي لمؤشر كفاءة المواقع الإلكترونية والمحتوى الرقمي 2025",
+    "en": "Introductory Guide to the Website Efficiency and Digital Content Index 2025"
+   },
+   "version": "2.0",
+   "related": {
+    "5.0": [
+     "5.21",
+     "5.22"
+    ]
+   }
+  },
+  {
+   "code": "gd-emerging-tech-index",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل التعريفي لمؤشر جاهزية تبني التقنيات الناشئة 2026",
+    "en": "Introductory Guide to the Emerging Technologies Adoption Readiness Index 2026"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.23",
+     "5.24"
+    ]
+   }
+  },
+  {
+   "code": "gd-digital-procurement",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل التعريفي لمنهجية المشتريات الرقمية",
+    "en": "Introductory Guide to the Digital Procurement Methodology"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.8"
+    ]
+   },
+   "topics": [
+    "المشتريات الرقمية"
+   ]
+  },
+  {
+   "code": "gd-platforms-products-services",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل التعريفي للمنصات والمنتجات والخدمات الرقمية",
+    "en": "Introductory Guide to Digital Platforms, Products and Services"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.14",
+     "5.15"
+    ]
+   }
+  },
+  {
+   "code": "gd-apis",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لواجهات برمجة التطبيقات (APIs)",
+    "en": "Application Programming Interfaces (APIs) Guideline"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.14"
+    ]
+   },
+   "topics": [
+    "واجهات برمجة التطبيقات"
+   ]
+  },
+  {
+   "code": "gd-sdlc",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لمنهجية دورة حياة تطوير النظم",
+    "en": "Systems Development Life Cycle Methodology Guideline"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.11"
+    ]
+   },
+   "topics": [
+    "دورة حياة تطوير"
+   ]
+  },
+  {
+   "code": "gd-devops",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لمنهجية تطوير وتشغيل البرمجيات DevOps",
+    "en": "Software Development and Operations (DevOps) Methodology Guideline"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.11"
+    ]
+   },
+   "topics": [
+    "DevOps"
+   ]
+  },
+  {
+   "code": "gd-digital-project-management",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لمنهجية إدارة المشروع الرقمي",
+    "en": "Digital Project Management Methodology Guideline"
+   },
+   "version": "2.0",
+   "related": {
+    "5.0": [
+     "5.2"
+    ]
+   },
+   "topics": [
+    "لإدارة المشاريع"
+   ]
+  },
+  {
+   "code": "gd-digital-fraud",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لمكافحة الاحتيال الرقمي",
+    "en": "Digital Fraud Prevention Guideline"
+   },
+   "version": "1.0",
+   "issuedOn": "2025",
+   "related": {
+    "5.0": [
+     "5.9"
+    ]
+   },
+   "topics": [
+    "الاحتيال"
+   ]
+  },
+  {
+   "code": "gd-contact-centres",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لمراكز الاتصال في الجهات الحكومية",
+    "en": "Guideline for Contact Centres in Government Entities"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.19"
+    ]
+   },
+   "topics": [
+    "مراكز الاتصال"
+   ]
+  },
+  {
+   "code": "gd-website-content",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي للمحتوى الرقمي للمواقع الحكومية",
+    "en": "Guideline for the Digital Content of Government Websites"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.22"
+    ]
+   }
+  },
+  {
+   "code": "gd-ict-economic-classification",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي للتصنيفات الاقتصادية لبنود الاتصالات وتقنية المعلومات",
+    "en": "Guideline for the Economic Classifications of ICT Items"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.8"
+    ]
+   }
+  },
+  {
+   "code": "gd-ict-contractor-classification",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي للتصنيف الفني لمقاولي قطاع الاتصالات وتقنية المعلومات",
+    "en": "Guideline for the Technical Classification of ICT Sector Contractors"
+   },
+   "version": "3.0",
+   "related": {
+    "5.0": [
+     "5.8"
+    ]
+   }
+  },
+  {
+   "code": "gd-cloud-adoption",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لتبني الحوسبة السحابية للجهات الحكومية",
+    "en": "Cloud Computing Adoption Guideline for Government Entities"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.13"
+    ]
+   }
+  },
+  {
+   "code": "gd-emerging-tech-adoption",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لتبني التقنيات الناشئة",
+    "en": "Emerging Technologies Adoption Guideline"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.24"
+    ]
+   },
+   "topics": [
+    "التقنيات الناشئة"
+   ]
+  },
+  {
+   "code": "gd-open-source",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لتبني البرمجيات الحرة ومفتوحة المصدر",
+    "en": "Free and Open-Source Software Adoption Guideline"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.12"
+    ]
+   },
+   "topics": [
+    "مفتوحة المصدر"
+   ]
+  },
+  {
+   "code": "gd-web-accessibility",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لإمكانية الوصول لمحتوى المواقع الحكومية الإلكترونية",
+    "en": "Accessibility Guideline for Government Website Content"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.22"
+    ]
+   },
+   "topics": [
+    "إمكانية الوصول"
+   ]
+  },
+  {
+   "code": "gd-channels-accessibility",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لإمكانية الوصول لمحتوى القنوات الرقمية لخدمة الأشخاص ذوي الإعاقة وكبار السن",
+    "en": "Accessibility Guideline for Digital Channel Content Serving Persons with Disabilities and the Elderly"
+   },
+   "version": "2.0",
+   "related": {
+    "5.0": [
+     "5.17",
+     "5.20"
+    ]
+   },
+   "topics": [
+    "ذوي الإعاقة"
+   ]
+  },
+  {
+   "code": "gd-rfp-preparation",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لإعداد كراسات الشروط والمواصفات الخاصة بالمشاريع الرقمية",
+    "en": "Guideline for Preparing Terms and Specifications Booklets for Digital Projects"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.8"
+    ]
+   },
+   "topics": [
+    "كراسات الشروط"
+   ]
+  },
+  {
+   "code": "gd-virtual-meetings",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لاستخدام أنظمة وتطبيقات الاجتماعات الافتراضية",
+    "en": "Guideline for Using Virtual Meeting Systems and Applications"
+   },
+   "version": "2.0",
+   "related": {
+    "5.0": [
+     "5.4"
+    ]
+   },
+   "topics": [
+    "الاجتماعات الافتراضية"
+   ]
+  },
+  {
+   "code": "gd-seo-basics",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لأساسيات تحسين الظهور على محركات البحث للمواقع الحكومية",
+    "en": "Guideline for Search Engine Optimization Basics for Government Websites"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.21",
+     "5.22"
+    ]
+   },
+   "topics": [
+    "محركات البحث"
+   ]
+  },
+  {
+   "code": "gd-risk-continuity",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لإدارة المخاطر واستمرارية الأعمال للحكومة الرقمية",
+    "en": "Risk Management and Business Continuity Guideline for Digital Government"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.9",
+     "5.10"
+    ]
+   }
+  },
+  {
+   "code": "gd-software-quality-testing",
+   "kind": "guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الدليل الاسترشادي لاختبار جودة برمجيات المنتجات والخدمات الحكومية الرقمية",
+    "en": "Software Quality Testing Guideline for Government Digital Products and Services"
+   },
+   "version": "1.0",
+   "related": {
+    "5.0": [
+     "5.11",
+     "5.16"
+    ]
+   },
+   "topics": [
+    "اختبار جودة"
+   ]
+  },
+  {
+   "code": "fw-dts-1.0",
+   "kind": "framework",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "المعايير الأساسية للتحول الرقمي",
+    "en": "Basic Digital Transformation Standards"
+   },
+   "version": "1.0",
+   "description": {
+    "ar": "النسخة الإنجليزية",
+    "en": "English edition"
+   }
+  },
+  {
+   "code": "fw-dts-2.0",
+   "kind": "framework",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "المعايير الأساسية للتحول الرقمي",
+    "en": "Basic Digital Transformation Standards"
+   },
+   "version": "2.0"
+  },
+  {
+   "code": "fw-dts-4.0",
+   "kind": "framework",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "المعايير الأساسية للتحول الرقمي",
+    "en": "Basic Digital Transformation Standards"
+   },
+   "version": "4.0"
+  },
+  {
+   "code": "fw-dts-5.0",
+   "kind": "framework",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "المعايير الأساسية للتحول الرقمي",
+    "en": "Basic Digital Transformation Standards"
+   },
+   "version": "5.0"
+  },
+  {
+   "code": "ug-qiyas-system",
+   "kind": "user_guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "دليل المستخدم لخدمة نظام قياس التحول الرقمي",
+    "en": "User Guide for the Digital Transformation Measurement (Qiyas) System Service"
+   },
+   "description": {
+    "ar": "متوفر بالعربية والإنجليزية",
+    "en": "Available in Arabic and English"
+   }
+  },
+  {
+   "code": "ug-standards-documents-2023",
+   "kind": "user_guide",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "دليل المستخدم لخدمة إدارة وثائق معايير التحول الرقمي (قياس 2023)",
+    "en": "User Guide for the Digital Transformation Standards Documents Management Service (Qiyas 2023)"
+   }
+  },
+  {
+   "code": "rpt-qiyas-2022",
+   "kind": "report",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "نتائج قياس التحول الرقمي للجهات الحكومية 2022",
+    "en": "Digital Transformation Measurement Results for Government Entities 2022"
+   },
+   "description": {
+    "ar": "القياس العاشر؛ متوفر بالعربية والإنجليزية",
+    "en": "10th measurement; available in Arabic and English"
+   }
+  },
+  {
+   "code": "rpt-qiyas-2023-executive",
+   "kind": "report",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "التقرير التنفيذي لقياس التحول الرقمي 2023",
+    "en": "Digital Transformation Measurement Executive Report 2023"
+   }
+  },
+  {
+   "code": "rpt-qiyas-2024-executive",
+   "kind": "report",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "التقرير التنفيذي لقياس التحول الرقمي 2024",
+    "en": "Digital Transformation Measurement Executive Report 2024"
+   },
+   "version": "1.0"
+  },
+  {
+   "code": "rpt-website-efficiency-2025",
+   "kind": "report",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "التقرير العام لمؤشر كفاءة المواقع الإلكترونية والمحتوى الرقمي 2025",
+    "en": "General Report of the Website Efficiency and Digital Content Index 2025"
+   },
+   "related": {
+    "5.0": [
+     "5.21",
+     "5.22"
+    ]
+   }
+  },
+  {
+   "code": "ws-qiyas-2022-launch",
+   "kind": "presentation",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "عرض ورشة الإطلاق لقياس التحول الرقمي العاشر",
+    "en": "Launch Workshop of the 10th Digital Transformation Measurement"
+   }
+  },
+  {
+   "code": "ws-qiyas-2023-launch",
+   "kind": "presentation",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "عرض ورشة إطلاق قياس 2023",
+    "en": "Qiyas 2023 Launch Workshop"
+   }
+  },
+  {
+   "code": "ws-qiyas-2024-launch",
+   "kind": "presentation",
+   "issuer": {
+    "ar": "هيئة الحكومة الرقمية",
+    "en": "Digital Government Authority"
+   },
+   "title": {
+    "ar": "الورشة التعريفية لإطلاق دورة قياس التحول الرقمي 2024",
+    "en": "Introductory Workshop Launching the Digital Transformation Measurement Cycle 2024"
+   }
+  }
+ ]
+}

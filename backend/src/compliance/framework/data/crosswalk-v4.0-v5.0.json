@@ -1,0 +1,3676 @@
+{
+ "format": "qiyas-crosswalk/1",
+ "from": {
+  "issuer": "DGA",
+  "documentCode": "DGA-1-2-1-111",
+  "version": "4.0"
+ },
+ "to": {
+  "issuer": "DGA",
+  "documentCode": "DGA-1-2-1-111",
+  "version": "5.0"
+ },
+ "standards": [
+  {
+   "from": "5.1.1",
+   "to": [
+    "5.1.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق في الإصدار 5.0.",
+    "en": "The standard is unchanged in v5.0."
+   }
+  },
+  {
+   "from": "5.1.2",
+   "to": [
+    "5.1.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق في الإصدار 5.0.",
+    "en": "The standard is unchanged in v5.0."
+   }
+  },
+  {
+   "from": "5.1.3",
+   "to": [
+    "5.1.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "أُعيد ترقيم المتطلب 3 ليصبح 4، وأُضيف في الإصدار 5.0 متطلب جديد (5.1.3-R3) منقول من المعيار 5.2.2-R5 في الإصدار 4.0 (منهجية إدارة المشاريع).",
+    "en": "v4 R3 is renumbered R4; v5.0 adds 5.1.3-R3 (project management methodology), which came from v4 5.2.2-R5."
+   }
+  },
+  {
+   "from": "5.2.1",
+   "to": [
+    "5.2.1"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "أضاف الإصدار 5.0 متطلبًا جديدًا (5.2.1-R5: الأدوار والمسؤوليات والأوصاف الوظيفية لتقنية المعلومات)، وأضاف إلى مهام لجنة التعاملات الإلكترونية الإشراف على أعمال حوكمة تقنية المعلومات، وأضاف تعميم الهيئة رقم (1189) إلى المراجع.",
+    "en": "v5.0 adds a new requirement (5.2.1-R5: IT roles, responsibilities and job descriptions), adds supervision of IT governance to the e-transactions committee's duties (R5→R6), and adds DGA Circular No. (1189) to the references."
+   }
+  },
+  {
+   "from": "5.2.2",
+   "to": [
+    "5.2.2",
+    "5.1.3"
+   ],
+   "relation": "split",
+   "note": {
+    "ar": "نُقل متطلب منهجية وسياسات إدارة المشاريع إلى المعيار 5.1.3 (5.1.3-R3)، ويطلب الإصدار 5.0 عينات حديثة.",
+    "en": "The project management methodology/policies requirement moved to 5.1.3 (5.1.3-R3); v5.0 asks for recent samples."
+   }
+  },
+  {
+   "from": "5.2.3",
+   "to": [
+    "5.2.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق، ويطلب الإصدار 5.0 عينات حديثة.",
+    "en": "Unchanged; v5.0 asks for recent samples."
+   }
+  },
+  {
+   "from": "5.3.1",
+   "to": [
+    "5.3.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "أُعيد ترتيب المتطلبات فقط، وأضاف الإصدار 5.0 المستوى الخامس لشهادة اعتماد البنية المؤسسية الوطنية.",
+    "en": "Requirements reordered only; v5.0 also accepts Level Five of the National EA accreditation certificate."
+   }
+  },
+  {
+   "from": "5.3.2",
+   "to": [
+    "5.3.2"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "المتطلب 1 أصبح تطبيق دورة تطوير مكونات البنية المؤسسية وفق NORA مع قائمة أصحاب العلاقة والمجالات ووحدات البناء والمناظير، ومستند إثباته ميثاق دورة التطوير بدلًا من وثيقة المنهجية.",
+    "en": "R1 now asks to apply an EA development cycle per NORA (with stakeholders, domains, building blocks and views in scope), evidenced by a development-cycle charter instead of a methodology document."
+   }
+  },
+  {
+   "from": "5.3.3",
+   "to": [
+    "5.3.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق، وأضاف الإصدار 5.0 أن مدة السنة تبدأ من تاريخ تشكيل اللجنة، والمستوى الخامس للشهادة.",
+    "en": "Unchanged in substance; v5.0 states the one-year period runs from the committee's formation date and accepts certificate Level Five."
+   }
+  },
+  {
+   "from": "5.3.4",
+   "to": [
+    "5.3.4"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "المتطلب 2 أصبح دراسة حالات استخدام التقنيات الحديثة وتضمينها في مشاريع خارطة التحول؛ والمتطلب 3 أصبح قياس الأثر على المستوى الاستراتيجي والمالي والتحول الرقمي؛ والمتطلب 4 أصبح الربط التقني بين أداة البنية المؤسسية والمنصات الرقمية بدلًا من المسرعات. الشهادة: المستوى الرابع في 4.0، والثالث أو الرابع أو الخامس في 5.0.",
+    "en": "R2 becomes a use-case study of modern technologies included in roadmap projects; R3 becomes impact measurement at strategic, financial and digital transformation levels; R4 becomes technical integration of the EA tool with digital platforms instead of accelerators. Certificate: Level Four in v4.0, Level Three/Four/Five in v5.0."
+   }
+  },
+  {
+   "from": "5.4.1",
+   "to": [
+    "5.4.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق، ويطلب الإصدار 5.0 دراسة ووثيقة حديثتين.",
+    "en": "Unchanged; v5.0 asks for a recent study and document."
+   }
+  },
+  {
+   "from": "5.4.2",
+   "to": [
+    "5.4.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق.",
+    "en": "Unchanged."
+   }
+  },
+  {
+   "from": "5.4.3",
+   "to": [
+    "5.4.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق مع تعديل لفظي بسيط.",
+    "en": "Unchanged apart from minor wording."
+   }
+  },
+  {
+   "from": "5.5.1",
+   "to": [
+    "5.5.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق، مع إعادة ترتيب البنود الفرعية للمتطلب 2 واشتراط أن تكون الخطة حديثة.",
+    "en": "Unchanged; R2 sub-items reordered and v5.0 requires an up-to-date plan."
+   }
+  },
+  {
+   "from": "5.5.2",
+   "to": [
+    "5.5.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق، ويطلب الإصدار 5.0 إضافةً إلى ذلك (3) عينات من الدعوات المرسلة للمشاركين.",
+    "en": "Unchanged; v5.0 additionally asks for (3) samples of invitations sent to participants."
+   }
+  },
+  {
+   "from": "5.5.3",
+   "to": [
+    "5.5.3"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "حُذف متطلب تعيين القادة المؤهلين الجدد، وأضاف الإصدار 5.0 متطلبين جديدين (R2 وR3) حول التقارير الدورية عبر الأدوات الرقمية وتحليلها لدعم القرارات القيادية.",
+    "en": "The requirement to appoint newly qualified leaders was dropped; v5.0 adds R2 and R3 on periodic reports via digital tools and their analysis to support leadership decisions."
+   }
+  },
+  {
+   "from": "5.5.4",
+   "to": [
+    "5.5.4"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق.",
+    "en": "Unchanged."
+   }
+  },
+  {
+   "from": "5.6.1",
+   "to": [
+    "5.6.1"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "أضاف الإصدار 5.0 مجالات تقنية المعلومات إلى نطاق الخطة، وحصر المستهدفين في موظفي التحول الرقمي وتقنية المعلومات، وأضاف تعميم الهيئة رقم (1189).",
+    "en": "v5.0 adds information technology fields to the plan's scope, targets digital transformation and IT employees, and adds DGA Circular No. (1189)."
+   }
+  },
+  {
+   "from": "5.6.2",
+   "to": [
+    "5.6.2"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "دُمج متطلب آلية المتابعة والقياس ونماذج التقارير مع متطلب إصدار تقارير المتابعة الدورية في متطلب واحد (5.6.2-R1)، ولم يعد الإصدار 5.0 يطلب اعتماد آلية المتابعة صراحةً.",
+    "en": "The monitoring mechanism/report templates requirement and the periodic reports requirement are merged into 5.6.2-R1; v5.0 no longer explicitly asks for an approved monitoring mechanism."
+   }
+  },
+  {
+   "from": "5.6.3",
+   "to": [
+    "5.6.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق.",
+    "en": "Unchanged."
+   }
+  },
+  {
+   "from": "5.7.1",
+   "to": [
+    "5.7.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق، مع استبدال مستوى الأتمتة \"تقليدي\" بـ\"غير مؤتمت\".",
+    "en": "Unchanged; the automation level \"traditional\" became \"not automated\"."
+   }
+  },
+  {
+   "from": "5.7.2",
+   "to": [
+    "5.7.2"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "دُمج متطلبا التوثيق والبطاقات في 5.7.2-R2، وأضاف الإصدار 5.0 متطلبًا جديدًا (5.7.2-R1) لآلية ترقيم الإصدارات، مأخوذًا من البند (ب) في 5.7.3-R1 من الإصدار 4.0.",
+    "en": "The documentation and cards requirements are merged into 5.7.2-R2; v5.0 adds 5.7.2-R1 (version numbering mechanism), taken from sub-item (b) of v4 5.7.3-R1."
+   }
+  },
+  {
+   "from": "5.7.3",
+   "to": [
+    "5.7.3"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "نُقل البند الفرعي (ب) الخاص بترقيم النسخ المحسنة إلى 5.7.2-R1، وأصبح البند (هـ) توضيح الخدمات الرقمية المرتبطة بالإجراءات المحسنة.",
+    "en": "Sub-item (b) on numbering improved versions moved to 5.7.2-R1; sub-item (e) became identifying the digital services linked to the improved procedures."
+   }
+  },
+  {
+   "from": "5.7.4",
+   "to": [
+    "5.7.4"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المعيار مطابق، ويطلب الإصدار 5.0 توضيح اسم الإجراء لكل شاشة.",
+    "en": "Unchanged; v5.0 asks to name the procedure on each attached screen."
+   }
+  },
+  {
+   "from": "5.8.1",
+   "to": [
+    "5.9.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.9 في الإصدار 5.0، وأصبحت جميع متطلباته على جميع الجهات الحكومية. حُذف متطلب عقد اجتماعات اللجنة التوجيهية دوريًّا (R7)، وحُذف شرط المشاركة مع المعنيين من متطلبات السياسة والإطار والإجراءات.",
+    "en": "Moved to axis 5.9 in v5.0, and all its requirements now apply to all government entities (the Annex 7.6 group split is gone). The periodic steering committee meetings requirement (R7) was dropped, and the 'share with stakeholders' clause was dropped from the policy, framework and procedures requirements. v5 proof items also differ (employment letters replace the appointment decision and job descriptions)."
+   }
+  },
+  {
+   "from": "5.8.2",
+   "to": [
+    "5.9.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.9 في الإصدار 5.0 مع متطلبات مطابقة، وأضاف الإصدار 5.0 متطلبًا جديدًا لاعتماد اللجنة التوجيهية للمخاطر الرئيسية (5.9.2-R6).",
+    "en": "Moved to axis 5.9 in v5.0 with matching requirements; all now apply to all government entities. v5.0 adds a new requirement for steering committee approval of the key risks (5.9.2-R6), and v5 E2 asks for samples of the risk register including digital-government-service risks."
+   }
+  },
+  {
+   "from": "5.8.3",
+   "to": [
+    "5.9.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.9. في الإصدار 5.0 تُرفع تقارير المخاطر إلى اللجنة التوجيهية لنظام إدارة المخاطر بدلًا من الإدارة العليا واللجان الداخلية والخارجية وأصحاب المصلحة.",
+    "en": "Moved to axis 5.9. In v5.0 risk reports go to the risk management system steering committee instead of senior management, internal/external committees and stakeholders, so R2 is marked changed (v4 reports may not show submission to the steering committee)."
+   }
+  },
+  {
+   "from": "5.8.4",
+   "to": [
+    "5.9.4"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.9. دمج الإصدار 5.0 تحليل الاحتياجات التدريبية مع وضع خطة التدريب في المتطلب R1، وأفرد تنفيذ الخطة في المتطلب R2.",
+    "en": "Moved to axis 5.9. v5.0 combines the training needs analysis with developing the training plan in R1 and moves implementation of the plan to R2; so v4 R1 merges into v5 R1 and v4 R2 (develop and implement) splits over v5 R1 and R2."
+   }
+  },
+  {
+   "from": "5.8.5",
+   "to": [
+    "5.9.5"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.9. في الإصدار 5.0 أصبحت التقارير المرفوعة للجنة التوجيهية عن نتائج قياس التحول الرقمي لمعايير إدارة المخاطر، وحُذف متطلبا مراجعة خطة الحملات التوعوية وخطة تقييم مستوى الامتثال، وأُضيف متطلبا نموذج الفحص النافي للجهالة واتفاقيات عدم الإفصاح.",
+    "en": "Moved to axis 5.9. In v5.0 the reports to the steering committee are about the digital transformation measurement results for the risk management standards (v4 R3: effectiveness review and compliance assessment results, to senior management and the committee). v4 R4 (annual review of the awareness campaigns plan) and R6 (annual compliance assessment plan) have no v5 counterpart; v5 adds R5 (due diligence form) and R6 (NDAs with IT outsourcing providers)."
+   }
+  },
+  {
+   "from": "5.9.1",
+   "to": [
+    "5.10.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.10 في الإصدار 5.0 بمتطلبات مطابقة مع تعديلات صياغية طفيفة.",
+    "en": "Moved to axis 5.10 in v5.0 with matching requirements and minor wording changes (e.g. team 'based on the entity's needs' instead of 'a sufficient number of qualified employees'; v5 proof items ask for employment identification letters)."
+   }
+  },
+  {
+   "from": "5.9.2",
+   "to": [
+    "5.10.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.10. في الإصدار 5.0 تُشارك سياسة استمرارية الأعمال مع جميع موظفي الجهة بدلًا من الأطراف المعنية الداخلية، وأصبحت جميع المتطلبات على جميع الجهات.",
+    "en": "Moved to axis 5.10; all requirements now apply to all government entities. v5 R5 requires sharing the policy with all of the entity's employees (v4: internal parties concerned), hence changed. v5 R1/R2 mention staff only (v4: staff and champions); treated as same."
+   }
+  },
+  {
+   "from": "5.9.3",
+   "to": [
+    "5.10.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.10. أضاف الإصدار 5.0 نقاط الاسترجاع المستهدفة (RPO) إلى متطلب R3، وحصر عدة متطلبات في العمليات والإجراءات المتعلقة بالخدمات الحكومية الرقمية.",
+    "en": "Moved to axis 5.10; all requirements now apply to all government entities. v5 R3 adds recovery point objectives (RPO) alongside RTO, hence changed; v5 R3, R4 and R7 are scoped to processes related to digital government services (treated as same for R4/R7). v5 E10 needs no document (verified via Raqmi)."
+   }
+  },
+  {
+   "from": "5.9.4",
+   "to": [
+    "5.10.4"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.10 بمتطلبات مطابقة مع إعادة ترتيب: أصبح تحليل التكاليف والمنافع R2.",
+    "en": "Moved to axis 5.10 with matching requirements, reordered (cost-benefit analysis is now R2) and all applying to all government entities. v5 R5 names RTO and RPO explicitly (v4 wording of the second term is garbled in the official text)."
+   }
+  },
+  {
+   "from": "5.9.5",
+   "to": [
+    "5.10.5"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.10. حُذف متطلبا تقديم نسب التوافرية الشهرية لهيئة الحكومة الرقمية واختبار خطة الاستجابة الإعلامية دوريًّا.",
+    "en": "Moved to axis 5.10; all requirements now apply to all government entities. v4 R13 (monthly availability rates to DGA) and R15 (periodic test of the media response plan) have no v5 counterpart. v5 R11 drops 'using different technologies'; v5 R8 drops 'function and data test results'; v5 E7 needs no document (verified via Raqmi)."
+   }
+  },
+  {
+   "from": "5.9.6",
+   "to": [
+    "5.10.6"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.10 بمتطلبات مطابقة.",
+    "en": "Moved to axis 5.10 with identical requirements."
+   }
+  },
+  {
+   "from": "5.9.7",
+   "to": [
+    "5.10.7"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.10 بمتطلبات مطابقة.",
+    "en": "Moved to axis 5.10 with identical requirements."
+   }
+  },
+  {
+   "from": "5.10.1",
+   "to": [
+    "5.11.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.11. دمج الإصدار 5.0 متطلبي الخدمات الذاتية للمستفيد الداخلي والخارجي في متطلب واحد (R3).",
+    "en": "Moved to axis 5.11. v5.0 merges the internal (staff) and external beneficiary self-services requirements (v4 R3, R4) into one requirement (v5 R3)."
+   }
+  },
+  {
+   "from": "5.10.2",
+   "to": [
+    "5.11.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.11 بمتطلبات مطابقة.",
+    "en": "Moved to axis 5.11 with identical requirements."
+   }
+  },
+  {
+   "from": "5.10.3",
+   "to": [
+    "5.11.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.11 بمتطلبات مطابقة.",
+    "en": "Moved to axis 5.11 with matching requirements (v5 R1 says 'adopt' instead of 'apply' the NCDA policies, and v5 E1 also asks for proof of sharing with staff)."
+   }
+  },
+  {
+   "from": "5.10.4",
+   "to": [
+    "5.11.4"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.11 بمتطلبات مطابقة.",
+    "en": "Moved to axis 5.11 with matching requirements."
+   }
+  },
+  {
+   "from": "5.10.5",
+   "to": [
+    "5.11.5"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.11 باسم (استخدام البريد الإلكتروني) بمتطلبات مطابقة، ولم يعد المتطلب R3 يتطلب مستند إثبات في الإصدار 5.0.",
+    "en": "Moved to axis 5.11 as 'Use of Email' with identical requirements; in v5.0 the hosting requirement (R3) needs no supporting document (verified internally). The v4 card title is an official copy error (it repeats the 5.10.4 title)."
+   }
+  },
+  {
+   "from": "5.11.1",
+   "to": [
+    "5.12.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.12. أصبح المتطلب R2 في الإصدار 5.0 إصدار سياسات تقنية المعلومات وحوكمتها واعتمادها وتعميمها، وأُضيف متطلب اتفاقيات مستوى الخدمة التشغيلية (R4)، واشتُرطت مشاركة سياسات الأصول التقنية والأجهزة الشخصية مع المنسوبين.",
+    "en": "Moved to axis 5.12. v5 R2 asks for IT policies and their governance (incl. technical services and infrastructure management), approved and circulated entity-wide, hence changed. v5 adds R4 (operational service level agreements) and requires the asset-use and personal-device rules to be shared with staff."
+   }
+  },
+  {
+   "from": "5.11.2",
+   "to": [
+    "5.12.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.12. أصبح متطلب مؤشرات الأداء في الإصدار 5.0 خاصًّا بمؤشرات حوكمة تقنية المعلومات وفق ضوابط الهيئة، وأُضيف متطلبا متابعة اتفاقيات مستوى الخدمة الداخلية وخطة التدقيق الداخلي على تقنية المعلومات.",
+    "en": "Moved to axis 5.12. v5 R3 is about IT governance KPIs developed per the DGA IT governance controls (v4: technical services/infrastructure process KPIs), hence changed. v5 adds R4 (internal operational SLA follow-up) and R7 (internal IT audit plan); v5 hosting proof (E5) needs no document."
+   }
+  },
+  {
+   "from": "5.11.3",
+   "to": [
+    "5.12.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.12 بمتطلبات مطابقة.",
+    "en": "Moved to axis 5.12 with identical requirements."
+   }
+  },
+  {
+   "from": "5.11.4",
+   "to": [
+    "5.12.4"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.12. أصبح متطلب إعادة الاستخدام في الإصدار 5.0 (R5) مشروطًا بإعادة استخدام برمجيات مودعة من جهات أخرى وتوثيقها عبر المستودع دون تكرار، وأُضيفت متطلبات خطة الإيداع ونسبة الإيداع والاستبدال والنشر.",
+    "en": "Moved to axis 5.12. v5 R5 requires reusing software deposited by other entities, documented via the repository and not previously submitted (v4 R3: enhance reuse per the product guide), hence changed. v5 adds R3 (3-year deposit plan), R4 (deposit >=20%), R6 (replace closed-source), R11 (handling contributions) and R12 (publish 100%). v5 R8b drops the preference for free/open-source ready-made software."
+   }
+  },
+  {
+   "from": "5.11.5",
+   "to": [
+    "5.8.1"
+   ],
+   "relation": "moved",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور الجديد 5.8 (المشتريات الرقمية) في الإصدار 5.0، وقُسِّم متطلب ربط الدوائر الرقمية بين الجهات المستخدمة للاتفاقية الإطارية (أوامر الشراء) والجهات المستثناة (العقود المطروحة).",
+    "en": "Moved to the new v5 axis 5.8 (Digital Procurement). v5 groups its requirements by exemption status: v4 R2 (link circuits to tendered contracts or framework purchase orders) splits into v5 R1a (purchase orders) and R2a (tendered contracts). v5 adds exemption-evidence requirements (R2b, R3a) and services valid for 2026 in R1b; several v5 proof items need no document (verified via Raqmi)."
+   }
+  },
+  {
+   "from": "5.11.6",
+   "to": [
+    "5.8.2"
+   ],
+   "relation": "moved",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور الجديد 5.8 (المشتريات الرقمية) في الإصدار 5.0، ولم يعد يتطلب مستند إثبات (التحقق عبر منصة رقمي).",
+    "en": "Moved to the new v5 axis 5.8 (Digital Procurement); v5 also asks to add all required detailed data and needs no supporting document (verified via Raqmi)."
+   }
+  },
+  {
+   "from": "5.11.7",
+   "to": [
+    "5.8.3"
+   ],
+   "relation": "moved",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور الجديد 5.8 (المشتريات الرقمية) في الإصدار 5.0، وأُضيفت متطلبات إثبات الاستثناء من الاتفاقية الإطارية أو من نظام المنافسات.",
+    "en": "Moved to the new v5 axis 5.8 (Digital Procurement). v5 adds exemption-evidence requirements (R2a, R3a) and separate proof items per group; v5 scope is entities applying the Government Tenders and Procurement Law (v4: entities linked to the State's general budget)."
+   }
+  },
+  {
+   "from": "5.12.1",
+   "to": [
+    "5.13.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "أصبحت بنود المتطلب (3) \"تمكين الوحدة\" متطلبات مستقلة في الإصدار الخامس: تعيين المسؤول ضمن (R1)، والمسميات ونموذج التفاعل ضمن (R2)، وفريق العمل (R3)، ولجنة الحوكمة (R4)، والسياسات (R5) مع حد أدنى من المحاور، ومتابعة المؤشرات (R6)، وخطة التدريب (R7).",
+    "en": "The sub-items of v4 R3 (“enabling the unit”) became separate v5 requirements: head appointment in R1, job titles and interaction model in R2, work team R3, governance committee R4, policies R5 (now with mandatory topics), KPI follow-up R6 and training plan R7."
+   }
+  },
+  {
+   "from": "5.12.2",
+   "to": [
+    "5.13.2"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "تغيرت الفترة والمستهدفات (2026–2027، 60% ثم 70%) وأضيف تقرير تحقيق مستهدف 2025 (R1) ودراسة الجدوى (R3e) ودراسة مخاطر الخطة (R5)؛ وتغير رابط الاستبانة.",
+    "en": "Period and targets changed (2026–2027, 60% then 70%); v5 adds a report on achieving the 2025 target (R1), a feasibility study (R3e) and a risk study of the plan (R5); the questionnaire link changed."
+   }
+  },
+  {
+   "from": "5.12.3",
+   "to": [
+    "5.13.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "قسّم الإصدار الخامس متطلب التقارير (3) إلى مراقبة الاستخدام والإنفاق والمخاطر (R3) وحصر العقود وأوامر الشراء (R4)، ولم يعد يطلب تقارير نماذج ترشيد التكلفة صراحة.",
+    "en": "v5 splits v4 R3 into usage/spending/risk monitoring (R3) and an inventory of contracts and purchase orders (R4); reports on cost-optimization models are no longer asked for explicitly."
+   }
+  },
+  {
+   "from": "5.13.1",
+   "to": [
+    "5.14.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "أضاف الإصدار الخامس متطلبًا جديدًا (R3) لخطة تطبيق المراسلة الفورية الآمنة للجهات المحددة في الملحق (7.6).",
+    "en": "v5 adds a new R3 (secure instant-messaging app plan) for the entities in Annex (7.6)."
+   }
+  },
+  {
+   "from": "5.13.2",
+   "to": [
+    "5.14.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المتطلبات نفسها؛ أضاف الإصدار الخامس قصر خدمات الهوية الرقمية على \"نفاذ\" (R2)، وأصبح المتطلب (3) على الجهات في الملحق (7.6.1)، ونُقلت منصة \"نفاذ\" إلى وزارة الداخلية، وأصبح إثبات (2) و(3) و(5) تحققًا داخليًا.",
+    "en": "Same requirements; v5 adds restricting digital identity to Nafath (R2), applies R3 to Annex (7.6.1) entities, moves Nafath under the Ministry of Interior, and makes E2, E3 and E5 internal verification."
+   }
+  },
+  {
+   "from": "5.13.3",
+   "to": [
+    "5.14.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المتطلبات نفسها بالترتيب نفسه.",
+    "en": "Same requirements in the same order."
+   }
+  },
+  {
+   "from": "5.13.4",
+   "to": [
+    "5.14.4"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "أعيد ترتيب المتطلبات؛ ويشترط الإصدار الخامس تفعيل خدمات الثقة الرقمية لجميع أعمال وخدمات الجهة للمستفيد الداخلي والخارجي.",
+    "en": "Requirements reordered; v5 requires activating digital trust services for all of the entity’s business and services, internal and external."
+   }
+  },
+  {
+   "from": "5.13.5",
+   "to": [
+    "5.15.1",
+    "5.17.2"
+   ],
+   "relation": "split",
+   "note": {
+    "ar": "يشمل الحصر في الإصدار الخامس المنصات الداخلية والخارجية والنطاقات الفرعية والجهات التابعة، ويُتحقق داخليًا عبر \"رقمي\"؛ ونُقل تسجيل معلومات الخدمات الرقمية (4) إلى المعيار 5.17.2.",
+    "en": "In v5 the inventory covers internal and external platforms, subdomains and affiliated entities and is verified internally via Raqmi; registering digital-service information (R4) moved to 5.17.2."
+   }
+  },
+  {
+   "from": "5.13.6",
+   "to": [
+    "5.15.2"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "تغير تعريف القوائم (أ/ب/ج): في الإصدار الرابع بحسب حالة الدمج في 2024، وفي الخامس بحسب العلاقة بحامل المشعل؛ لذلك الربط تقريبي ويحتاج مراجعة بحسب قائمة الجهة في الملحق (7.6). لا يوجد في الخامس اعتماد تقرير حالة التقدم (6).",
+    "en": "The lists (A/B/C) were redefined: v4 by 2024 consolidation status, v5 by relationship to the sector torchbearer; mappings are approximate and must be checked against the entity’s list in Annex (7.6). v5 has no counterpart to approving a progress report (R6)."
+   }
+  },
+  {
+   "from": "5.13.7",
+   "to": [
+    "5.15.3"
+   ],
+   "relation": "merged",
+   "note": {
+    "ar": "بقي من المعيار إغلاق النطاقات غير النشطة فقط (مدمجًا في معيار حوكمة النطاقات 5.15.3، مع إضافة الحذف)؛ أما مراجعة المنصات وإغلاقها فلا مقابل لها في الإصدار الخامس.",
+    "en": "Only closing inactive domains survives (merged into the domains governance standard 5.15.3, now “close and delete”); reviewing and closing platforms has no v5 counterpart."
+   }
+  },
+  {
+   "from": "5.13.8",
+   "to": [
+    "5.15.3",
+    "5.15.4"
+   ],
+   "relation": "split",
+   "note": {
+    "ar": "أصبح تسجيل النطاقات وفق ضوابط هيئة الحكومة الرقمية (5.15.3)، وتحول متطلب خطة \"كود المنصات\" إلى تطبيق فعلي في معيار مستقل (5.15.4) للجهات في الملحق (7.6).",
+    "en": "Domain registration now follows DGA controls (5.15.3); the Platforms Code plan became actual application in a separate standard (5.15.4) for Annex (7.6) entities."
+   }
+  },
+  {
+   "from": "5.13.9",
+   "to": [
+    "5.17.1",
+    "5.17.2"
+   ],
+   "relation": "split",
+   "note": {
+    "ar": "لم يعد \"توكلنا\" معيارًا مستقلًا: خطة الإتاحة في 5.17.1 (الحزمة الثالثة) والإطلاق في 5.17.2، والتسجيل ضمن حصر الخدمات الرقمية في 5.17.2-R5.",
+    "en": "Tawakkalna is no longer a standalone standard: the plan is in 5.17.1 (third package), the launch in 5.17.2, and registration within the digital-services inventory 5.17.2-R5."
+   }
+  },
+  {
+   "from": "5.14.1",
+   "to": [
+    "5.16.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المتطلب نفسه.",
+    "en": "Same requirement."
+   }
+  },
+  {
+   "from": "5.14.2",
+   "to": [
+    "5.16.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المتطلبات نفسها.",
+    "en": "Same requirements."
+   }
+  },
+  {
+   "from": "5.14.3",
+   "to": [
+    "5.16.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المتطلبات نفسها.",
+    "en": "Same requirements."
+   }
+  },
+  {
+   "from": "5.14.4",
+   "to": [
+    "5.16.4"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "يركز الحصر في الإصدار الخامس على الخدمات الأكثر طلبًا؛ وحل محتوى الخدمات على \"رقمي\" (R2) محل المستهدفات (2)؛ وأصبح القياس (5) قائمة مؤشرات تشغيلية محددة لفترة 2025–2026.",
+    "en": "v5 inventory targets the most requested services; v5 R2 (guidance content on Raqmi) replaces v4 targets (R2), which has no counterpart; measurement (R5) became a defined list of operational KPIs for 2025–2026."
+   }
+  },
+  {
+   "from": "5.15.1",
+   "to": [
+    "5.17.1",
+    "5.17.2"
+   ],
+   "relation": "split",
+   "note": {
+    "ar": "نُقل حصر الخدمات غير المؤتمتة إلى 5.17.1-R1، ويطلب الإصدار الخامس إطلاقها فعليًا قبل 31/12/2026 (5.17.2-R1) بدل تصميم إجراءاتها وجدولها؛ ولا مقابل لمسار الدراسة البديل.",
+    "en": "The non-automated services inventory moved to 5.17.1-R1; v5 asks for actually launching them by 31/12/2026 (5.17.2-R1) instead of designing procedures and a timeline; the alternative study path has no counterpart."
+   }
+  },
+  {
+   "from": "5.15.2",
+   "to": [
+    "5.17.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "الخطة نفسها؛ دُمج البندان (ب) و(ت) وحُذف بند أتمتة طلبات الارتباط (ج).",
+    "en": "Same plan; v4 items (b) and (c) were combined and item (e) (automation of linkage requests) was dropped."
+   }
+  },
+  {
+   "from": "5.15.3",
+   "to": [
+    "5.17.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "أصبحت المعلومات عن الخدمات دليلًا شاملًا للخدمات متوافقًا مع النسيج الرقمي وثنائي اللغة (R3)؛ ولا مقابل لربط الخدمات بالبوابة الوطنية للخدمات الموحدة (4).",
+    "en": "Service information became a comprehensive bilingual service catalogue aligned with the Digital Fabric (R3); linking services to the National Unified Services Portal (R4) has no v5 counterpart."
+   }
+  },
+  {
+   "from": "5.15.4",
+   "to": [
+    "5.17.5"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "المتطلبات نفسها؛ أصبح إثبات (3) تحققًا داخليًا.",
+    "en": "Same requirements; E3 became internal verification."
+   }
+  },
+  {
+   "from": "5.16.1",
+   "to": [
+    "5.22.1"
+   ],
+   "relation": "moved",
+   "note": {
+    "ar": "نُقل المعيار إلى محور المحتوى الرقمي (5.22.1 القيمة المضافة للمحتوى الرقمي) مع توسيع قائمة المعلومات المطلوبة وإضافة متطلب المحتوى التفاعلي (R5).",
+    "en": "Moved to the digital content axis (5.22.1 Added Value of Digital Content), with an expanded information list and a new interactive-content requirement (R5)."
+   }
+  },
+  {
+   "from": "5.16.2",
+   "to": [
+    "5.18.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقلت الاستشارات من منصة \"استطلاع\" إلى منصة \"تفاعل\" بشكل ربعي (R2) وأضيفت مبادرات التطوير المشترك (R3)؛ ولا مقابل لإبداء المرئيات على \"استطلاع\" (3). وأضاف الإصدار الخامس تطوير الموقع للمشاركة (R6).",
+    "en": "Consultations moved from Istitlaa to Tafaul on a quarterly basis (R2) and co-development initiatives were added (R3); expressing views on Istitlaa (R3) has no counterpart. v5 also adds website e-participation tools (R6)."
+   }
+  },
+  {
+   "from": "5.16.3",
+   "to": [
+    "5.18.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "أضاف الإصدار الخامس الإعلان عن خدمة \"بلاغ رقمي\" وحدًا أعلى 7% للبلاغات المصعّدة.",
+    "en": "v5 adds announcing the Digital Report service and a 7% ceiling on escalated reports."
+   }
+  },
+  {
+   "from": "5.16.4",
+   "to": [
+    "5.18.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "نشر نتائج الاستشارات أصبح مرحلة \"عرض النتائج\" في استشارات منصة \"تفاعل\" (5.18.1-R2) ويُتحقق منه داخليًا.",
+    "en": "Publishing consultation results became the “presentation of results” stage of Tafaul consultations (5.18.1-R2), verified internally."
+   }
+  },
+  {
+   "from": "5.17.1",
+   "to": [
+    "5.19.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.19. أصبح طلب موافقة الهيئة على المشاركة (المتطلب 4) تنسيقًا مسبقًا مع برنامج السعودية الرقمية ضمن المتطلب 3 في الإصدار الخامس، والمتطلب 4 في الإصدار الخامس (المشاركة الفعلية في فعاليات البرنامج) جديد ويُتحقق منه داخليًّا. صار النطاق في الإصدار الخامس «جميع الجهات الحكومية» مع بقاء المتطلبين 3 و4 على جهات الملحق (7.6).",
+    "en": "Moved to axis 5.19. The v4 requirement to obtain DGA approval for participation (R4) became prior coordination with the Digital Saudi Program within v5 R3; v5 R4 (actual participation in the program's events) is new and verified internally. v5 scope reads 'All government entities', with R3 and R4 still applying to Annex (7.6) entities."
+   }
+  },
+  {
+   "from": "5.17.2",
+   "to": [
+    "5.19.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.19. يشترط الإصدار الخامس في المتطلب 2 استخدام أدوات رقمية لرصد المؤشرات، ويطلب المستند 3 دراسة تحليلية ومحاضر اجتماعات.",
+    "en": "Moved to axis 5.19. v5 R2 additionally requires digital tools for tracking the indicators; v5 E3 asks for an analysis study plus meeting minutes."
+   }
+  },
+  {
+   "from": "5.17.3",
+   "to": [
+    "5.19.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.19 دون تغيير جوهري.",
+    "en": "Moved to axis 5.19 with no material change."
+   }
+  },
+  {
+   "from": "5.18.1",
+   "to": [
+    "5.20.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.20 دون تغيير جوهري.",
+    "en": "Moved to axis 5.20 with no material change."
+   }
+  },
+  {
+   "from": "5.18.2",
+   "to": [
+    "5.20.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.20؛ أضاف الإصدار الخامس في المتطلب 2 «آليات قياسها» إلى المؤشرات، وبقيت البنود الفرعية الثمانية كما هي.",
+    "en": "Moved to axis 5.20; v5 R2 adds 'and the mechanisms for measuring them' to the indicators, the eight sub-items are unchanged."
+   }
+  },
+  {
+   "from": "5.18.3",
+   "to": [
+    "5.20.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.20؛ أصبحت الدراسة «دراسة» بدل «دراسة أولية»، وأضاف البند (ب) استخدام التقنيات الناشئة في القياس.",
+    "en": "Moved to axis 5.20; the study is no longer described as 'preliminary', and sub-item (b) adds the use of emerging technologies in measurement."
+   }
+  },
+  {
+   "from": "5.18.4",
+   "to": [
+    "5.20.4"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.20؛ صار البند الفرعي (ب) في المتطلب 1 «قياس وتحليل تفاعل المستفيد» بدل «إنشاء تقارير التفاعل»، ونص المستند 1 في الإصدار الخامس على أن الاستبيانات لا تفي بالغرض.",
+    "en": "Moved to axis 5.20; R1 sub-item (b) now reads 'measuring and analyzing beneficiary interaction' instead of 'generating interaction reports', and v5 E1 states that questionnaires do not fulfill the requirement."
+   }
+  },
+  {
+   "from": "5.18.5",
+   "to": [
+    "5.20.5"
+   ],
+   "relation": "changed",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.20 وتغيرت متطلباته: يطلب الإصدار الخامس حصر جميع رحلات الحياة وتحديد (3) رحلات ذات أولوية، ورسم الوضع الحالي والمستقبلي، وإطلاق (3) رحلات في 2026 بدل رحلتين في 2025، ولم يعد يطلب خطة عمل مستقلة للإطلاق. أُضيفت القائمة (ج) إلى النطاق.",
+    "en": "Moved to axis 5.20 with changed requirements: v5 asks to inventory all life journeys and identify (3) priority journeys, map the current and future state, and launch (3) journeys in 2026 instead of two in 2025; a separate launch action plan is no longer asked for. List (C) was added to the scope."
+   }
+  },
+  {
+   "from": "5.19.1",
+   "to": [],
+   "relation": "removed",
+   "note": {
+    "ar": "لا يتضمن الإصدار الخامس محورًا أو معيارًا لحوكمة وإدارة البيانات أو استخدام وإتاحة البيانات أو البيانات المفتوحة؛ لذا لا يوجد مقابل لهذا المعيار.",
+    "en": "v5.0 has no axis or standard for data governance and management, data use and availability, or open data, so this standard has no v5 counterpart."
+   }
+  },
+  {
+   "from": "5.19.2",
+   "to": [],
+   "relation": "removed",
+   "note": {
+    "ar": "لا يتضمن الإصدار الخامس محورًا أو معيارًا لحوكمة وإدارة البيانات أو استخدام وإتاحة البيانات أو البيانات المفتوحة؛ لذا لا يوجد مقابل لهذا المعيار.",
+    "en": "v5.0 has no axis or standard for data governance and management, data use and availability, or open data, so this standard has no v5 counterpart."
+   }
+  },
+  {
+   "from": "5.19.3",
+   "to": [],
+   "relation": "removed",
+   "note": {
+    "ar": "لا يتضمن الإصدار الخامس محورًا أو معيارًا لحوكمة وإدارة البيانات أو استخدام وإتاحة البيانات أو البيانات المفتوحة؛ لذا لا يوجد مقابل لهذا المعيار.",
+    "en": "v5.0 has no axis or standard for data governance and management, data use and availability, or open data, so this standard has no v5 counterpart."
+   }
+  },
+  {
+   "from": "5.20.1",
+   "to": [],
+   "relation": "removed",
+   "note": {
+    "ar": "لا يتضمن الإصدار الخامس محورًا أو معيارًا لحوكمة وإدارة البيانات أو استخدام وإتاحة البيانات أو البيانات المفتوحة؛ لذا لا يوجد مقابل لهذا المعيار.",
+    "en": "v5.0 has no axis or standard for data governance and management, data use and availability, or open data, so this standard has no v5 counterpart."
+   }
+  },
+  {
+   "from": "5.20.2",
+   "to": [],
+   "relation": "removed",
+   "note": {
+    "ar": "لا يتضمن الإصدار الخامس محورًا أو معيارًا لحوكمة وإدارة البيانات أو استخدام وإتاحة البيانات أو البيانات المفتوحة؛ لذا لا يوجد مقابل لهذا المعيار.",
+    "en": "v5.0 has no axis or standard for data governance and management, data use and availability, or open data, so this standard has no v5 counterpart."
+   }
+  },
+  {
+   "from": "5.20.3",
+   "to": [],
+   "relation": "removed",
+   "note": {
+    "ar": "لا يتضمن الإصدار الخامس محورًا أو معيارًا لحوكمة وإدارة البيانات أو استخدام وإتاحة البيانات أو البيانات المفتوحة؛ لذا لا يوجد مقابل لهذا المعيار.",
+    "en": "v5.0 has no axis or standard for data governance and management, data use and availability, or open data, so this standard has no v5 counterpart."
+   }
+  },
+  {
+   "from": "5.21.1",
+   "to": [],
+   "relation": "removed",
+   "note": {
+    "ar": "لا يتضمن الإصدار الخامس محورًا أو معيارًا لحوكمة وإدارة البيانات أو استخدام وإتاحة البيانات أو البيانات المفتوحة؛ لذا لا يوجد مقابل لهذا المعيار.",
+    "en": "v5.0 has no axis or standard for data governance and management, data use and availability, or open data, so this standard has no v5 counterpart."
+   }
+  },
+  {
+   "from": "5.21.2",
+   "to": [],
+   "relation": "removed",
+   "note": {
+    "ar": "لا يتضمن الإصدار الخامس محورًا أو معيارًا لحوكمة وإدارة البيانات أو استخدام وإتاحة البيانات أو البيانات المفتوحة؛ لذا لا يوجد مقابل لهذا المعيار.",
+    "en": "v5.0 has no axis or standard for data governance and management, data use and availability, or open data, so this standard has no v5 counterpart."
+   }
+  },
+  {
+   "from": "5.21.3",
+   "to": [],
+   "relation": "removed",
+   "note": {
+    "ar": "لا يتضمن الإصدار الخامس محورًا أو معيارًا لحوكمة وإدارة البيانات أو استخدام وإتاحة البيانات أو البيانات المفتوحة؛ لذا لا يوجد مقابل لهذا المعيار.",
+    "en": "v5.0 has no axis or standard for data governance and management, data use and availability, or open data, so this standard has no v5 counterpart."
+   }
+  },
+  {
+   "from": "5.22.1",
+   "to": [
+    "5.23.1"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.23؛ أضاف الإصدار الخامس في المتطلب 1 تحديد مجالات الابتكار ووضع أهداف ومؤشرات استراتيجية، ويطلب المستند 1 الاستراتيجية كاملة بدل الجزء المتعلق بالابتكار.",
+    "en": "Moved to axis 5.23; v5 R1 adds defining the areas of innovation and setting strategic objectives and indicators, and v5 E1 asks for the strategy rather than only the innovation part."
+   }
+  },
+  {
+   "from": "5.22.2",
+   "to": [
+    "5.23.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.23. أضاف الإصدار الخامس متطلبًا جديدًا (5.23.2-R1) لخطة سنوية لفعاليات الابتكار، فانتقلت المتطلبات الثلاثة إلى R2–R4 مع تفاصيل إضافية (سجل للتحديات، (3) عينات لكل فعالية، جلستان على الأقل للعصف الذهني، توثيق مخرجات التعاون).",
+    "en": "Moved to axis 5.23. v5 adds a new requirement (5.23.2-R1) for an annual innovation events plan, so the three v4 requirements shift to R2–R4 with extra detail (challenges register, (3) samples per event, at least two brainstorming sessions, documented cooperation outputs)."
+   }
+  },
+  {
+   "from": "5.22.3",
+   "to": [
+    "5.23.3"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.23. أُدرج في الإصدار الخامس متطلب آلية إدارة الابتكار الرقمي (من المعيار 5.22.4 في الإصدار الرابع) بوصفه R4، فانتقل متطلب تلقي المقترحات إلى R5. يطلب المستند 3 في الإصدار الخامس (3) فعاليات على الأقل.",
+    "en": "Moved to axis 5.23. v5 inserts the digital innovation management mechanism (from v4 5.22.4) as R4, so the proposals-intake requirement moves to R5. v5 E3 asks for at least (3) events."
+   }
+  },
+  {
+   "from": "5.22.4",
+   "to": [
+    "5.23.3",
+    "5.24.1"
+   ],
+   "relation": "split",
+   "note": {
+    "ar": "أُلغي المعيار كمعيار مستقل: انتقلت آلية إدارة الابتكار إلى 5.23.3-R4، وأصبح حصر الأفكار الإبداعية حصرًا للمبادرات والحلول الابتكارية في 5.24.1-R1 بعناصر مختلفة (التكلفة، أعداد المستفيدين، المرحلة الحالية، نسبة الرضا).",
+    "en": "No longer a separate standard: the innovation management mechanism moved to 5.23.3-R4, and the inventory of creative ideas became an inventory of innovative initiatives and solutions in 5.24.1-R1 with different fields (cost, beneficiary numbers, current stage, satisfaction rate)."
+   }
+  },
+  {
+   "from": "5.23.1",
+   "to": [
+    "5.24.1"
+   ],
+   "relation": "merged",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.24 ودُمج مع حصر الحلول الابتكارية (من 5.22.4). انتقل المتطلب إلى R2 مع بند جديد لوصف المشكلة والنتائج، وصار الربط بالأهداف الاستراتيجية للجهة بدل مناظير ومحاور التحول الرقمي.",
+    "en": "Moved to axis 5.24 and merged with the inventory of innovative solutions (from v4 5.22.4). The requirement moved to R2 with a new sub-item describing the problem and results, and linkage is now to the entity's strategic objectives instead of digital transformation perspectives or axes."
+   }
+  },
+  {
+   "from": "5.23.2",
+   "to": [
+    "5.24.2"
+   ],
+   "relation": "same",
+   "note": {
+    "ar": "انتقل المعيار إلى المحور 5.24؛ أضاف الإصدار الخامس إلى المنهجية القياس قبل تطبيق الحل وبعده.",
+    "en": "Moved to axis 5.24; v5 adds measurement before and after implementing the solution to the methodology."
+   }
+  }
+ ],
+ "requirements": [
+  {
+   "from": "5.1.1-R1",
+   "to": [
+    "5.1.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.1.2-R1",
+   "to": [
+    "5.1.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.1.3-R1",
+   "to": [
+    "5.1.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.1.3-R2",
+   "to": [
+    "5.1.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.1.3-R3",
+   "to": [
+    "5.1.3-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.1-R1",
+   "to": [
+    "5.2.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.1-R2",
+   "to": [
+    "5.2.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.1-R3",
+   "to": [
+    "5.2.1-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.1-R4",
+   "to": [
+    "5.2.1-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.1-R5",
+   "to": [
+    "5.2.1-R6"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.2.2-R1",
+   "to": [
+    "5.2.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.2-R2",
+   "to": [
+    "5.2.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.2-R3",
+   "to": [
+    "5.2.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.2-R4",
+   "to": [
+    "5.2.2-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.2-R5",
+   "to": [
+    "5.1.3-R3"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.2.2-R6",
+   "to": [
+    "5.2.2-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.3-R1",
+   "to": [
+    "5.2.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.3-R2",
+   "to": [
+    "5.2.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.3-R3",
+   "to": [
+    "5.2.3-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.2.3-R4",
+   "to": [
+    "5.2.3-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.1-R1",
+   "to": [
+    "5.3.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.1-R2",
+   "to": [
+    "5.3.1-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.1-R3",
+   "to": [
+    "5.3.1-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.1-R4",
+   "to": [
+    "5.3.1-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.1-R5",
+   "to": [
+    "5.3.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.1-R6",
+   "to": [
+    "5.3.1-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.2-R1",
+   "to": [
+    "5.3.2-R1"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.3.2-R2",
+   "to": [
+    "5.3.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.2-R3",
+   "to": [
+    "5.3.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.2-R4",
+   "to": [
+    "5.3.2-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.2-R5",
+   "to": [
+    "5.3.2-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.2-R6",
+   "to": [
+    "5.3.2-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.2-R7",
+   "to": [
+    "5.3.2-R7"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.2-R8",
+   "to": [
+    "5.3.2-R8"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.2-R9",
+   "to": [
+    "5.3.2-R9"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.3-R1",
+   "to": [
+    "5.3.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.3-R2",
+   "to": [
+    "5.3.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.3-R3",
+   "to": [
+    "5.3.3-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.3-R4",
+   "to": [
+    "5.3.3-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.3-R5",
+   "to": [
+    "5.3.3-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.3-R6",
+   "to": [
+    "5.3.3-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.4-R1",
+   "to": [
+    "5.3.4-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.3.4-R2",
+   "to": [
+    "5.3.4-R2"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.3.4-R3",
+   "to": [
+    "5.3.4-R3"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.3.4-R4",
+   "to": [
+    "5.3.4-R4"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.4.1-R1",
+   "to": [
+    "5.4.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.4.1-R2",
+   "to": [
+    "5.4.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.4.2-R1",
+   "to": [
+    "5.4.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.4.2-R2",
+   "to": [
+    "5.4.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.4.2-R3",
+   "to": [
+    "5.4.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.4.2-R4",
+   "to": [
+    "5.4.2-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.4.3-R1",
+   "to": [
+    "5.4.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.4.3-R2",
+   "to": [
+    "5.4.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.5.1-R1",
+   "to": [
+    "5.5.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.5.1-R2",
+   "to": [
+    "5.5.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.5.2-R1",
+   "to": [
+    "5.5.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.5.2-R2",
+   "to": [
+    "5.5.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.5.2-R3",
+   "to": [
+    "5.5.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.5.3-R1",
+   "to": [
+    "5.5.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.5.3-R2",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.5.4-R1",
+   "to": [
+    "5.5.4-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.5.4-R2",
+   "to": [
+    "5.5.4-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.6.1-R1",
+   "to": [
+    "5.6.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.6.1-R2",
+   "to": [
+    "5.6.1-R2"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.6.2-R1",
+   "to": [
+    "5.6.2-R1"
+   ],
+   "relation": "merged"
+  },
+  {
+   "from": "5.6.2-R2",
+   "to": [
+    "5.6.2-R1"
+   ],
+   "relation": "merged"
+  },
+  {
+   "from": "5.6.2-R3",
+   "to": [
+    "5.6.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.6.3-R1",
+   "to": [
+    "5.6.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.6.3-R2",
+   "to": [
+    "5.6.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.7.1-R1",
+   "to": [
+    "5.7.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.7.2-R1",
+   "to": [
+    "5.7.2-R2"
+   ],
+   "relation": "merged"
+  },
+  {
+   "from": "5.7.2-R2",
+   "to": [
+    "5.7.2-R2"
+   ],
+   "relation": "merged"
+  },
+  {
+   "from": "5.7.2-R3",
+   "to": [
+    "5.7.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.7.2-R4",
+   "to": [
+    "5.7.2-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.7.3-R1",
+   "to": [
+    "5.7.3-R1",
+    "5.7.2-R1"
+   ],
+   "relation": "split"
+  },
+  {
+   "from": "5.7.4-R1",
+   "to": [
+    "5.7.4-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.7.4-R2",
+   "to": [
+    "5.7.4-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.7.4-R3",
+   "to": [
+    "5.7.4-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.7.4-R4",
+   "to": [
+    "5.7.4-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R1",
+   "to": [
+    "5.9.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R2",
+   "to": [
+    "5.9.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R3",
+   "to": [
+    "5.9.1-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R4",
+   "to": [
+    "5.9.1-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R5",
+   "to": [
+    "5.9.1-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R6",
+   "to": [
+    "5.9.1-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R7",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.8.1-R8",
+   "to": [
+    "5.9.1-R7"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R9",
+   "to": [
+    "5.9.1-R8"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R10",
+   "to": [
+    "5.9.1-R9"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R11",
+   "to": [
+    "5.9.1-R10"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R12",
+   "to": [
+    "5.9.1-R11"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R13",
+   "to": [
+    "5.9.1-R12"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R14",
+   "to": [
+    "5.9.1-R13"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R15",
+   "to": [
+    "5.9.1-R14"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.1-R16",
+   "to": [
+    "5.9.1-R15"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.2-R1",
+   "to": [
+    "5.9.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.2-R2",
+   "to": [
+    "5.9.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.2-R3",
+   "to": [
+    "5.9.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.2-R4",
+   "to": [
+    "5.9.2-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.2-R5",
+   "to": [
+    "5.9.2-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.3-R1",
+   "to": [
+    "5.9.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.3-R2",
+   "to": [
+    "5.9.3-R2"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.8.3-R3",
+   "to": [
+    "5.9.3-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.3-R4",
+   "to": [
+    "5.9.3-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.4-R1",
+   "to": [
+    "5.9.4-R1"
+   ],
+   "relation": "merged"
+  },
+  {
+   "from": "5.8.4-R2",
+   "to": [
+    "5.9.4-R1",
+    "5.9.4-R2"
+   ],
+   "relation": "split"
+  },
+  {
+   "from": "5.8.4-R3",
+   "to": [
+    "5.9.4-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.4-R4",
+   "to": [
+    "5.9.4-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.5-R1",
+   "to": [
+    "5.9.5-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.5-R2",
+   "to": [
+    "5.9.5-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.5-R3",
+   "to": [
+    "5.9.5-R3"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.8.5-R4",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.8.5-R5",
+   "to": [
+    "5.9.5-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.8.5-R6",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.9.1-R1",
+   "to": [
+    "5.10.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.1-R2",
+   "to": [
+    "5.10.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.1-R3",
+   "to": [
+    "5.10.1-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.1-R4",
+   "to": [
+    "5.10.1-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.1-R5",
+   "to": [
+    "5.10.1-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.1-R6",
+   "to": [
+    "5.10.1-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.1-R7",
+   "to": [
+    "5.10.1-R7"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.2-R1",
+   "to": [
+    "5.10.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.2-R2",
+   "to": [
+    "5.10.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.2-R3",
+   "to": [
+    "5.10.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.2-R4",
+   "to": [
+    "5.10.2-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.2-R5",
+   "to": [
+    "5.10.2-R5"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.9.2-R6",
+   "to": [
+    "5.10.2-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.2-R7",
+   "to": [
+    "5.10.2-R7"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.3-R1",
+   "to": [
+    "5.10.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.3-R2",
+   "to": [
+    "5.10.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.3-R3",
+   "to": [
+    "5.10.3-R3"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.9.3-R4",
+   "to": [
+    "5.10.3-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.3-R5",
+   "to": [
+    "5.10.3-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.3-R6",
+   "to": [
+    "5.10.3-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.3-R7",
+   "to": [
+    "5.10.3-R7"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.3-R8",
+   "to": [
+    "5.10.3-R8"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.3-R9",
+   "to": [
+    "5.10.3-R9"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.3-R10",
+   "to": [
+    "5.10.3-R10"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.4-R1",
+   "to": [
+    "5.10.4-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.4-R2",
+   "to": [
+    "5.10.4-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.4-R3",
+   "to": [
+    "5.10.4-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.4-R4",
+   "to": [
+    "5.10.4-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.4-R5",
+   "to": [
+    "5.10.4-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R1",
+   "to": [
+    "5.10.5-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R2",
+   "to": [
+    "5.10.5-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R3",
+   "to": [
+    "5.10.5-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R4",
+   "to": [
+    "5.10.5-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R5",
+   "to": [
+    "5.10.5-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R6",
+   "to": [
+    "5.10.5-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R7",
+   "to": [
+    "5.10.5-R7"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R8",
+   "to": [
+    "5.10.5-R8"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R9",
+   "to": [
+    "5.10.5-R9"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R10",
+   "to": [
+    "5.10.5-R10"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R11",
+   "to": [
+    "5.10.5-R11"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R12",
+   "to": [
+    "5.10.5-R12"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R13",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.9.5-R14",
+   "to": [
+    "5.10.5-R13"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.5-R15",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.9.6-R1",
+   "to": [
+    "5.10.6-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.6-R2",
+   "to": [
+    "5.10.6-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.6-R3",
+   "to": [
+    "5.10.6-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.7-R1",
+   "to": [
+    "5.10.7-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.7-R2",
+   "to": [
+    "5.10.7-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.9.7-R3",
+   "to": [
+    "5.10.7-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.1-R1",
+   "to": [
+    "5.11.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.1-R2",
+   "to": [
+    "5.11.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.1-R3",
+   "to": [
+    "5.11.1-R3"
+   ],
+   "relation": "merged"
+  },
+  {
+   "from": "5.10.1-R4",
+   "to": [
+    "5.11.1-R3"
+   ],
+   "relation": "merged"
+  },
+  {
+   "from": "5.10.1-R5",
+   "to": [
+    "5.11.1-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.2-R1",
+   "to": [
+    "5.11.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.2-R2",
+   "to": [
+    "5.11.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.2-R3",
+   "to": [
+    "5.11.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.2-R4",
+   "to": [
+    "5.11.2-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.3-R1",
+   "to": [
+    "5.11.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.3-R2",
+   "to": [
+    "5.11.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.3-R3",
+   "to": [
+    "5.11.3-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.3-R4",
+   "to": [
+    "5.11.3-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.4-R1",
+   "to": [
+    "5.11.4-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.4-R2",
+   "to": [
+    "5.11.4-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.4-R3",
+   "to": [
+    "5.11.4-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.4-R4",
+   "to": [
+    "5.11.4-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.5-R1",
+   "to": [
+    "5.11.5-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.5-R2",
+   "to": [
+    "5.11.5-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.10.5-R3",
+   "to": [
+    "5.11.5-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.1-R1",
+   "to": [
+    "5.12.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.1-R2",
+   "to": [
+    "5.12.1-R2"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.11.1-R3",
+   "to": [
+    "5.12.1-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.1-R4",
+   "to": [
+    "5.12.1-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.1-R5",
+   "to": [
+    "5.12.1-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.2-R1",
+   "to": [
+    "5.12.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.2-R2",
+   "to": [
+    "5.12.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.2-R3",
+   "to": [
+    "5.12.2-R3"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.11.2-R4",
+   "to": [
+    "5.12.2-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.2-R5",
+   "to": [
+    "5.12.2-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.3-R1",
+   "to": [
+    "5.12.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.3-R2",
+   "to": [
+    "5.12.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.3-R3",
+   "to": [
+    "5.12.3-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.4-R1",
+   "to": [
+    "5.12.4-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.4-R2",
+   "to": [
+    "5.12.4-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.4-R3",
+   "to": [
+    "5.12.4-R5"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.11.4-R4",
+   "to": [
+    "5.12.4-R7"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.4-R5",
+   "to": [
+    "5.12.4-R8"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.4-R6",
+   "to": [
+    "5.12.4-R9"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.4-R7",
+   "to": [
+    "5.12.4-R10"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.5-R1",
+   "to": [
+    "5.8.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.5-R2",
+   "to": [
+    "5.8.1-R1",
+    "5.8.1-R2"
+   ],
+   "relation": "split"
+  },
+  {
+   "from": "5.11.5-R3",
+   "to": [
+    "5.8.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.5-R4",
+   "to": [
+    "5.8.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.6-R1",
+   "to": [
+    "5.8.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.7-R1",
+   "to": [
+    "5.8.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.11.7-R2",
+   "to": [
+    "5.8.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.12.1-R1",
+   "to": [
+    "5.13.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.12.1-R2",
+   "to": [
+    "5.13.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.12.1-R3",
+   "to": [
+    "5.13.1-R1",
+    "5.13.1-R2",
+    "5.13.1-R3",
+    "5.13.1-R4",
+    "5.13.1-R5",
+    "5.13.1-R6",
+    "5.13.1-R7"
+   ],
+   "relation": "split"
+  },
+  {
+   "from": "5.12.2-R1",
+   "to": [
+    "5.13.2-R2"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.12.2-R2",
+   "to": [
+    "5.13.2-R3"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.12.2-R3",
+   "to": [
+    "5.13.2-R4",
+    "5.13.2-R5"
+   ],
+   "relation": "split"
+  },
+  {
+   "from": "5.12.2-R4",
+   "to": [
+    "5.13.2-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.12.3-R1",
+   "to": [
+    "5.13.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.12.3-R2",
+   "to": [
+    "5.13.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.12.3-R3",
+   "to": [
+    "5.13.3-R3",
+    "5.13.3-R4"
+   ],
+   "relation": "split"
+  },
+  {
+   "from": "5.13.1-R1",
+   "to": [
+    "5.14.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.1-R2",
+   "to": [
+    "5.14.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.2-R1",
+   "to": [
+    "5.14.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.2-R2",
+   "to": [
+    "5.14.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.2-R3",
+   "to": [
+    "5.14.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.2-R4",
+   "to": [
+    "5.14.2-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.2-R5",
+   "to": [
+    "5.14.2-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.2-R6",
+   "to": [
+    "5.14.2-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.2-R7",
+   "to": [
+    "5.14.2-R7"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.2-R8",
+   "to": [
+    "5.14.2-R8"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.2-R9",
+   "to": [
+    "5.14.2-R9"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.2-R10",
+   "to": [
+    "5.14.2-R10"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.3-R1",
+   "to": [
+    "5.14.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.3-R2",
+   "to": [
+    "5.14.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.3-R3",
+   "to": [
+    "5.14.3-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.3-R4",
+   "to": [
+    "5.14.3-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.3-R5",
+   "to": [
+    "5.14.3-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.3-R6",
+   "to": [
+    "5.14.3-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.3-R7",
+   "to": [
+    "5.14.3-R7"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.3-R8",
+   "to": [
+    "5.14.3-R8"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.3-R9",
+   "to": [
+    "5.14.3-R9"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.3-R10",
+   "to": [
+    "5.14.3-R10"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.3-R11",
+   "to": [
+    "5.14.3-R11"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.4-R1",
+   "to": [
+    "5.14.4-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.4-R2",
+   "to": [
+    "5.14.4-R2"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.13.4-R3",
+   "to": [
+    "5.14.4-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.5-R1",
+   "to": [
+    "5.15.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.5-R2",
+   "to": [
+    "5.15.1-R2"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.13.5-R3",
+   "to": [
+    "5.15.1-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.5-R4",
+   "to": [
+    "5.17.2-R5"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.13.6-R1",
+   "to": [
+    "5.15.2-R1",
+    "5.15.2-R6"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.13.6-R2",
+   "to": [
+    "5.15.2-R2",
+    "5.15.2-R7"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.13.6-R3",
+   "to": [
+    "5.15.2-R4",
+    "5.15.2-R5",
+    "5.15.2-R8"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.13.6-R4",
+   "to": [
+    "5.15.2-R5"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.13.6-R5",
+   "to": [
+    "5.15.2-R2"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.13.6-R6",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.13.7-R1",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.13.7-R2",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.13.7-R3",
+   "to": [
+    "5.15.3-R4"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.13.8-R1",
+   "to": [
+    "5.15.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.8-R2",
+   "to": [
+    "5.15.3-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.13.8-R3",
+   "to": [
+    "5.15.4-R1"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.13.9-R1",
+   "to": [
+    "5.17.2-R5"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.13.9-R2",
+   "to": [
+    "5.17.1-R3"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.13.9-R3",
+   "to": [
+    "5.17.2-R10"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.14.1-R1",
+   "to": [
+    "5.16.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.14.2-R1",
+   "to": [
+    "5.16.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.14.2-R2",
+   "to": [
+    "5.16.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.14.2-R3",
+   "to": [
+    "5.16.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.14.2-R4",
+   "to": [
+    "5.16.2-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.14.2-R5",
+   "to": [
+    "5.16.2-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.14.3-R1",
+   "to": [
+    "5.16.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.14.3-R2",
+   "to": [
+    "5.16.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.14.3-R3",
+   "to": [
+    "5.16.3-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.14.3-R4",
+   "to": [
+    "5.16.3-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.14.4-R1",
+   "to": [
+    "5.16.4-R1"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.14.4-R2",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.14.4-R3",
+   "to": [
+    "5.16.4-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.14.4-R4",
+   "to": [
+    "5.16.4-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.14.4-R5",
+   "to": [
+    "5.16.4-R5"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.15.1-R1",
+   "to": [
+    "5.17.1-R1"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.15.1-R2",
+   "to": [
+    "5.17.2-R1"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.15.1-R3",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.15.2-R1",
+   "to": [
+    "5.17.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.15.3-R1",
+   "to": [
+    "5.17.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.15.3-R2",
+   "to": [
+    "5.17.2-R3"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.15.3-R3",
+   "to": [
+    "5.17.2-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.15.3-R4",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.15.3-R5",
+   "to": [
+    "5.17.2-R6"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.15.3-R6",
+   "to": [
+    "5.17.2-R7"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.15.3-R7",
+   "to": [
+    "5.17.2-R8"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.15.3-R8",
+   "to": [
+    "5.17.2-R9"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.15.4-R1",
+   "to": [
+    "5.17.5-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.15.4-R2",
+   "to": [
+    "5.17.5-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.15.4-R3",
+   "to": [
+    "5.17.5-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.15.4-R4",
+   "to": [
+    "5.17.5-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.16.1-R1",
+   "to": [
+    "5.22.1-R1"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.16.1-R2",
+   "to": [
+    "5.22.1-R2"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.16.1-R3",
+   "to": [
+    "5.22.1-R3"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.16.1-R4",
+   "to": [
+    "5.22.1-R4"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.16.2-R1",
+   "to": [
+    "5.18.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.16.2-R2",
+   "to": [
+    "5.18.1-R2"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.16.2-R3",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.16.2-R4",
+   "to": [
+    "5.18.1-R2",
+    "5.18.1-R3"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.16.2-R5",
+   "to": [
+    "5.18.1-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.16.2-R6",
+   "to": [
+    "5.18.1-R5"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.16.3-R1",
+   "to": [
+    "5.18.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.16.3-R2",
+   "to": [
+    "5.18.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.16.3-R3",
+   "to": [
+    "5.18.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.16.3-R4",
+   "to": [
+    "5.18.2-R4"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.16.4-R1",
+   "to": [
+    "5.18.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.16.4-R2",
+   "to": [
+    "5.18.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.16.4-R3",
+   "to": [
+    "5.18.3-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.16.4-R4",
+   "to": [
+    "5.18.1-R2"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.17.1-R1",
+   "to": [
+    "5.19.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.17.1-R2",
+   "to": [
+    "5.19.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.17.1-R3",
+   "to": [
+    "5.19.1-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.17.1-R4",
+   "to": [
+    "5.19.1-R3"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.17.2-R1",
+   "to": [
+    "5.19.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.17.2-R2",
+   "to": [
+    "5.19.2-R2"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.17.2-R3",
+   "to": [
+    "5.19.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.17.3-R1",
+   "to": [
+    "5.19.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.17.3-R2",
+   "to": [
+    "5.19.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.18.1-R1",
+   "to": [
+    "5.20.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.18.1-R2",
+   "to": [
+    "5.20.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.18.2-R1",
+   "to": [
+    "5.20.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.18.2-R2",
+   "to": [
+    "5.20.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.18.3-R1",
+   "to": [
+    "5.20.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.18.4-R1",
+   "to": [
+    "5.20.4-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.18.4-R2",
+   "to": [
+    "5.20.4-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.18.4-R3",
+   "to": [
+    "5.20.4-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.18.5-R1",
+   "to": [
+    "5.20.5-R1"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.18.5-R2",
+   "to": [
+    "5.20.5-R2"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.18.5-R3",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.18.5-R4",
+   "to": [
+    "5.20.5-R3"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.18.5-R5",
+   "to": [
+    "5.20.5-R4"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.19.1-R1",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.19.1-R2",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.19.2-R1",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.19.2-R2",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.19.2-R3",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.19.2-R4",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.19.2-R5",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.19.3-R1",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.19.3-R2",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.19.3-R3",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.19.3-R4",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.20.1-R1",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.20.1-R2",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.20.1-R3",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.20.1-R4",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.20.2-R1",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.20.2-R2",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.20.2-R3",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.20.2-R4",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.20.2-R5",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.20.2-R6",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.20.3-R1",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.20.3-R2",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.21.1-R1",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.21.1-R2",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.21.1-R3",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.21.2-R1",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.21.2-R2",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.21.2-R3",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.21.2-R4",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.21.3-R1",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.21.3-R2",
+   "to": [],
+   "relation": "removed"
+  },
+  {
+   "from": "5.22.1-R1",
+   "to": [
+    "5.23.1-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.22.1-R2",
+   "to": [
+    "5.23.1-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.22.1-R3",
+   "to": [
+    "5.23.1-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.22.2-R1",
+   "to": [
+    "5.23.2-R2"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.22.2-R2",
+   "to": [
+    "5.23.2-R3"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.22.2-R3",
+   "to": [
+    "5.23.2-R4"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.22.3-R1",
+   "to": [
+    "5.23.3-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.22.3-R2",
+   "to": [
+    "5.23.3-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.22.3-R3",
+   "to": [
+    "5.23.3-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.22.3-R4",
+   "to": [
+    "5.23.3-R5"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.22.4-R1",
+   "to": [
+    "5.23.3-R4"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.22.4-R2",
+   "to": [
+    "5.24.1-R1"
+   ],
+   "relation": "changed"
+  },
+  {
+   "from": "5.23.1-R1",
+   "to": [
+    "5.24.1-R2"
+   ],
+   "relation": "moved"
+  },
+  {
+   "from": "5.23.2-R1",
+   "to": [
+    "5.24.2-R1"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.23.2-R2",
+   "to": [
+    "5.24.2-R2"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.23.2-R3",
+   "to": [
+    "5.24.2-R3"
+   ],
+   "relation": "same"
+  },
+  {
+   "from": "5.23.2-R4",
+   "to": [
+    "5.24.2-R4"
+   ],
+   "relation": "same"
+  }
+ ]
+}

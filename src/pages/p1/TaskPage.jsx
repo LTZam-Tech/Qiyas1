@@ -133,6 +133,7 @@ export default function TaskPage({ lang, id, onNavigate }) {
             )}
             {task.can.workEvidence && <UploadForm lang={lang} task={task} onDone={done(t('رُفع الدليل وأُضيف كمسودة', 'Evidence uploaded as a draft', 'ثبوت مسودے کے طور پر اپ لوڈ ہو گیا'))} />}
           </section>
+          {task.can.workEvidence && <SuggestedEvidence lang={lang} task={task} onDone={done} />}
         </div>
 
         <div className={s.stack}>
@@ -181,6 +182,56 @@ function Fact({ label, children }) {
 }
 Fact.propTypes = { label: PropTypes.string.isRequired, children: PropTypes.node };
 
+// Files a consultant imported or carried over for this task's requirements (BNK-5): using one links it as a draft.
+function SuggestedEvidence({ lang, task, onDone }) {
+  const t = makeT(lang);
+  const { data, reload } = useApi(() => api.get(`/tasks/${task.id}/suggestions`), [task.id, task.evidence.length]);
+  const act = useAction();
+  if (!data?.length) return null;
+  const source = (x) => (x.source === 'carry_over'
+    ? t('من الدورة السابقة', 'From the previous cycle', 'پچھلے دور سے')
+    : t('من استيراد مجلد', 'From a folder import', 'فولڈر امپورٹ سے'));
+  return (
+    <section className="q-card">
+      <div className="q-card-head">
+        <h2 className="q-section-title">{t('أدلة مقترحة', 'Suggested evidence', 'تجویز کردہ ثبوت')}</h2>
+        <span className={s.sub}>{t('راجعها قبل استخدامها؛ تُرسل للمراجعة كأي دليل.', 'Check each one before using it; it is reviewed like any evidence.', 'استعمال سے پہلے ہر ایک کو دیکھیں؛ اس کا جائزہ عام ثبوت کی طرح ہوتا ہے۔')}</span>
+      </div>
+      <ErrorNote error={act.error} lang={lang} />
+      <ul className={s.list}>
+        {data.map((x) => (
+          <li key={x.id} className={s.listItem}>
+            <div className={s.listMain}>
+              <span className={s.title}><span dir="auto">{x.title}</span></span>
+              <span className={s.sub}>
+                <span className="q-code" style={{ marginInlineEnd: 6 }}>{x.requirement_code}</span>
+                {x.proof_item_code && <span className="q-code" style={{ marginInlineEnd: 6 }}>{x.proof_item_code}</span>}
+                {source(x)} · {x.suggested_by}
+                {x.source_detail?.path && <> · <span dir="auto">{x.source_detail.path}</span></>}
+                {x.source_detail?.fromRequirement && <> · {t('كان', 'was', 'پہلے')} <span className="q-code">{x.source_detail.fromRequirement}</span></>}
+              </span>
+            </div>
+            <div className={s.row}>
+              {x.original_filename && (
+                <button type="button" className="q-btn q-btn-ghost q-btn-sm" onClick={() => act.run(() => api.download(`/evidence-versions/${x.version_id}/download`, x.original_filename))}>{t('تنزيل', 'Download', 'ڈاؤن لوڈ')}</button>
+              )}
+              <button type="button" className="q-btn q-btn-secondary q-btn-sm" disabled={act.busy || x.already_linked}
+                onClick={() => act.run(() => api.post(`/suggestions/${x.id}/use`, { taskId: task.id }), () => { reload(); onDone(t('أُضيف كمسودة', 'Added as a draft', 'مسودے کے طور پر شامل ہو گیا'))(); })}>
+                {t('استخدام', 'Use', 'استعمال کریں')}
+              </button>
+              <button type="button" className="q-btn q-btn-ghost q-btn-sm" disabled={act.busy}
+                onClick={() => act.run(() => api.post(`/suggestions/${x.id}/dismiss`, { taskId: task.id }), reload)}>
+                {t('تجاهل', 'Dismiss', 'نظر انداز کریں')}
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+SuggestedEvidence.propTypes = { lang: PropTypes.string.isRequired, task: PropTypes.object.isRequired, onDone: PropTypes.func.isRequired };
+
 function UploadForm({ lang, task, onDone }) {
   const t = makeT(lang);
   const [mode, setMode] = useState('file');
@@ -215,8 +266,13 @@ function UploadForm({ lang, task, onDone }) {
           <input className="q-input" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         </label>
         {mode === 'file' ? (
-          <label className={s.field}>{t('الملف', 'File', 'فائل')}
-            <input className="q-input" type="file" required onChange={(e) => setFile(e.target.files?.[0] ?? null)} accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.csv,.zip" />
+          <label className={s.field} style={{ position: 'relative' }}>{t('الملف', 'File', 'فائل')}
+            {/* the browser's own file button is not translated; this label opens it */}
+            <input type="file" required onChange={(e) => setFile(e.target.files?.[0] ?? null)} accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.csv,.zip"
+              style={{ position: 'absolute', insetInlineStart: 0, bottom: 0, width: 1, height: 1, opacity: 0 }} />
+            <span className="q-input" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} dir="auto">
+              {file ? file.name : t('اختر ملفًا…', 'Choose a file…', 'فائل منتخب کریں…')}
+            </span>
           </label>
         ) : (
           <label className={s.field}>{t('الرابط', 'Link', 'لنک')}
@@ -228,13 +284,13 @@ function UploadForm({ lang, task, onDone }) {
             const r = task.requirements.find((x) => x.id === e.target.value);
             setForm({ ...form, requirementId: e.target.value, proofItemId: r?.proof_items[0]?.id ?? '' });
           }}>
-            {task.requirements.map((r) => <option key={r.id} value={r.id}>{r.standard_code} · {r.code}</option>)}
+            {task.requirements.map((r) => <option key={r.id} value={r.id}>{`\u2066${r.code}\u2069`}</option>)}
           </select>
         </label>
         <label className={s.field}>{t('الدليل المطلوب', 'Required proof', 'درکار ثبوت')}
           <select className="q-input" value={form.proofItemId} onChange={(e) => setForm({ ...form, proofItemId: e.target.value })}>
             <option value="">{t('عام للمتطلب', 'General for the requirement', 'شرط کے لیے عمومی')}</option>
-            {(req?.proof_items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
+            {(req?.proof_items ?? []).map((p) => <option key={p.id} value={p.id}>{`\u2066${p.code}\u2069`}</option>)}
           </select>
         </label>
       </div>

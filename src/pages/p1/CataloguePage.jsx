@@ -18,6 +18,7 @@ export default function CataloguePage({ lang, onNavigate }) {
   const isQc = q.can('assignment.create');
   const { data, error, loading, reload } = useApi(() => (q.cycleId ? api.get(`/cycles/${q.cycleId}/readiness`) : Promise.resolve(null)), [q.cycleId]);
   const [openIds, setOpenIds] = useState(() => new Set());
+  const [docsFor, setDocsFor] = useState(null);
   const [selected, setSelected] = useState(() => new Set());
   const [query, setQuery] = useState('');
   const [assigning, setAssigning] = useState(false);
@@ -100,8 +101,16 @@ export default function CataloguePage({ lang, onNavigate }) {
                     <div key={st.id} className="q-card" style={{ marginTop: 8 }}>
                       <div className="q-card-head" style={{ padding: '10px 14px' }}>
                         <span className={s.title} style={{ fontSize: '0.88rem' }}><span className="q-code">{st.code}</span> {pickText(lang, st.title)}</span>
-                        <Progress value={st.rollup?.readinessPct} />
+                        <div className={s.row}>
+                          {q.can('library.view') && (
+                            <button type="button" className="q-btn q-btn-ghost q-btn-sm" aria-expanded={docsFor === st.id} onClick={() => setDocsFor(docsFor === st.id ? null : st.id)}>
+                              {t('الأنظمة والأدلة', 'Regulations', 'قوانین اور رہنما')}
+                            </button>
+                          )}
+                          <Progress value={st.rollup?.readinessPct} />
+                        </div>
                       </div>
+                      {docsFor === st.id && <StandardDocuments lang={lang} standardId={st.id} />}
                       <ul className={s.list}>
                         {st.requirements.map((r) => (
                           <li key={r.id} className={s.listItem} style={{ padding: '10px 14px' }}>
@@ -153,6 +162,40 @@ export default function CataloguePage({ lang, onNavigate }) {
   );
 }
 CataloguePage.propTypes = pageProps;
+
+// Laws, circulars and DGA documents a standard cites (with the clause) or shares its topic with.
+function StandardDocuments({ lang, standardId }) {
+  const t = makeT(lang);
+  const { data, error, loading } = useApi(() => api.get('/library', { standardId }), [standardId]);
+  const act = useAction();
+  if (loading && !data) return <Loading lang={lang} />;
+  const rel = (d) => d.standards.find((x) => x.standardId === standardId) ?? {};
+  const docs = (data ?? []).map((d) => ({ ...d, link: rel(d) })).sort((a, b) => (a.link.relation === b.link.relation ? 0 : a.link.relation === 'cited' ? -1 : 1));
+  return (
+    <div style={{ padding: '0 14px 12px' }}>
+      <ErrorNote error={error ?? act.error} lang={lang} />
+      {docs.length === 0 ? <span className={s.sub}>{t('لا توجد وثائق مرتبطة', 'No linked documents', 'کوئی منسلک دستاویز نہیں')}</span> : (
+        <ul className={s.list}>
+          {docs.map((d) => (
+            <li key={d.id} className={s.listItem} style={{ padding: '8px 0' }}>
+              <div className={s.listMain}>
+                <span style={{ fontSize: '0.85rem' }} dir="auto">{lang === 'ar' ? d.title_ar : d.title_en}{d.version ? ` · v${d.version}` : ''}</span>
+                <span className={s.sub} dir="auto">
+                  {d.link.relation === 'cited' ? t('يستند إليه المعيار', 'Cited by this standard', 'یہ معیار اس کا حوالہ دیتا ہے') : t('ذو صلة', 'Related', 'متعلقہ')}
+                  {d.link.detail ? ` · ${d.link.detail}` : ''}
+                </span>
+              </div>
+              {d.has_file && (
+                <button type="button" className="q-btn q-btn-ghost q-btn-sm" onClick={() => act.run(() => api.download(`/library/${d.id}/file`, d.original_filename ?? 'document.pdf'))}>{t('تنزيل', 'Download', 'ڈاؤن لوڈ')}</button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+StandardDocuments.propTypes = { lang: PropTypes.string.isRequired, standardId: PropTypes.string.isRequired };
 
 function Progress({ value }) {
   return (

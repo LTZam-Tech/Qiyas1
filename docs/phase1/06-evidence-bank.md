@@ -82,6 +82,15 @@ Rules:
 | BNK-7 | Reuse can also be handed to a department: the consultant attaches reused drafts to an assignment so the executor starts from them. |
 | BNK-8 | The consultant can also attach reused or central evidence to a task himself and submit it, like a normal employee (D3). It is then reviewed by another consultant (D9). |
 
+### 5.1 Carry-over and folder import (batch 6)
+
+| ID | Rule |
+|---|---|
+| BNK-9 | **Carry-over** copies every accepted version of an earlier cycle into the current bank (same stored object) and creates a *suggestion* for each matching requirement: the same requirement when both cycles use the same framework version, otherwise the crosswalk targets. Requirements marked *removed* in the crosswalk get no suggestion. Running it again skips evidence already carried over. |
+| BNK-10 | **Folder import** takes a folder organized for the DGA portal. The most specific code in the path decides: `5.3.2.7` = requirement R7 of standard 5.3.2; `5.3.2` = every requirement of the standard; an axis code alone (`5.18`) or no code = *unmatched*. Names may follow an older framework version; they are translated through the crosswalk. System and shortcut files are skipped; the same content already in the bank is not stored twice. |
+| BNK-11 | Neither feature links anything. The task owner (or a consultant) **uses** or **dismisses** each suggestion on the task page; using creates a normal draft link (and starts an assigned task). The importer counts as the uploader, so another consultant reviews it (D9). |
+| BNK-12 | Task owners can download a file suggested for their task before deciding. |
+
 ## 6. Search
 
 Indexed fields: title, file name, extracted text (PDF/Office, Phase 1 best effort), standard/requirement codes, perspective/axis, kind, department, owner, document date, review status, cycle. Filters default to **accepted** evidence when searching history.

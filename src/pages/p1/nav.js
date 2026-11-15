@@ -14,6 +14,7 @@ export const NAV = [
     item('catalogue', 'المعايير والجاهزية', 'Standards & readiness', 'معیارات اور تیاری', 'catalog', (s) => s.can('framework.view')),
     item('submission', 'الرفع على منصة الهيئة', 'DGA submission', 'DGA پر جمع کرانا', 'upload', (s) => s.can('submission.view_queue')),
     item('bank', 'بنك الأدلة', 'Evidence bank', 'ثبوت کا بینک', 'archive', (s) => s.can('bank.search_history')),
+    item('library', 'مكتبة الأنظمة والأدلة', 'Regulations library', 'قوانین کی لائبریری', 'bookmarkIcon', (s) => s.can('library.view')),
     item('reports', 'التقارير', 'Reports', 'رپورٹس', 'chart', (s) => s.can('report.generate')),
   ]),
   group('group-system', 'النظام', 'System', 'سسٹم', [
