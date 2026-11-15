@@ -20,7 +20,7 @@ Every operational role has deadlines (decision 4). Durations are in **business d
 Notes:
 
 - **Original vs current deadline.** The implementation timer uses `current_due_at`; it changes only by an approved extension or a consultant correction with reason. `original_due_at` is shown alongside it everywhere.
-- **Pausing.** The implementation timer pauses while a clarification is open (D1) and while the task's evidence waits for review (D5); when it resumes, the deadline moves later by the paused business time. After a rejection there is no separate rework timer: the same implementation timer resumes. All timers also pause when the cycle is closed or the item is withdrawn.
+- **Pausing.** The implementation timer pauses while a clarification is open (D1) and while the task's evidence waits for review (D5); when it resumes, the deadline moves later by the paused working time, rounded to the nearest whole working day. After a rejection there is no separate rework timer: the same implementation timer resumes. All timers also pause when the cycle is closed or the item is withdrawn.
 - **Overdue consultant and officer work never moves automatically**; it notifies (decision 4).
 - *Compliance Oversight* is a configurable **group** (e.g. the transformation office director). Recipients for each rule can be roles, groups, or contextual people (owner, requester, original assignee, department manager).
 

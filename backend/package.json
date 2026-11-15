@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "migrate": "node dist/scripts/migrate.js",
     "test:unit": "jest",
-    "test:db": "jest -c jest.db.config.js"
+    "test:db": "jest -c jest.db.config.js",
+    "dev:phase1": "ts-node --transpile-only -r tsconfig-paths/register src/compliance/dev/devServer.ts"
   },
   "keywords": [
     "compliance",

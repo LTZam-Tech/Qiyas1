@@ -2,10 +2,13 @@
  * Task deadline engine (BR-EXT-04, BR-CLR-06, D1, D5).
  *
  * current due = (latest approved extension date, else the original date)
- *               + working time spent paused (open clarification, evidence awaiting review)
+ *               + working days spent paused (open clarification, evidence awaiting review),
+ *                 rounded to the nearest whole working day so deadlines stay end-of-day dates
  * The original deadline is never modified.
  */
-import { WorkCalendar, addBusinessMs, businessMsBetween } from './calendar';
+import { WorkCalendar, addBusinessDays, businessMsBetween } from './calendar';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type PauseReason = 'clarification' | 'awaiting_review';
 
@@ -29,9 +32,11 @@ export interface DeadlineState {
   originalDueAt: Date;
   /** Due date before pauses: original or approved extension. */
   baseDueAt: Date;
-  /** Effective due date including working time spent paused so far. */
+  /** Effective due date including working days spent paused so far. */
   currentDueAt: Date;
   pausedBusinessMs: number;
+  /** Paused time counted against the deadline, in whole working days. */
+  pausedBusinessDays: number;
   isPaused: boolean;
   openPauseReasons: PauseReason[];
   isOverdue: boolean;
@@ -62,7 +67,9 @@ export function computeDeadline(input: DeadlineInput): DeadlineState {
     (sum, [s, e]) => sum + businessMsBetween(new Date(s), new Date(e), calendar),
     0,
   );
-  const currentDueAt = addBusinessMs(baseDueAt, pausedBusinessMs, calendar);
+  // A pause shorter than half a working day does not move a date-based deadline.
+  const pausedBusinessDays = Math.round(pausedBusinessMs / DAY_MS);
+  const currentDueAt = pausedBusinessDays > 0 ? addBusinessDays(baseDueAt, pausedBusinessDays, calendar) : baseDueAt;
   const openPauseReasons = pauses.filter((p) => p.to === null && p.from.getTime() <= now.getTime()).map((p) => p.reason);
   const isPaused = openPauseReasons.length > 0;
   return {
@@ -70,6 +77,7 @@ export function computeDeadline(input: DeadlineInput): DeadlineState {
     baseDueAt,
     currentDueAt,
     pausedBusinessMs,
+    pausedBusinessDays,
     isPaused,
     openPauseReasons: [...new Set(openPauseReasons)],
     // No reminders, overdue or automatic escalation while paused (BR-ESC-02).

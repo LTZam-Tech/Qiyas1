@@ -8,6 +8,8 @@ export default defineConfig({
     port: 4200,
     host: '0.0.0.0',
     allowedHosts: ['qiyas.iltizamtech.com', 'localhost'],
+    // The backend (its build output and local database files) is not part of the web app.
+    watch: { ignored: ['**/backend/**', '**/mock-api/**'] },
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8082',

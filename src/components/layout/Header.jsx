@@ -18,6 +18,7 @@ export default function Header({
   onChangeLanguage,
   isDark = false,
   lang = 'ar',
+  onNavigate,
 }) {
   const t = makeT(lang);
   const searchRef = useRef(null);
@@ -90,7 +91,7 @@ export default function Header({
         >
           {isDark ? Icons.sunIcon : Icons.moonIcon}
         </button>
-        <NotificationBell lang={lang} />
+        <NotificationBell lang={lang} onNavigate={onNavigate} />
       </div>
     </header>
   );
@@ -108,4 +109,5 @@ Header.propTypes = {
   onChangeLanguage: PropTypes.func.isRequired,
   isDark: PropTypes.bool,
   lang: PropTypes.oneOf(['ar', 'en', 'ur']),
+  onNavigate: PropTypes.func,
 };

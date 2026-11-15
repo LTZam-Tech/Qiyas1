@@ -8,6 +8,16 @@ export const ROLE_LABELS = {
 };
 // Rendered with t(role.ar, role.en), so Urdu comes from the dictionary.
 
+/** Phase 1 roles (docs/phase1/02-roles-and-permissions.md). */
+export const PHASE1_ROLE_LABELS = {
+  QC: { ar: 'مستشار قياس', en: 'Qiyas Consultant', ur: 'قیاس کنسلٹنٹ' },
+  DM: { ar: 'مدير الإدارة', en: 'Department Manager', ur: 'شعبے کا مینیجر' },
+  EMP: { ar: 'موظف', en: 'Employee', ur: 'ملازم' },
+  DSO: { ar: 'مسؤول الرفع على منصة الهيئة', en: 'DGA Submission Officer', ur: 'DGA سبمیشن آفیسر' },
+  EXE: { ar: 'الإدارة العليا', en: 'Executive Viewer', ur: 'اعلیٰ انتظامیہ' },
+  ADM: { ar: 'مدير النظام', en: 'System Administrator', ur: 'سسٹم ایڈمنسٹریٹر' },
+};
+
 export const getDisplayName = (user, lang) => {
   if (!user) return '';
   const ar = user.full_name || user.fullName || user.name_ar;

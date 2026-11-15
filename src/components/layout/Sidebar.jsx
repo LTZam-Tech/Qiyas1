@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { Icons } from '../../utils/icons.jsx';
 import BrandMark from '../BrandMark.jsx';
 import styles from './Sidebar.module.css';
-import { ROLE_LABELS, getDisplayName, getInitials } from '../../utils/user.js';
+import { PHASE1_ROLE_LABELS, getDisplayName, getInitials } from '../../utils/user.js';
 import { makeT } from '../../i18n/index.js';
 
 
@@ -14,6 +14,7 @@ export default function Sidebar({
   navItems,
   onNavigate,
   user,
+  roles = [],
   onLogout,
   filteredNavItems,
   onClose,
@@ -23,11 +24,12 @@ export default function Sidebar({
   // On tablet/mobile the sidebar is a drawer: always full width when visible.
   const collapsed = !isTablet && !sideOpen;
   const name = getDisplayName(user, lang);
-  const role = ROLE_LABELS[user?.role] || { ar: user?.role || '', en: user?.role || '' };
+  // A person can hold several roles (e.g. manager in one department, employee in another).
+  const roleText = roles.map((r) => PHASE1_ROLE_LABELS[r]).filter(Boolean).map((r) => t(r.ar, r.en, r.ur)).join(' · ');
 
   const renderItem = (item) => {
-    const active = page === item.key || (page === 'approvals' && item.key === 'review') || (page === 'analytics' && item.key === 'reports');
-    const label = t(item.label, item.labelEn);
+    const active = page === item.key;
+    const label = t(item.label, item.labelEn, item.labelUr);
     return (
       <li key={item.key}>
         <button
@@ -76,7 +78,7 @@ export default function Sidebar({
               {collapsed ? (
                 <div className={styles.sectionDivider} aria-hidden="true" />
               ) : (
-                <div className={styles.sectionLabel}>{t(item.label, item.labelEn)}</div>
+                <div className={styles.sectionLabel}>{t(item.label, item.labelEn, item.labelUr)}</div>
               )}
               <ul className={styles.list}>{item.children?.map(renderItem)}</ul>
             </div>
@@ -94,7 +96,7 @@ export default function Sidebar({
           {!collapsed && (
             <div className={styles.profileText}>
               <span className={styles.profileName}>{name}</span>
-              <span className={styles.profileRole}>{t(role.ar, role.en)}</span>
+              <span className={styles.profileRole}>{roleText}</span>
             </div>
           )}
         </div>
@@ -125,6 +127,7 @@ Sidebar.propTypes = {
     email: PropTypes.string,
     role: PropTypes.string,
   }),
+  roles: PropTypes.arrayOf(PropTypes.string),
   onLogout: PropTypes.func.isRequired,
   filteredNavItems: PropTypes.arrayOf(PropTypes.object).isRequired,
   onClose: PropTypes.func.isRequired,

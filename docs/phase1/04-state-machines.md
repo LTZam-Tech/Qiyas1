@@ -63,7 +63,7 @@ stateDiagram-v2
 | Open clarification (D1) | Clarification raised or follow-up asked | Answered by the consultant or the manager |
 | Evidence waiting for review (D5) | Task moves to *submitted* | Task leaves *submitted* (rework required, back to in progress, completed) |
 
-When a pause ends, `current_due_at` moves later by the paused **business** time. Every pause is recorded (start, end, reason) and `original_due_at` never changes.
+When a pause ends, `current_due_at` moves later by the paused working time, **rounded to the nearest whole working day** (deadlines are end-of-day dates; a pause under half a working day does not move them). Every pause is recorded (start, end, reason) and `original_due_at` never changes.
 
 **Ownership is separate from status.** Escalation (manual or automatic) changes `current_owner` to the DM and records history; it does **not** change the execution status. Fields: `original_assignee_id` (never changes after first assignment), `current_owner_id`, ownership history table.
 

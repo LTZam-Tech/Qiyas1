@@ -1,0 +1,1527 @@
+{
+ "format": "qiyas-framework/1",
+ "issuer": "DGA",
+ "documentCode": "DGA-1-2-1-111",
+ "version": "5.0-demo",
+ "publishedOn": "2026-04-01",
+ "title": {
+  "ar": "المعايير الأساسية للتحول الرقمي (بيانات تجريبية)",
+  "en": "Basic Digital Transformation Standards (demo data)",
+  "ur": "ڈیجیٹل تبدیلی کے بنیادی معیارات (آزمائشی ڈیٹا)"
+ },
+ "perspectives": [
+  {
+   "code": "D1",
+   "name": {
+    "ar": "الاستراتيجية والتخطيط",
+    "en": "Strategy & Planning",
+    "ur": "حکمتِ عملی اور منصوبہ بندی"
+   },
+   "axes": [
+    {
+     "code": "1.1",
+     "name": {
+      "ar": "التخطيط للتحول الرقمي",
+      "en": "Digital Transformation Planning",
+      "ur": "ڈیجیٹل تبدیلی کی منصوبہ بندی"
+     },
+     "standards": [
+      {
+       "code": "1.1.1",
+       "title": {
+        "ar": "وضع الخطة الاستراتيجية",
+        "en": "Strategic Plan Development",
+        "ur": "اسٹریٹجک منصوبے کی تیاری"
+       },
+       "goal": {
+        "ar": "تطوير خطة استراتيجية للتحول الرقمي متوائمة مع استراتيجية الجهة ومستهدفات رؤية السعودية 2030.",
+        "en": "Develop a digital transformation strategic plan aligned with the entity's strategy and the targets of Saudi Vision 2030.",
+        "ur": "ڈیجیٹل تبدیلی کا ایک اسٹریٹجک منصوبہ تیار کرنا جو ادارے کی حکمتِ عملی اور سعودی ویژن 2030 کے اہداف سے ہم آہنگ ہو۔"
+       },
+       "requirements": [
+        {
+         "code": "1.1.1-R1",
+         "kind": "sequential",
+         "text": {
+          "ar": "إعداد استراتيجية للتحول الرقمي/ للتحول للتعاملات الإلكترونية الحكومية، بحيث تشمل ما يأتي:",
+          "en": "Prepare a strategy for digital transformation / the shift to e-government transactions that includes the following:"
+         },
+         "children": [
+          {
+           "code": "1.1.1-R1a",
+           "text": {
+            "ar": "رؤية ورسالة وركائز وأهداف استراتيجية وربطها باستراتيجية الجهة.",
+            "en": "A vision, mission, pillars and strategic objectives, linked to the entity's strategy."
+           }
+          },
+          {
+           "code": "1.1.1-R1b",
+           "text": {
+            "ar": "المبادرات والمشاريع الاستراتيجية ومؤشرات الأداء الاستراتيجية.",
+            "en": "Strategic initiatives and projects, and strategic performance indicators."
+           }
+          },
+          {
+           "code": "1.1.1-R1c",
+           "text": {
+            "ar": "نموذج تحقيق التكامل مع الجهات الخارجية ذات العلاقة، لتحقيق المستهدفات.",
+            "en": "A model for integrating with relevant external entities to achieve the targets."
+           }
+          },
+          {
+           "code": "1.1.1-R1d",
+           "text": {
+            "ar": "الكفاءات والقدرات والمهارات اللازمة، لتحقيق مستهدفات الخطة.",
+            "en": "The competencies, capabilities and skills needed to achieve the plan's targets."
+           }
+          }
+         ]
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "1.1.1-E1",
+         "expectedKind": "plan",
+         "requirementCodes": [
+          "1.1.1-R1"
+         ],
+         "description": {
+          "ar": "إرفاق الخطة الاستراتيجية المعتمدة للتحول الرقمي، التي تتضمن جميع متطلبات تطبيق المعيار، ويكون تاريخ اعتمادها خلال فترة لا تزيد عن (36) شهرًا.",
+          "en": "Attach the approved digital transformation strategic plan, covering every requirement of the standard, approved within the last 36 months."
+         }
+        }
+       ]
+      },
+      {
+       "code": "1.1.2",
+       "title": {
+        "ar": "مراجعة الأهداف الاستراتيجية",
+        "en": "Strategic Objectives Review",
+        "ur": "اسٹریٹجک اہداف کا جائزہ"
+       },
+       "requirements": [
+        {
+         "code": "1.1.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «مراجعة الأهداف الاستراتيجية» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Strategic Objectives Review\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "1.1.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "1.1.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "code": "1.2",
+     "name": {
+      "ar": "حوكمة التحول الرقمي",
+      "en": "Digital Transformation Governance",
+      "ur": "ڈیجیٹل تبدیلی کی گورننس"
+     },
+     "standards": [
+      {
+       "code": "1.2.1",
+       "title": {
+        "ar": "تحديد الاحتياجات الأساسية",
+        "en": "Basic Needs Identification",
+        "ur": "بنیادی ضروریات کی نشاندہی"
+       },
+       "requirements": [
+        {
+         "code": "1.2.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «تحديد الاحتياجات الأساسية» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Basic Needs Identification\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "1.2.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "1.2.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "1.2.2",
+       "title": {
+        "ar": "دراسة الفجوات",
+        "en": "Gap Analysis",
+        "ur": "خلا کا تجزیہ"
+       },
+       "requirements": [
+        {
+         "code": "1.2.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «دراسة الفجوات» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Gap Analysis\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "1.2.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "1.2.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "code": "1.3",
+     "name": {
+      "ar": "البنية المؤسسية",
+      "en": "Enterprise Architecture",
+      "ur": "ادارہ جاتی ڈھانچہ"
+     },
+     "standards": [
+      {
+       "code": "1.3.1",
+       "title": {
+        "ar": "آلية التقييم الدوري",
+        "en": "Periodic Evaluation Mechanism",
+        "ur": "وقتاً فوقتاً جانچ کا طریقۂ کار"
+       },
+       "requirements": [
+        {
+         "code": "1.3.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «آلية التقييم الدوري» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Periodic Evaluation Mechanism\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "1.3.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "1.3.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "1.3.2",
+       "title": {
+        "ar": "تقارير المتابعة",
+        "en": "Follow-up Reports",
+        "ur": "پیروی کی رپورٹس"
+       },
+       "requirements": [
+        {
+         "code": "1.3.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «تقارير المتابعة» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Follow-up Reports\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "1.3.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "1.3.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "1.3.3",
+       "title": {
+        "ar": "مؤشرات الأداء",
+        "en": "Performance Indicators",
+        "ur": "کارکردگی کے اشاریے"
+       },
+       "requirements": [
+        {
+         "code": "1.3.3-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «مؤشرات الأداء» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Performance Indicators\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "1.3.3-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "1.3.3-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "D2",
+   "name": {
+    "ar": "المنظمة والثقافة",
+    "en": "Organization & Culture",
+    "ur": "ادارہ اور ثقافت"
+   },
+   "axes": [
+    {
+     "code": "2.1",
+     "name": {
+      "ar": "الثقافة والبيئة الرقمية",
+      "en": "Digital Culture & Environment",
+      "ur": "ڈیجیٹل ثقافت اور ماحول"
+     },
+     "standards": [
+      {
+       "code": "2.1.1",
+       "title": {
+        "ar": "إعداد السياسات العامة",
+        "en": "General Policies Preparation",
+        "ur": "عمومی پالیسیوں کی تیاری"
+       },
+       "requirements": [
+        {
+         "code": "2.1.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «إعداد السياسات العامة» وتوثيقها.",
+          "en": "Apply and document the requirements of \"General Policies Preparation\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "2.1.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "2.1.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "2.1.2",
+       "title": {
+        "ar": "اعتماد السياسات",
+        "en": "Policy Approval",
+        "ur": "پالیسی کی منظوری"
+       },
+       "requirements": [
+        {
+         "code": "2.1.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «اعتماد السياسات» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Policy Approval\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "2.1.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "2.1.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "code": "2.2",
+     "name": {
+      "ar": "تطوير قيادات التحول الرقمي",
+      "en": "Digital Transformation Leadership Development",
+      "ur": "ڈیجیٹل تبدیلی کی قیادت کی تیاری"
+     },
+     "standards": [
+      {
+       "code": "2.2.1",
+       "title": {
+        "ar": "آليات الحوكمة",
+        "en": "Governance Mechanisms",
+        "ur": "گورننس کے طریقۂ کار"
+       },
+       "requirements": [
+        {
+         "code": "2.2.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «آليات الحوكمة» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Governance Mechanisms\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "2.2.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "2.2.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "code": "2.3",
+     "name": {
+      "ar": "بناء الكفاءات",
+      "en": "Capability Building",
+      "ur": "صلاحیتوں کی تعمیر"
+     },
+     "standards": [
+      {
+       "code": "3.1.1",
+       "title": {
+        "ar": "جدولة الفعاليات",
+        "en": "Events Scheduling",
+        "ur": "تقریبات کا شیڈول"
+       },
+       "requirements": [
+        {
+         "code": "3.1.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «جدولة الفعاليات» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Events Scheduling\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "3.1.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "3.1.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "3.1.2",
+       "title": {
+        "ar": "تنسيق الفعاليات",
+        "en": "Events Coordination",
+        "ur": "تقریبات کی رابطہ کاری"
+       },
+       "requirements": [
+        {
+         "code": "3.1.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «تنسيق الفعاليات» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Events Coordination\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "3.1.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "3.1.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "D3",
+   "name": {
+    "ar": "العمليات والتشغيل",
+    "en": "Operations & Execution",
+    "ur": "آپریشنز اور عمل درآمد"
+   },
+   "axes": [
+    {
+     "code": "3.1",
+     "name": {
+      "ar": "إجراءات العمل",
+      "en": "Work Procedures",
+      "ur": "کام کے طریقۂ کار"
+     },
+     "standards": [
+      {
+       "code": "3.2.1",
+       "title": {
+        "ar": "تخطيط الأنشطة",
+        "en": "Activities Planning",
+        "ur": "سرگرمیوں کی منصوبہ بندی"
+       },
+       "requirements": [
+        {
+         "code": "3.2.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «تخطيط الأنشطة» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Activities Planning\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "3.2.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "3.2.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "3.2.2",
+       "title": {
+        "ar": "تقييم الأنشطة",
+        "en": "Activities Evaluation",
+        "ur": "سرگرمیوں کی جانچ"
+       },
+       "requirements": [
+        {
+         "code": "3.2.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «تقييم الأنشطة» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Activities Evaluation\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "3.2.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "3.2.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "D4",
+   "name": {
+    "ar": "إدارة المخاطر واستمرارية الأعمال",
+    "en": "Risk Management & Business Continuity",
+    "ur": "خطرات کا انتظام اور کاروباری تسلسل"
+   },
+   "axes": [
+    {
+     "code": "4.1",
+     "name": {
+      "ar": "إدارة المخاطر",
+      "en": "Risk Management",
+      "ur": "خطرات کا انتظام"
+     },
+     "standards": [
+      {
+       "code": "4.1.1",
+       "title": {
+        "ar": "رصد المظاهر",
+        "en": "Aspects Monitoring",
+        "ur": "پہلوؤں کی نگرانی"
+       },
+       "requirements": [
+        {
+         "code": "4.1.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «رصد المظاهر» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Aspects Monitoring\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "4.1.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "4.1.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "4.1.2",
+       "title": {
+        "ar": "تحليل المظاهر",
+        "en": "Aspects Analysis",
+        "ur": "پہلوؤں کا تجزیہ"
+       },
+       "requirements": [
+        {
+         "code": "4.1.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «تحليل المظاهر» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Aspects Analysis\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "4.1.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "4.1.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "code": "4.2",
+     "name": {
+      "ar": "استمرارية الأعمال",
+      "en": "Business Continuity",
+      "ur": "کاروباری تسلسل"
+     },
+     "standards": [
+      {
+       "code": "4.2.1",
+       "title": {
+        "ar": "الاستراتيجية التشغيلية",
+        "en": "Operational Strategy",
+        "ur": "آپریشنل حکمتِ عملی"
+       },
+       "requirements": [
+        {
+         "code": "4.2.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «الاستراتيجية التشغيلية» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Operational Strategy\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "4.2.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "4.2.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "D5",
+   "name": {
+    "ar": "تقنية المعلومات",
+    "en": "Information Technology",
+    "ur": "انفارمیشن ٹیکنالوجی"
+   },
+   "axes": [
+    {
+     "code": "5.1",
+     "name": {
+      "ar": "الأنظمة الداعمة للتحول الرقمي",
+      "en": "Digital Transformation Supporting Systems",
+      "ur": "ڈیجیٹل تبدیلی کے معاون نظام"
+     },
+     "standards": [
+      {
+       "code": "4.3.1",
+       "title": {
+        "ar": "خطة التنفيذ",
+        "en": "Implementation Plan",
+        "ur": "عمل درآمد کا منصوبہ"
+       },
+       "requirements": [
+        {
+         "code": "4.3.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «خطة التنفيذ» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Implementation Plan\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "4.3.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "4.3.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "4.3.2",
+       "title": {
+        "ar": "متابعة التنفيذ",
+        "en": "Implementation Follow-up",
+        "ur": "عمل درآمد کی پیروی"
+       },
+       "requirements": [
+        {
+         "code": "4.3.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «متابعة التنفيذ» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Implementation Follow-up\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "4.3.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "4.3.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "code": "5.2",
+     "name": {
+      "ar": "البنية التحتية للخدمات التقنية",
+      "en": "Technical Services Infrastructure",
+      "ur": "تکنیکی خدمات کا بنیادی ڈھانچہ"
+     },
+     "standards": [
+      {
+       "code": "5.1.1",
+       "title": {
+        "ar": "بروتوكولات الإنقاذ",
+        "en": "Rescue Protocols",
+        "ur": "امدادی پروٹوکول"
+       },
+       "requirements": [
+        {
+         "code": "5.1.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «بروتوكولات الإنقاذ» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Rescue Protocols\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "5.1.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "5.1.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "5.1.2",
+       "title": {
+        "ar": "استجابة الطوارئ",
+        "en": "Emergency Response",
+        "ur": "ہنگامی ردِعمل"
+       },
+       "requirements": [
+        {
+         "code": "5.1.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «استجابة الطوارئ» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Emergency Response\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "5.1.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "5.1.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "code": "5.3",
+     "name": {
+      "ar": "البنية السحابية",
+      "en": "Cloud Infrastructure",
+      "ur": "کلاؤڈ انفراسٹرکچر"
+     },
+     "standards": [
+      {
+       "code": "5.2.1",
+       "title": {
+        "ar": "برامج التدريب",
+        "en": "Training Programs",
+        "ur": "تربیتی پروگرام"
+       },
+       "requirements": [
+        {
+         "code": "5.2.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «برامج التدريب» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Training Programs\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "5.2.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "5.2.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "5.2.2",
+       "title": {
+        "ar": "تأهيل المنقذين",
+        "en": "Rescuers Qualification",
+        "ur": "امدادی کارکنوں کی اہلیت"
+       },
+       "requirements": [
+        {
+         "code": "5.2.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «تأهيل المنقذين» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Rescuers Qualification\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "5.2.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "5.2.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "D6",
+   "name": {
+    "ar": "الحكومة الشاملة",
+    "en": "Whole-of-Government",
+    "ur": "مجموعی حکومت"
+   },
+   "axes": [
+    {
+     "code": "6.1",
+     "name": {
+      "ar": "منصات الحكومة الشاملة",
+      "en": "Whole-of-Government Platforms",
+      "ur": "مجموعی حکومت کے پلیٹ فارمز"
+     },
+     "standards": [
+      {
+       "code": "6.1.1",
+       "title": {
+        "ar": "الهيكل التنظيمي",
+        "en": "Organizational Chart",
+        "ur": "تنظیمی چارٹ"
+       },
+       "requirements": [
+        {
+         "code": "6.1.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «الهيكل التنظيمي» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Organizational Chart\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "6.1.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "6.1.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "6.1.2",
+       "title": {
+        "ar": "تحديد المسؤوليات",
+        "en": "Responsibilities Definition",
+        "ur": "ذمہ داریوں کا تعین"
+       },
+       "requirements": [
+        {
+         "code": "6.1.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «تحديد المسؤوليات» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Responsibilities Definition\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "6.1.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "6.1.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "D7",
+   "name": {
+    "ar": "القنوات والخدمات",
+    "en": "Channels & Services",
+    "ur": "چینلز اور خدمات"
+   },
+   "axes": [
+    {
+     "code": "7.1",
+     "name": {
+      "ar": "جودة الخدمات الرقمية",
+      "en": "Digital Service Quality",
+      "ur": "ڈیجیٹل خدمات کا معیار"
+     },
+     "standards": [
+      {
+       "code": "6.2.1",
+       "title": {
+        "ar": "نظام المحاسبة",
+        "en": "Accountability System",
+        "ur": "احتساب کا نظام"
+       },
+       "requirements": [
+        {
+         "code": "6.2.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «نظام المحاسبة» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Accountability System\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "6.2.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "6.2.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "code": "7.2",
+     "name": {
+      "ar": "القنوات والخدمات الرقمية",
+      "en": "Digital Channels & Services",
+      "ur": "ڈیجیٹل چینلز اور خدمات"
+     },
+     "standards": [
+      {
+       "code": "7.1.1",
+       "title": {
+        "ar": "التوظيف والاستقطاب",
+        "en": "Recruitment",
+        "ur": "بھرتی"
+       },
+       "requirements": [
+        {
+         "code": "7.1.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «التوظيف والاستقطاب» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Recruitment\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "7.1.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "7.1.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "7.1.2",
+       "title": {
+        "ar": "تقييم الأداء الوظيفي",
+        "en": "Performance Appraisal",
+        "ur": "کارکردگی کا جائزہ"
+       },
+       "requirements": [
+        {
+         "code": "7.1.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «تقييم الأداء الوظيفي» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Performance Appraisal\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "7.1.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "7.1.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "D8",
+   "name": {
+    "ar": "مركزية المستفيد",
+    "en": "Beneficiary-Centricity",
+    "ur": "استفادہ کنندہ پر توجہ"
+   },
+   "axes": [
+    {
+     "code": "8.1",
+     "name": {
+      "ar": "مشاركة المستفيد",
+      "en": "Beneficiary Engagement",
+      "ur": "استفادہ کنندگان کی شمولیت"
+     },
+     "standards": [
+      {
+       "code": "7.2.1",
+       "title": {
+        "ar": "تحليل الكفاءات",
+        "en": "Competency Analysis",
+        "ur": "مہارتوں کا تجزیہ"
+       },
+       "requirements": [
+        {
+         "code": "7.2.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «تحليل الكفاءات» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Competency Analysis\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "7.2.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "7.2.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "7.2.2",
+       "title": {
+        "ar": "خطط التطوير",
+        "en": "Development Plans",
+        "ur": "ترقیاتی منصوبے"
+       },
+       "requirements": [
+        {
+         "code": "7.2.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «خطط التطوير» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Development Plans\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "7.2.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "7.2.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "code": "8.2",
+     "name": {
+      "ar": "تعزيز العلاقة مع المستفيد",
+      "en": "Strengthening Beneficiary Relationship",
+      "ur": "استفادہ کنندگان سے تعلق کی مضبوطی"
+     },
+     "standards": [
+      {
+       "code": "8.1.1",
+       "title": {
+        "ar": "خطة الاستعداد",
+        "en": "Preparedness Plan",
+        "ur": "تیاری کا منصوبہ"
+       },
+       "requirements": [
+        {
+         "code": "8.1.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «خطة الاستعداد» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Preparedness Plan\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "8.1.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "8.1.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "8.1.2",
+       "title": {
+        "ar": "اختبارات الجاهزية",
+        "en": "Readiness Tests",
+        "ur": "تیاری کی جانچ"
+       },
+       "requirements": [
+        {
+         "code": "8.1.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «اختبارات الجاهزية» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Readiness Tests\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "8.1.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "8.1.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "code": "8.3",
+     "name": {
+      "ar": "تجربة المستفيد",
+      "en": "Beneficiary Experience",
+      "ur": "استفادہ کنندہ کا تجربہ"
+     },
+     "standards": [
+      {
+       "code": "8.2.1",
+       "title": {
+        "ar": "إدارة موارد المركز",
+        "en": "Center Resources Management",
+        "ur": "مرکز کے وسائل کا انتظام"
+       },
+       "requirements": [
+        {
+         "code": "8.2.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «إدارة موارد المركز» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Center Resources Management\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "8.2.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "8.2.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "D9",
+   "name": {
+    "ar": "البيانات الحكومية",
+    "en": "Government Data",
+    "ur": "سرکاری ڈیٹا"
+   },
+   "axes": [
+    {
+     "code": "9.1",
+     "name": {
+      "ar": "حوكمة وإدارة البيانات",
+      "en": "Data Governance & Management",
+      "ur": "ڈیٹا گورننس اور انتظام"
+     },
+     "standards": [
+      {
+       "code": "9.1.1",
+       "title": {
+        "ar": "الفتاوى والأحكام",
+        "en": "Fatwas & Rulings",
+        "ur": "فتاویٰ اور احکام"
+       },
+       "requirements": [
+        {
+         "code": "9.1.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «الفتاوى والأحكام» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Fatwas & Rulings\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "9.1.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "9.1.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "9.1.2",
+       "title": {
+        "ar": "التطبيق الفقهي",
+        "en": "Jurisprudence Application",
+        "ur": "فقہی اطلاق"
+       },
+       "requirements": [
+        {
+         "code": "9.1.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «التطبيق الفقهي» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Jurisprudence Application\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "9.1.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "9.1.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "code": "9.2",
+     "name": {
+      "ar": "استخدام وإتاحة البيانات",
+      "en": "Data Use & Availability",
+      "ur": "ڈیٹا کا استعمال اور دستیابی"
+     },
+     "standards": [
+      {
+       "code": "10.1.1",
+       "title": {
+        "ar": "إدارة المنشآت السكنية",
+        "en": "Residential Facilities Management",
+        "ur": "رہائشی سہولیات کا انتظام"
+       },
+       "requirements": [
+        {
+         "code": "10.1.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «إدارة المنشآت السكنية» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Residential Facilities Management\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "10.1.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "10.1.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "code": "9.3",
+     "name": {
+      "ar": "البيانات المفتوحة",
+      "en": "Open Data",
+      "ur": "اوپن ڈیٹا"
+     },
+     "standards": [
+      {
+       "code": "10.2.1",
+       "title": {
+        "ar": "جدول الصيانة الدورية",
+        "en": "Periodic Maintenance Schedule",
+        "ur": "وقتاً فوقتاً دیکھ بھال کا شیڈول"
+       },
+       "requirements": [
+        {
+         "code": "10.2.1-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «جدول الصيانة الدورية» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Periodic Maintenance Schedule\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "10.2.1-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "10.2.1-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      },
+      {
+       "code": "10.2.2",
+       "title": {
+        "ar": "تقييم التكرار",
+        "en": "Repetition Evaluation",
+        "ur": "تکرار کی جانچ"
+       },
+       "requirements": [
+        {
+         "code": "10.2.2-R1",
+         "kind": "single",
+         "text": {
+          "ar": "تطبيق متطلبات معيار «تقييم التكرار» وتوثيقها.",
+          "en": "Apply and document the requirements of \"Repetition Evaluation\"."
+         }
+        }
+       ],
+       "proofItems": [
+        {
+         "code": "10.2.2-E1",
+         "expectedKind": "document",
+         "requirementCodes": [
+          "10.2.2-R1"
+         ],
+         "description": {
+          "ar": "مستند معتمد يثبت تطبيق المعيار.",
+          "en": "An approved document proving the standard is applied."
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

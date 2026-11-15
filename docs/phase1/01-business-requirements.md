@@ -68,7 +68,7 @@ Each requirement has an ID for traceability to tests and code.
 | BR-CLR-03 | An answer is routed **back to the person who asked**. When an employee asks, the **department manager can see the request and answer it too**, so the employee is not left waiting (D4). The consultant is informed when the manager answers and can add to the answer. |
 | BR-CLR-04 | The consultant has a configurable **response deadline**; overdue clarifications trigger reminders and escalation per [07](07-notifications-and-escalation.md). An answer from the manager also stops this deadline. |
 | BR-CLR-05 | Answers can include text and attachments; a request can have follow-up messages until the requester closes it or the consultant marks it resolved. |
-| BR-CLR-06 | While a clarification is open, the task's **implementation deadline is paused** (D1). When it is answered, the deadline resumes and moves later by the paused business time. A follow-up question pauses it again. The original deadline is still shown. |
+| BR-CLR-06 | While a clarification is open, the task's **implementation deadline is paused** (D1). When it is answered, the deadline resumes and moves later by the paused working time, rounded to the nearest whole working day. A follow-up question pauses it again. The original deadline is still shown. |
 
 ### BR-EXT · Extension requests
 

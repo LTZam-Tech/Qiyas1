@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Icons } from '../../utils/icons.jsx';
-import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../../services/notificationsService.js';
+import { api } from '../../services/qiyasApi.js';
 import styles from './Notifications.module.css';
-import { makePick, makeT } from '../../i18n/index.js';
+import { makeT } from '../../i18n/index.js';
 
-const TYPE_STYLE = {
-  task_assigned: { icon: 'tasks', tone: 'brand' },
-  review_completed: { icon: 'checkCircle', tone: 'success' },
-  sla_warning: { icon: 'clock', tone: 'warning' },
-  escalation: { icon: 'alert', tone: 'danger' },
+// Icon and colour by event family (event codes from the Phase 1 notification catalogue).
+const styleFor = (code = '') => {
+  if (/overdue|escalat|quarantin|rejected|declined|changed/.test(code)) return { icon: 'alert', tone: 'danger' };
+  if (/reminder|requested|asked/.test(code)) return { icon: 'clock', tone: 'warning' };
+  if (/accepted|approved|completed|answered|ready/.test(code)) return { icon: 'checkCircle', tone: 'success' };
+  return { icon: 'tasks', tone: 'brand' };
 };
 
 const relativeTime = (dateString, lang) => {
@@ -24,18 +25,19 @@ const relativeTime = (dateString, lang) => {
   return rtf.format(Math.round(diffSec / 86400), 'day');
 };
 
-export default function NotificationBell({ lang = 'ar' }) {
+export default function NotificationBell({ lang = 'ar', onNavigate }) {
   const t = makeT(lang);
-  // Titles may come as plain text or with per-language fields (title_en, title_ur).
-  const pick = makePick(lang);
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const dropdownRef = useRef(null);
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.read_at).length;
 
   const fetchNotifications = useCallback(async () => {
-    const data = await getNotifications();
-    setNotifications(data);
+    try {
+      setNotifications(await api.get('/notifications'));
+    } catch {
+      // keep the last list; the bell retries on the next poll
+    }
   }, []);
 
   useEffect(() => {
@@ -68,15 +70,18 @@ export default function NotificationBell({ lang = 'ar' }) {
     });
   };
 
-  const handleMarkRead = async (id) => {
-    if (await markNotificationAsRead(id)) {
-      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
-    }
+  const markRead = async (ids) => {
+    await api.post('/notifications/read', { ids }).catch(() => undefined);
+    const now = new Date().toISOString();
+    setNotifications((prev) => prev.map((n) => (ids === 'all' || ids.includes(n.id) ? { ...n, read_at: n.read_at ?? now } : n)));
   };
 
-  const handleMarkAllRead = async () => {
-    if (await markAllNotificationsAsRead()) {
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  const open = (note) => {
+    if (!note.read_at) markRead([note.id]);
+    const taskId = note.entity_type === 'task' ? note.entity_id : note.payload?.taskId;
+    if (taskId && onNavigate) {
+      setIsOpen(false);
+      onNavigate('task', taskId);
     }
   };
 
@@ -104,7 +109,7 @@ export default function NotificationBell({ lang = 'ar' }) {
               </span>
             </div>
             {unreadCount > 0 && (
-              <button type="button" onClick={handleMarkAllRead} className={styles.markAllBtn}>
+              <button type="button" onClick={() => markRead('all')} className={styles.markAllBtn}>
                 {t('تحديد الكل كمقروء', 'Mark all read')}
               </button>
             )}
@@ -117,21 +122,22 @@ export default function NotificationBell({ lang = 'ar' }) {
               </li>
             ) : (
               notifications.map((note) => {
-                const ts = TYPE_STYLE[note.type] || { icon: 'bellIcon', tone: 'neutral' };
+                const ts = styleFor(note.event_code);
+                const text = note.text?.[lang] ?? { title: note.title };
                 return (
                   <li key={note.id}>
                     <button
                       type="button"
-                      className={`${styles.item} ${!note.isRead ? styles.unread : ''}`}
-                      onClick={() => !note.isRead && handleMarkRead(note.id)}
+                      className={`${styles.item} ${!note.read_at ? styles.unread : ''}`}
+                      onClick={() => open(note)}
                     >
                       <span className={`q-icon-chip q-tone-${ts.tone} ${styles.itemIcon}`}>{Icons[ts.icon]}</span>
                       <span className={styles.itemText}>
-                        <span className={styles.itemTitle}>{pick(note.title_ar || note.title, note.title_en, note.title_ur)}</span>
-                        {note.body ? <span className={styles.itemBody}>{pick(note.body_ar || note.body, note.body_en, note.body_ur)}</span> : null}
-                        <span className={styles.itemTime}>{relativeTime(note.createdAt, lang)}</span>
+                        <span className={styles.itemTitle}>{text.title}</span>
+                        {text.reason ? <span className={styles.itemBody}>{text.reason}</span> : null}
+                        <span className={styles.itemTime}>{relativeTime(note.created_at, lang)}</span>
                       </span>
-                      {!note.isRead && <span className={styles.unreadDot} aria-label={t('غير مقروء', 'Unread')} />}
+                      {!note.read_at && <span className={styles.unreadDot} aria-label={t('غير مقروء', 'Unread')} />}
                     </button>
                   </li>
                 );
@@ -146,4 +152,5 @@ export default function NotificationBell({ lang = 'ar' }) {
 
 NotificationBell.propTypes = {
   lang: PropTypes.oneOf(['ar', 'en', 'ur']),
+  onNavigate: PropTypes.func,
 };

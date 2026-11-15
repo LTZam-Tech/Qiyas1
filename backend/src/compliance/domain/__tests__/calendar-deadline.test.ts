@@ -94,6 +94,13 @@ describe('deadline engine', () => {
     expect(s.originalDueAt.getTime()).toBe(original.getTime());
   });
 
+  it('a short pause does not move a date-based deadline; half a working day or more counts as a day', () => {
+    const short = computeDeadline({ originalDueAt: original, pauses: [{ reason: 'awaiting_review', from: local(2026, 11, 16, 9), to: local(2026, 11, 16, 9, 1) }], now: local(2026, 11, 17), calendar: cal });
+    expect(short.currentDueAt.getTime()).toBe(original.getTime());
+    const half = computeDeadline({ originalDueAt: original, pauses: [{ reason: 'clarification', from: local(2026, 11, 16, 0), to: local(2026, 11, 16, 12) }], now: local(2026, 11, 17), calendar: cal });
+    expect([half.pausedBusinessDays, localDateKey(half.currentDueAt, cal)]).toEqual([1, '2026-11-22']);
+  });
+
   it('overlapping pauses count once', () => {
     const s = computeDeadline({
       originalDueAt: original,
