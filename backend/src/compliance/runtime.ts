@@ -5,7 +5,14 @@
  *   - runs the deadline scheduler and email sender every few minutes
  *
  * Environment:
- *   QIYAS_EVIDENCE_DIR             evidence files folder (default ./evidence-store)
+ *   QIYAS_STORAGE                  "minio" (production) or "disk" (default; development)
+ *   QIYAS_EVIDENCE_DIR             evidence folder when QIYAS_STORAGE=disk (default ./evidence-store)
+ *   MINIO_ENDPOINT / MINIO_PORT / MINIO_USE_SSL / MINIO_ACCESS_KEY / MINIO_SECRET_KEY
+ *                                  (MINIO_ROOT_USER / MINIO_ROOT_PASSWORD are accepted as the keys)
+ *   QIYAS_MINIO_BUCKET             default qiyas-evidence;  QIYAS_MINIO_SSE=true asks MinIO to encrypt objects
+ *   QIYAS_CLAMAV_HOST / QIYAS_CLAMAV_PORT   clamd for virus scanning (port 3310); required in production
+ *   QIYAS_ALLOW_DEV_SCANNER=true   lets production start without ClamAV (test installations only)
+ *   QIYAS_LOAD_SHIPPED_DATA        "off" skips loading the DGA frameworks shipped with the release
  *   QIYAS_SCHEDULER                "off" disables the scheduler (e.g. on a second API node)
  *   QIYAS_SCHEDULER_INTERVAL_MS    default 300000 (5 minutes)
  *   SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASSWORD / SMTP_FROM   email; without SMTP_HOST emails wait unsent
@@ -20,7 +27,11 @@ import { migrate } from './db/migrate';
 import { seedRbac } from './db/seedRbac';
 import { syncLibrary } from './library/library';
 import { EvidenceDeps } from './evidence/evidence';
-import { DevScanner, LocalDiskStorage } from './evidence/storage';
+import { DevScanner, EvidenceStorage, LocalDiskStorage, VirusScanner } from './evidence/storage';
+import { ClamAvScanner, MinioStorage } from './evidence/productionAdapters';
+import { loadShippedData } from './framework/shipped';
+import { logoFile, publicBranding } from './admin/branding';
+import express from 'express';
 import { Mailer, sendPendingEmails } from './notifications/mailer';
 import { runScheduler } from './notifications/scheduler';
 
@@ -30,12 +41,35 @@ interface Log {
   error(msg: string, meta?: unknown): void;
 }
 
-export function evidenceDepsFromEnv(log: Log): EvidenceDeps {
-  const dir = process.env.QIYAS_EVIDENCE_DIR || path.resolve(process.cwd(), 'evidence-store');
-  if (process.env.NODE_ENV === 'production') {
-    log.warn('Evidence virus scanning uses the development scanner; connect ClamAV before production use');
+export function evidenceDepsFromEnv(log: Log, env: NodeJS.ProcessEnv = process.env): EvidenceDeps {
+  const production = env.NODE_ENV === 'production';
+  let storage: EvidenceStorage;
+  if (env.QIYAS_STORAGE === 'minio') {
+    const accessKey = env.MINIO_ACCESS_KEY || env.MINIO_ROOT_USER;
+    const secretKey = env.MINIO_SECRET_KEY || env.MINIO_ROOT_PASSWORD;
+    if (!env.MINIO_ENDPOINT || !accessKey || !secretKey) throw new Error('QIYAS_STORAGE=minio needs MINIO_ENDPOINT and MinIO credentials');
+    storage = new MinioStorage({
+      endPoint: env.MINIO_ENDPOINT, port: Number(env.MINIO_PORT || 9000), useSSL: env.MINIO_USE_SSL === 'true',
+      accessKey, secretKey, bucket: env.QIYAS_MINIO_BUCKET || 'qiyas-evidence', serverSideEncryption: env.QIYAS_MINIO_SSE === 'true',
+    });
+    log.info('Evidence storage: MinIO', { endPoint: env.MINIO_ENDPOINT, bucket: env.QIYAS_MINIO_BUCKET || 'qiyas-evidence' });
+  } else {
+    const dir = env.QIYAS_EVIDENCE_DIR || path.resolve(process.cwd(), 'evidence-store');
+    if (production) log.warn('Evidence storage is a local folder; set QIYAS_STORAGE=minio for production', { dir });
+    storage = new LocalDiskStorage(dir);
   }
-  return { storage: new LocalDiskStorage(dir), scanner: new DevScanner() };
+  let scanner: VirusScanner;
+  if (env.QIYAS_CLAMAV_HOST) {
+    scanner = new ClamAvScanner({ host: env.QIYAS_CLAMAV_HOST, port: Number(env.QIYAS_CLAMAV_PORT || 3310) });
+    log.info('Virus scanning: ClamAV', { host: env.QIYAS_CLAMAV_HOST });
+  } else {
+    if (production && env.QIYAS_ALLOW_DEV_SCANNER !== 'true') {
+      throw new Error('Production needs ClamAV: set QIYAS_CLAMAV_HOST (or QIYAS_ALLOW_DEV_SCANNER=true for a test installation)');
+    }
+    log.warn('Virus scanning uses the development scanner (EICAR only); connect ClamAV before real use');
+    scanner = new DevScanner();
+  }
+  return { storage, scanner };
 }
 
 export function smtpMailerFromEnv(): Mailer | null {
@@ -58,9 +92,11 @@ export async function prepareComplianceDatabase(pool: PoolLike): Promise<string[
   try {
     const ran = await migrate(client);
     await seedRbac(client);
-    // the shipped regulations catalogue and the citations of every imported framework
     await client.query('BEGIN');
     try {
+      // official DGA versions shipped with this release (new ones only), then the
+      // regulations catalogue and the citations of every imported framework
+      if (process.env.QIYAS_LOAD_SHIPPED_DATA !== 'off') await loadShippedData(client);
       await syncLibrary(client);
       await client.query('COMMIT');
     } catch (err) {
@@ -73,7 +109,43 @@ export async function prepareComplianceDatabase(pool: PoolLike): Promise<string[
   }
 }
 
+/** Routes open before sign-in: the login screen's branding, and component health for monitoring. */
+export function createPublicRouter(pool: PoolLike, evidence: EvidenceDeps) {
+  const r = express.Router();
+  const withDb = async <T>(fn: (db: Awaited<ReturnType<PoolLike['connect']>>) => Promise<T>) => {
+    const c = await pool.connect();
+    try { return await fn(c); } finally { c.release(); }
+  };
+  r.get('/branding', async (_req, res) => {
+    try { res.json({ success: true, data: await withDb(publicBranding) }); } catch { res.status(503).json({ success: false }); }
+  });
+  r.get('/branding/logo', async (_req, res) => {
+    try {
+      const logo = await withDb((db) => logoFile(db, evidence));
+      if (!logo) { res.status(404).end(); return; }
+      res.setHeader('Content-Type', logo.mimeType);
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.send(logo.content);
+    } catch { res.status(503).end(); }
+  });
+  r.get('/health', async (_req, res) => {
+    const check = async (fn: () => Promise<boolean>) => { try { return (await fn()) ? 'up' : 'down'; } catch { return 'down'; } };
+    const storage = evidence.storage as EvidenceStorage & { ping?: () => Promise<boolean> };
+    const scanner = evidence.scanner as VirusScanner & { ping?: () => Promise<boolean> };
+    const components = {
+      database: await check(() => withDb(async (db) => (await db.query('SELECT 1 AS ok')).rows[0].ok === 1)),
+      storage: { kind: storage instanceof MinioStorage ? 'minio' : 'disk', status: await check(() => (storage.ping ? storage.ping() : storage.exists('health-check'))) },
+      scanner: { kind: scanner instanceof ClamAvScanner ? 'clamav' : 'development', status: await check(() => (scanner.ping ? scanner.ping() : Promise.resolve(true))) },
+    };
+    const ok = components.database === 'up' && components.storage.status === 'up' && components.scanner.status === 'up';
+    res.status(ok ? 200 : 503).json({ status: ok ? 'healthy' : 'unhealthy', components, at: new Date().toISOString() });
+  });
+  return r;
+}
+
 export function mountComplianceApi(app: Application, pool: PoolLike, authenticate: RequestHandler, evidence: EvidenceDeps): void {
+  app.use('/api/v2/public', createPublicRouter(pool, evidence));
   app.use('/api/v2', createComplianceRouter({ pool, authenticate, evidence }));
 }
 

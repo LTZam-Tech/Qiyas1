@@ -28,6 +28,9 @@ import { authenticate } from '@/middleware/auth';
 import { evidenceDepsFromEnv, mountComplianceApi } from '@/compliance/runtime';
 
 const app: Application = express();
+// Behind the installation's reverse proxy (deploy/nginx.conf): trust its X-Forwarded-* headers so
+// rate limits and audit records see the user's address. TRUST_PROXY=false when exposed directly.
+if (process.env.TRUST_PROXY !== 'false' && process.env.NODE_ENV === 'production') app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 1));
 
 // Security middleware
 app.use(helmet({

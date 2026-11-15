@@ -26,7 +26,7 @@ import { syncLibrary } from '../library/library';
 import { migrate } from '../db/migrate';
 import { seedRbac } from '../db/seedRbac';
 import { createComplianceRouter } from '../api/router';
-import { runComplianceTick } from '../runtime';
+import { createPublicRouter, runComplianceTick } from '../runtime';
 import { assignTask, createAssignment, publishAssignment } from '../work/tasks';
 import { existsSync as fileExists, readFileSync } from 'fs';
 
@@ -239,9 +239,9 @@ async function main() {
     else res.json({ success: true, data: { user } });
   });
   app.post('/api/v1/auth/logout', (_req, res) => res.json({ success: true, data: {} }));
-  app.use('/api/v2', createComplianceRouter({
-    pool: poolLike, authenticate, evidence: { storage: new LocalDiskStorage(path.join(ROOT, 'evidence')), scanner: new DevScanner() },
-  }));
+  const evidenceDeps = { storage: new LocalDiskStorage(path.join(ROOT, 'evidence')), scanner: new DevScanner() };
+  app.use('/api/v2/public', createPublicRouter(poolLike, evidenceDeps));
+  app.use('/api/v2', createComplianceRouter({ pool: poolLike, authenticate, evidence: evidenceDeps }));
 
   app.listen(API_PORT, '127.0.0.1', () => {
     console.log(`Qiyas Phase 1 dev server on http://127.0.0.1:${API_PORT} (PostgreSQL on ${PG_PORT})`);

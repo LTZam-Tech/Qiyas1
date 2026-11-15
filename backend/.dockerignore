@@ -5,3 +5,8 @@ dist
 .DS_Store
 uploads
 coverage
+.devdata
+evidence-store
+test
+*.txt
+.env.*

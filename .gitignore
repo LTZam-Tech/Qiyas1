@@ -32,3 +32,8 @@ dist
 
 # Production secrets (NEVER commit)
 .env.production
+
+# installation secrets and release packages
+deploy/.env
+deploy/certs/
+release/

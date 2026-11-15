@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import styles from './LoginPage.module.css';
 import { env } from '../config/env.js';
 import { Icons } from '../utils/icons.jsx';
 import BrandMark from '../components/BrandMark.jsx';
 import LanguageMenu from '../components/LanguageMenu.jsx';
-import joufLogo from '../assets/jouf_logo.png';
+import { api } from '../services/qiyasApi.js';
 import { dirOf, makeT } from '../i18n/index.js';
 
 const getBackendPortLabel = () => {
@@ -23,6 +23,14 @@ const LoginPage = ({ onLogin, isLoading, lang = 'ar', onChangeLanguage }) => {
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // The client's name and logo come from the installation's settings (docs/phase1/09 §7)
+  const [branding, setBranding] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    api.get('/public/branding').then((b) => { if (alive) setBranding(b); }).catch(() => undefined);
+    return () => { alive = false; };
+  }, []);
+  const clientName = branding && (lang === 'en' ? branding.nameEn : branding.nameAr);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -84,10 +92,12 @@ const LoginPage = ({ onLogin, isLoading, lang = 'ar', onChangeLanguage }) => {
           </ul>
         </div>
 
-        <div className={styles.client}>
-          <span className={styles.clientLogo}><img src={joufLogo} alt="" /></span>
-          <span>{t('مقدّم لجامعة الجوف', 'Prepared for Jouf University')}</span>
-        </div>
+        {clientName && (
+          <div className={styles.client}>
+            {branding.hasLogo && <span className={styles.clientLogo}><img src={`${env.apiBaseUrl.replace(/\/v1\/?$/, '/v2')}/public/branding/logo?v=${branding.version}`} alt="" /></span>}
+            <span dir="auto">{t(`مقدّم لـ${clientName}`, `Prepared for ${clientName}`, `${clientName} کے لیے تیار کردہ`)}</span>
+          </div>
+        )}
       </aside>
 
       <main className={styles.formPanel}>

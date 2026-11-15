@@ -3,3 +3,12 @@ dist
 .git
 .env
 .DS_Store
+backend
+mock-api
+docs
+release
+deploy/.env
+deploy/certs
+*.exe
+*.ps1
+coverage

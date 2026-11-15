@@ -110,8 +110,25 @@ Object storage grows with evidence; plan 1–2 TB per cycle for large entities a
 | RPO / RTO | ≤ 15 minutes / ≤ 4 hours (medium size) |
 | Restore test | Quarterly, documented |
 
-## 7. What changes from today's setup
+## 7. As built (batch 6e)
 
-- Google Fonts are currently loaded from the internet: they must be **bundled** with the web app.
-- The Jouf University logo is built into the login page: branding must move to **settings**.
-- Development-only pieces (`mock-api/`, debug files, `caddy.exe` and helper scripts in the repo root) are excluded from release packages.
+The release package lives in [`deploy/`](../../deploy/README.md): a Compose file for one installation, the Nginx reverse proxy (TLS, HSTS, CSP, 60 MB uploads), `.env.example`, the install / upgrade / backup guide and `make-release.sh`, which writes the offline package (images + compose + checksums).
+
+| Topic | As built |
+|---|---|
+| Evidence storage | `QIYAS_STORAGE=minio`: content-addressed private objects (`objects/ab/<sha256>`), integrity-checked on every read, optional server-side encryption. MinIO stopped publishing community images in 2025; the compose file uses Chainguard's MinIO build, pinned by digest. Any S3-compatible store works. |
+| Virus scanning | ClamAV over clamd `INSTREAM`. Fails closed: a timeout, a size limit or an unreachable daemon marks the file as not clean. The API refuses to start in production without ClamAV (`QIYAS_ALLOW_DEV_SCANNER=true` only for test installations). |
+| Framework data | The official DGA v5.0 and v4.0 files and their crosswalk ship in the API image and load at first start (new versions only, activated). |
+| First administrator | `createAdmin` command inside the API container (see the install guide); everything else is set in the app. |
+| Branding | Organization name and logo (PNG/JPEG/WebP, checked by content and scanned) are settings; the sign-in page reads them before sign-in. |
+| Fonts | IBM Plex Sans Arabic and Poppins are bundled with the web app; the CSP allows no external origin. |
+| Health | `GET /api/v2/public/health`: database, storage, scanner; used by the container health checks. |
+| Network | Data services on an internal network; only ClamAV's updater reaches its mirror. |
+
+Not yet: a setup wizard (the admin command plus the Organization page cover it), Redis-backed job queues for reports (reports run on request), MinIO replication and WAL archiving (documented as operator tasks in the guide).
+
+## 8. What changed from the earlier setup
+
+- Google Fonts were loaded from the internet: now **bundled** with the web app (done).
+- The Jouf University logo was built into the login page: branding now comes from **settings** (done; the logo file was removed from the code).
+- Development-only pieces (`mock-api/`, debug files, `caddy.exe` and helper scripts in the repo root) are excluded from the images by `.dockerignore` and are not part of release packages (done).

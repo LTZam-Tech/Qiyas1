@@ -18,6 +18,10 @@ class Database {
       max: config.database.poolMax,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
+      // The original tables live in "public" and are queried unqualified. Pin the search path so a
+      // database user named like another schema (e.g. "qiyas") never redirects them; Qiyas Phase 1
+      // always names its schema explicitly.
+      options: '-c search_path=public',
     });
 
     this.pool.on('error', (err: Error) => {

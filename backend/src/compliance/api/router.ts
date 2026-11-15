@@ -6,6 +6,7 @@ import express, { RequestHandler, Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
 import * as admin from '../admin/admin';
+import { removeLogo, setLogo } from '../admin/branding';
 import { ComplianceError, audit, mustOne } from '../core/context';
 import { can } from '../domain/permissions';
 import { EvidenceDeps, linkEvidence, submitEvidence, uploadEvidence, withdrawEvidence } from '../evidence/evidence';
@@ -260,6 +261,12 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
     durationBusinessDays: z.number().int().min(0).nullish(), reminderDays: z.array(z.number().int().min(0)).optional(),
     escalationAfterBusinessDays: z.number().int().min(0).optional(), repeatEveryBusinessDays: z.number().int().min(1).nullish(), isActive: z.boolean().optional(),
   }), req.body))));
+  r.post('/admin/settings/logo', upload.single('file'), route(opts, (ctx, req) => {
+    const f = uploaded(req);
+    if (!f) throw new ComplianceError('validation', 'Attach an image');
+    return setLogo(ctx, opts.evidence, { content: f.buffer, filename: utf8Name(f.originalname) });
+  }));
+  r.delete('/admin/settings/logo', route(opts, (ctx) => removeLogo(ctx)));
   r.put('/admin/settings', route(opts, (ctx, req) => admin.saveOrgSettings(ctx, parse(z.object({ nameAr: text(), nameEn: text(), defaultLanguage: z.enum(['ar', 'en', 'ur']).optional() }), req.body))));
 
   return r;

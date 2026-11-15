@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --watch src --exec ts-node -r tsconfig-paths/register src/server.ts",
-    "build": "tsc && tsc-alias && node -e \"require('fs').cpSync('src/compliance/db/migrations','dist/compliance/db/migrations',{recursive:true})\"",
+    "build": "tsc && tsc-alias && node -e \"const fs=require('fs');fs.cpSync('src/compliance/db/migrations','dist/compliance/db/migrations',{recursive:true});fs.cpSync('src/compliance/framework/data','dist/compliance/framework/data',{recursive:true})\"",
     "start": "node dist/server.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch",

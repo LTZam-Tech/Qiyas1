@@ -1,6 +1,7 @@
 // Administration (BR-ADM): people and roles, departments, deadline policies, organization.
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import { env } from '../../config/env.js';
 import { makeT } from '../../i18n/index.js';
 import { api } from '../../services/qiyasApi.js';
 import useToast from '../../hooks/useToast.js';
@@ -237,19 +238,50 @@ Deadlines.propTypes = sub;
 
 function Organization({ lang, notify }) {
   const t = makeT(lang);
-  const [form, setForm] = useState({ nameAr: '', nameEn: '', defaultLanguage: 'ar' });
+  const [form, setForm] = useState(null);
+  const branding = useApi(() => api.get('/public/branding'), []);
   const act = useAction();
+  const fileInput = useRef(null);
+  const current = form ?? (branding.data ? { nameAr: branding.data.nameAr ?? '', nameEn: branding.data.nameEn ?? '', defaultLanguage: branding.data.defaultLanguage ?? 'ar' } : { nameAr: '', nameEn: '', defaultLanguage: 'ar' });
+  const set = (k) => (e) => setForm({ ...current, [k]: e.target.value });
+  const logoUrl = branding.data?.hasLogo ? `${env.apiBaseUrl.replace(/\/v1\/?$/, '/v2')}/public/branding/logo?v=${branding.data.version}` : null;
+  const upload = (e) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    const data = new FormData();
+    data.append('file', f);
+    act.run(() => api.upload('/admin/settings/logo', data), () => { notify(t('حُفظ الشعار', 'Logo saved', 'لوگو محفوظ ہو گیا')); branding.reload(); });
+  };
   return (
     <section className={`q-card q-card-pad ${s.form}`} style={{ maxWidth: 560 }}>
-      <label className={s.field}>{t('اسم الجهة بالعربية', 'Organization name (Arabic)', 'ادارے کا نام (عربی)')}<input className="q-input" dir="rtl" value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} /></label>
-      <label className={s.field}>{t('اسم الجهة بالإنجليزية', 'Organization name (English)', 'ادارے کا نام (انگریزی)')}<input className="q-input" dir="ltr" value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} /></label>
+      <p className={s.sub}>{t('يظهر الاسم والشعار في صفحة الدخول وفي التقارير. لكل جهة إعداداتها؛ لا تُضمَّن في الإصدار.',
+        'The name and logo appear on the sign-in page and in reports. Each entity sets its own; they are not part of the release.',
+        'نام اور لوگو سائن ان صفحے اور رپورٹس میں نظر آتے ہیں۔ ہر ادارہ اپنا مقرر کرتا ہے؛ یہ ریلیز کا حصہ نہیں۔')}</p>
+      <label className={s.field}>{t('اسم الجهة بالعربية', 'Organization name (Arabic)', 'ادارے کا نام (عربی)')}<input className="q-input" dir="rtl" value={current.nameAr} onChange={set('nameAr')} /></label>
+      <label className={s.field}>{t('اسم الجهة بالإنجليزية', 'Organization name (English)', 'ادارے کا نام (انگریزی)')}<input className="q-input" dir="ltr" value={current.nameEn} onChange={set('nameEn')} /></label>
       <label className={s.field}>{t('اللغة الافتراضية', 'Default language', 'طے شدہ زبان')}
-        <select className="q-input" value={form.defaultLanguage} onChange={(e) => setForm({ ...form, defaultLanguage: e.target.value })}>
+        <select className="q-input" value={current.defaultLanguage} onChange={set('defaultLanguage')}>
           <option value="ar">العربية</option><option value="en">English</option><option value="ur">اردو</option>
         </select>
       </label>
+      <div><button type="button" className="q-btn q-btn-primary" disabled={!current.nameAr || !current.nameEn || act.busy}
+        onClick={() => act.run(() => api.put('/admin/settings', current), () => { notify(t('حُفظت الإعدادات', 'Settings saved', 'ترتیبات محفوظ ہو گئیں')); setForm(null); branding.reload(); })}>{t('حفظ', 'Save', 'محفوظ کریں')}</button></div>
+      <div className={s.field}>{t('الشعار (PNG أو JPEG أو WebP، حتى 1 م.ب)', 'Logo (PNG, JPEG or WebP, up to 1 MB)', 'لوگو (PNG، JPEG یا WebP، 1 MB تک)')}
+        <div className={s.row}>
+          {logoUrl && <img src={logoUrl} alt="" style={{ height: 48, maxWidth: 160, objectFit: 'contain', background: 'var(--surface-2)', borderRadius: 8, padding: 4 }} />}
+          <input ref={fileInput} type="file" hidden accept=".png,.jpg,.jpeg,.webp" onChange={upload} />
+          <button type="button" className="q-btn q-btn-secondary" disabled={act.busy || !branding.data?.nameAr} onClick={() => fileInput.current?.click()}>
+            {logoUrl ? t('تغيير الشعار', 'Change logo', 'لوگو تبدیل کریں') : t('رفع الشعار', 'Upload logo', 'لوگو اپ لوڈ کریں')}
+          </button>
+          {logoUrl && (
+            <button type="button" className="q-btn q-btn-ghost" disabled={act.busy} onClick={() => act.run(() => api.del('/admin/settings/logo'), () => branding.reload())}>
+              {t('إزالة', 'Remove', 'ہٹائیں')}
+            </button>
+          )}
+        </div>
+      </div>
       <ErrorNote error={act.error} lang={lang} />
-      <div><button type="button" className="q-btn q-btn-primary" disabled={!form.nameAr || !form.nameEn || act.busy} onClick={() => act.run(() => api.put('/admin/settings', form), () => notify(t('حُفظت الإعدادات', 'Settings saved', 'ترتیبات محفوظ ہو گئیں')))}>{t('حفظ', 'Save', 'محفوظ کریں')}</button></div>
     </section>
   );
 }

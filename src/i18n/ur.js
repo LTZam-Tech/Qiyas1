@@ -80,7 +80,6 @@ const UR = {
   'Track compliance across perspectives, axes and standards': 'تناظرات، محوروں اور معیارات میں تعمیل پر نظر رکھیں',
   'One evidence locker with a full audit trail': 'تبدیلیوں کے مکمل ریکارڈ کے ساتھ ثبوت کا ایک ہی ذخیرہ',
   'Role-based review and approval workflow': 'کرداروں اور اختیارات کے مطابق جائزہ اور منظوری',
-  'Prepared for Jouf University': 'جامعہ الجوف کے لیے تیار کردہ',
   'Sign in to Qiyas': 'قیاس میں لاگ اِن کریں',
   'Enter your work email and password to continue.': 'جاری رکھنے کے لیے اپنا دفتری ای میل اور پاس ورڈ درج کریں۔',
   'Email': 'ای میل',

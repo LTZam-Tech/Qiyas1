@@ -1,0 +1,136 @@
+# Qiyas — one on-premises installation (docs/phase1/09-deployment.md).
+# Usage: copy .env.example to .env, set the secrets, put the certificate in ./certs, then: docker compose up -d
+# Only the web container publishes ports; databases, storage and the virus scanner sit on an internal network.
+name: qiyas
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [data]
+
+  redis:
+    image: redis:7-alpine
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set in .env}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks: [data]
+
+  minio:
+    # MinIO no longer publishes community images to Docker Hub or quay.io; this is MinIO built
+    # from source and patched by Chainguard, pinned by digest (update the digest with each release).
+    image: cgr.dev/chainguard/minio@sha256:18c8fa28697b25e0f34c6faae171079e88a03efb8e76a21d3b5d07b4e3cbef3e
+    command: ["server", "/home/nonroot/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set in .env}
+    volumes:
+      # mounted on the image's home folder so the non-root MinIO user owns it
+      - minio_data:/home/nonroot
+    # the image has no shell for a health check; the API's own health check covers storage
+    restart: unless-stopped
+    networks: [data]
+
+  clamav:
+    image: clamav/clamav:1.4
+    environment:
+      # evidence files may be up to 50 MB
+      CLAMD_CONF_StreamMaxLength: 100M
+      CLAMD_CONF_MaxFileSize: 100M
+      CLAMD_CONF_MaxScanSize: 200M
+      # without internet access, point FreshClam at the client's signature mirror, e.g.
+      # FRESHCLAM_CONF_PrivateMirror: http://clamav-mirror.entity.local
+    volumes:
+      - clamav_db:/var/lib/clamav
+    # "updates" lets FreshClam reach its signature mirror; nothing else leaves the data network
+    networks: [data, updates]
+    healthcheck:
+      test: ["CMD-SHELL", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 180s
+    restart: unless-stopped
+
+  api:
+    image: qiyas-api:${QIYAS_VERSION:-latest}
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: "8000"
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      QIYAS_STORAGE: minio
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: "9000"
+      MINIO_USE_SSL: "false"
+      QIYAS_CLAMAV_HOST: clamav
+      QIYAS_CLAMAV_PORT: "3310"
+      BODY_LIMIT: 5mb
+      UPLOAD_MAX_FILE_SIZE_MB: "50"
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      minio: { condition: service_started }
+      clamav: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/api/v2/public/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    networks: [data, app]
+
+  web:
+    image: qiyas-web:${QIYAS_VERSION:-latest}
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+    ports:
+      - "${QIYAS_HTTP_PORT:-80}:80"
+      - "${QIYAS_HTTPS_PORT:-443}:443"
+    volumes:
+      # the client's certificate: fullchain.pem and privkey.pem (an internal CA is fine)
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+    networks: [app]
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  clamav_db:
+
+networks:
+  data:
+    internal: true
+  app:
+  updates:
