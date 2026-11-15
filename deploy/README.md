@@ -41,6 +41,22 @@ updater can reach its mirror.
    - Deadlines (SLA policies).
    The official DGA standards **v5.0** and **v4.0**, their crosswalk, and the regulations catalogue are loaded automatically at first start. A consultant then creates the measurement cycle.
 
+## Sharing a server with other sites
+
+When the server already runs a web server for other sites on ports 80/443, Qiyas must not take those
+ports. Run it behind that web server instead:
+
+1. Start Qiyas on the local port only (127.0.0.1:8088, not reachable from outside):
+   `docker compose -f docker-compose.yml -f docker-compose.behind-proxy.yml up -d --build`
+   (use the same `-f … -f …` pair for every later `docker compose` command, or set
+   `COMPOSE_FILE=docker-compose.yml:docker-compose.behind-proxy.yml` in `.env`).
+2. Add a site for the Qiyas domain to the existing web server. For nginx: `host-nginx-qiyas.conf`
+   (copy to `/etc/nginx/sites-available/qiyas`, set `server_name`, link it into `sites-enabled`, `nginx -t`, reload).
+3. Certificate through that web server, which keeps serving the other sites: `certbot --nginx -d <domain>`.
+   Renewal is automatic (certbot's timer) and needs no Qiyas restart. `./certs` is not used in this mode.
+
+Other sites are untouched: only requests for the Qiyas domain are forwarded.
+
 ## Upgrade
 
 1. Back up (below).

@@ -1,0 +1,14 @@
+# Overlay for a server that already runs a web server for other sites (it keeps ports 80/443).
+#   docker compose -f docker-compose.yml -f docker-compose.behind-proxy.yml up -d --build
+# Qiyas then listens only on 127.0.0.1:8088 (plain HTTP, reachable from this server only);
+# the existing web server terminates TLS for the Qiyas domain and forwards to it.
+services:
+  web:
+    ports: !override
+      - "127.0.0.1:${QIYAS_LOCAL_PORT:-8088}:8080"
+    volumes: !override
+      - ./nginx-behind-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+  api:
+    environment:
+      # user → server's web server → Qiyas web container → API
+      TRUST_PROXY_HOPS: "2"
