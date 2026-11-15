@@ -8,6 +8,7 @@ import { ComplianceError, ServiceContext, audit, fromTransition, mustOne, requir
 import { actorsFor } from '../domain/permissions';
 import { CycleStatus, cycleMachine } from '../domain/stateMachines';
 import { ValidationIssue, validateFrameworkFile } from './frameworkFile';
+import { recomputeRequirement } from '../evidence/readiness';
 
 export interface ImportResult {
   frameworkVersionId: string;
@@ -132,9 +133,9 @@ export async function setApplicability(ctx: ServiceContext, cycleRequirementId: 
   if (cr.status === 'closed' || cr.status === 'archived') throw new ComplianceError('conflict', 'The cycle is closed');
   if (!applicable && (reason ?? '').trim().length < 3) throw new ComplianceError('validation', 'A reason is required to mark a requirement not applicable');
   await ctx.db.query(`UPDATE qiyas.cycle_requirements SET is_applicable = $2, not_applicable_reason = $3,
-      applicability_set_by = $4, applicability_set_at = $5,
-      readiness = CASE WHEN $2 THEN (CASE WHEN readiness = 'not_applicable' THEN 'not_started' ELSE readiness END) ELSE 'not_applicable' END
-     WHERE id = $1`, [cycleRequirementId, applicable, applicable ? null : reason, ctx.actor.userId, ctx.now]);
+      applicability_set_by = $4, applicability_set_at = $5 WHERE id = $1`,
+  [cycleRequirementId, applicable, applicable ? null : reason, ctx.actor.userId, ctx.now]);
+  await recomputeRequirement(ctx.db, cycleRequirementId);
   await audit(ctx, { action: 'requirement.applicability', entityType: 'cycle_requirement', entityId: cycleRequirementId,
     before: { applicable: cr.is_applicable }, after: { applicable }, reason });
 }
