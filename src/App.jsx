@@ -23,7 +23,7 @@ import SubmissionPage from './pages/p1/SubmissionPage.jsx';
 import BankPage from './pages/p1/BankPage.jsx';
 import LibraryPage from './pages/p1/LibraryPage.jsx';
 import AdminPage from './pages/p1/AdminPage.jsx';
-import ReportsPage from './pages/ReportsPage.jsx';
+import ReportsPage from './pages/p1/ReportsPage.jsx';
 import ErrorLogPage from './pages/ErrorLogPage.jsx';
 
 const PAGE_COMPONENTS = {

@@ -103,7 +103,6 @@ const UR = {
 
   // ---------- Evidence locker & upload ----------
   'Filter by status': 'صورتحال کے لحاظ سے فلٹر کریں',
-  'Close': 'بند کریں',
   'Cancel': 'منسوخ کریں',
 
   // ---------- Files ledger ----------
@@ -111,23 +110,7 @@ const UR = {
   // ---------- Review ----------
 
   // ---------- Reports ----------
-  'Self-assessment report': 'خود تشخیصی رپورٹ',
-  'Compliance level across every perspective and standard.': 'ہر تناظر اور معیار میں تعمیل کی سطح۔',
-  'Executive summary': 'انتظامی خلاصہ',
-  'A short view of current progress and key indicators.': 'موجودہ پیش رفت اور اہم اشاریوں کا مختصر جائزہ۔',
-  'Non-compliance report': 'عدم تعمیل کی رپورٹ',
-  'Standards not met, with remediation plans and next actions.': 'پورے نہ ہونے والے معیارات، اصلاحی منصوبوں اور اگلے اقدامات کے ساتھ۔',
-  'Evidence register': 'ثبوت کا رجسٹر',
-  'Every uploaded file with its review details and approval state.': 'ہر اپ لوڈ شدہ فائل، اس کے جائزے کی تفصیلات اور منظوری کی صورتحال کے ساتھ۔',
-  'Reviewer SLA report': 'جائزہ کاروں کی SLA رپورٹ',
-  'Review cycle times by team and average time to approval.': 'ٹیم کے لحاظ سے جائزے کا دورانیہ اور منظوری کا اوسط وقت۔',
-  'Full audit pack': 'مکمل آڈٹ پیکج',
-  'All official documents, evidence and review results in one file.': 'تمام سرکاری دستاویزات، ثبوت اور جائزے کے نتائج ایک فائل میں۔',
-  'Reports & audit packs': 'رپورٹس اور آڈٹ پیکجز',
-  'Generate ready-to-share reports for leadership and auditors.': 'قیادت اور آڈیٹرز کے لیے شیئر کرنے کے قابل رپورٹس تیار کریں۔',
-  'Preview': 'پیش منظر',
   'Download': 'ڈاؤن لوڈ',
-  'Full preview becomes available once the reporting service is connected.': 'رپورٹنگ سروس سے منسلک ہونے کے بعد مکمل پیش منظر دستیاب ہو گا۔',
 
   // ---------- Error log ----------
   'All': 'سب',

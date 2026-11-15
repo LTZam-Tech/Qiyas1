@@ -76,6 +76,8 @@ Purpose: answer for top management *"are we ready, what is still not posted, and
 
 Report rules: generated asynchronously; the report shows the cycle and the "data as of" timestamp; files are kept for 30 days (configurable); each generation is audited.
 
+**As built (batch 6d).** All eight reports are generated on request from live data (`GET /api/v2/reports/:code`), in the reader's language, filtered by role and scope (a department manager sees only managed departments; the submission officer and executives see accepted evidence only), and audited as `report.generated`. Excel is built on the server (one cover sheet with the summary, one sheet per section, right to left for Arabic and Urdu). PDF is the browser's *Save as PDF* of a print view of the same data, which shapes Arabic and Urdu text correctly without server fonts. Reports are not yet queued or kept for 30 days: at Phase 1 data sizes they return in seconds; queuing and retention are left for when a client's volume needs them.
+
 ## 7. Metrics definitions
 
 | Metric | Definition |

@@ -22,6 +22,8 @@ import { approveExtension, askForMoreTime, declineAsk, forwardAsk, rejectExtensi
 import { assignTask, cancelAssignment, createAssignment, publishAssignment, startTask } from '../work/tasks';
 import { ApiOptions, AuthedRequest, FileResponse, parse, route } from './http';
 import * as q from './queries';
+import { REPORT_CODES, ReportCode, availableReports, generateReport } from '../reports/reports';
+import { reportToXlsx } from '../reports/xlsx';
 
 const id = z.string().uuid();
 const date = z.coerce.date();
@@ -209,6 +211,22 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
   get('/library/:id/file', async (ctx, req) => {
     const f = await libraryFile(ctx, p(req, 'id'));
     return new FileResponse(await opts.evidence.storage.get(f.key), f.filename, f.mimeType);
+  });
+
+  // ---- reports (docs 08 §6): the same data on screen, printed to PDF, or as Excel
+  const lang = z.enum(['ar', 'en', 'ur']).default('ar');
+  get('/reports', (ctx, req) => availableReports(ctx, parse(lang, req.query.lang) ?? 'ar'));
+  get('/reports/:code', async (ctx, req) => {
+    const code = parse(z.enum(REPORT_CODES), req.params.code) as ReportCode;
+    const qs = parse(z.object({
+      cycleId: id, lang, format: z.enum(['view', 'xlsx']).default('view'), cycleRequirementId: id.optional(),
+      from: z.string().optional(), to: z.string().optional(), entityType: z.string().optional(), action: z.string().optional(),
+    }), req.query);
+    const report = await generateReport(ctx, code, qs, qs.lang ?? 'ar', qs.format ?? 'view');
+    if (qs.format === 'view') return report;
+    const day = report.asOf.slice(0, 10);
+    return new FileResponse(await reportToXlsx(report, ctx.calendar.utcOffsetMinutes), `${report.title} - ${report.cycle?.name ?? ''} - ${day}.xlsx`,
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   });
 
   // ---- notifications
