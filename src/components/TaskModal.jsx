@@ -325,15 +325,25 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
     <div className={styles.overlay} onClick={() => { resetForm(); onClose(); }}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
+          <div className={styles.headingText}>
+            <h2 className={styles.title}>{lang === 'ar' ? 'إنشاء مهمة جديدة' : 'Create New Task'}</h2>
+            <p className={styles.subtitle}>
+              {lang === 'ar'
+                ? 'حدد المعيار والمسؤول والموعد النهائي للشاهد المطلوب.'
+                : 'Choose the standard, owner and due date for the required evidence.'}
+            </p>
+          </div>
           <button
             type="button"
             className={styles.closeButton}
             onClick={() => { resetForm(); onClose(); }}
             aria-label="إغلاق"
           >
-            ×
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
-          <h2 className={styles.title}>{lang === 'ar' ? 'إنشاء مهمة جديدة' : 'Create New Task'}</h2>
         </div>
 
         {isLoadingData ? (
@@ -342,7 +352,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
           <form className={styles.form} onSubmit={handleSubmit}>
             {error && <div className={styles.error}>{error}</div>}
 
-            <div className={styles.formGroup}>
+            <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <label htmlFor="title" className={styles.label}>
                 {lang === 'ar' ? 'عنوان المهمة' : 'Task Title'} <span className={styles.required}>*</span>
               </label>
@@ -547,7 +557,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
               </div>
             </div>
 
-            <div className={styles.formGroup}>
+            <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <label htmlFor="description" className={styles.label}>
                 {lang === 'ar' ? 'التعليمات / الوصف' : 'Instructions / Description'}
               </label>

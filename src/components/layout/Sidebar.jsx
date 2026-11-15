@@ -1,7 +1,9 @@
 import PropTypes from 'prop-types';
 import { Icons } from '../../utils/icons.jsx';
+import BrandMark from '../BrandMark.jsx';
 import styles from './Sidebar.module.css';
-import joufLogo from '../../assets/jouf_logo.png';
+import { ROLE_LABELS, getDisplayName, getInitials } from '../../utils/user.js';
+
 
 export default function Sidebar({
   sideOpen,
@@ -9,105 +11,100 @@ export default function Sidebar({
   page,
   lang,
   navItems,
-  expandedGroups,
-  onToggleGroup,
   onNavigate,
   user,
   onLogout,
   filteredNavItems,
-  onToggleSidebar,
+  onClose,
 }) {
+  const t = (ar, en) => (lang === 'ar' ? ar : en);
   const list = filteredNavItems.length > 0 ? filteredNavItems : navItems;
+  // On tablet/mobile the sidebar is a drawer: always full width when visible.
+  const collapsed = !isTablet && !sideOpen;
+  const name = getDisplayName(user, lang);
+  const role = ROLE_LABELS[user?.role] || { ar: user?.role || '', en: user?.role || '' };
+
+  const renderItem = (item) => {
+    const active = page === item.key || (page === 'approvals' && item.key === 'review') || (page === 'analytics' && item.key === 'reports');
+    const label = lang === 'ar' ? item.label : item.labelEn;
+    return (
+      <li key={item.key}>
+        <button
+          type="button"
+          className={`${styles.item} ${active ? styles.itemActive : ''}`}
+          onClick={() => onNavigate(item)}
+          aria-current={active ? 'page' : undefined}
+          title={collapsed ? label : undefined}
+        >
+          <span className={styles.itemIcon}>{Icons[item.iconKey] || Icons.alertCircle}</span>
+          {!collapsed && <span className={styles.itemLabel}>{label}</span>}
+        </button>
+      </li>
+    );
+  };
 
   return (
     <aside
-      className={`${styles.sidebar} ${!sideOpen ? styles.sidebarCollapsed : ''}`}
-      aria-label="Main navigation sidebar"
+      className={[
+        styles.sidebar,
+        collapsed ? styles.collapsed : '',
+        isTablet ? styles.drawer : '',
+        isTablet && sideOpen ? styles.drawerOpen : '',
+      ].join(' ')}
+      aria-label={t('القائمة الرئيسية', 'Main navigation')}
     >
-      {/* 1. Sidebar Header (Logo on right in RTL) */}
-      <div className={styles.sidebarHeader}>
-        <img src={joufLogo} alt="Jouf University" className={styles.joufLogo} />
+      <div className={styles.brand}>
+        <BrandMark size={38} />
+        {!collapsed && (
+          <div className={styles.brandText}>
+            <span className={styles.brandName}>{t('قياس', 'Qiyas')}</span>
+            <span className={styles.brandSub}>{t('منصة الامتثال · التزام تك', 'Compliance · IltizamTech')}</span>
+          </div>
+        )}
+        {isTablet && (
+          <button type="button" className={styles.closeBtn} onClick={onClose} aria-label={t('إغلاق القائمة', 'Close menu')}>
+            {Icons.x}
+          </button>
+        )}
       </div>
 
-      <nav className={styles.nav} aria-label="Main navigation">
-        {list.map((item) => {
-          const active = page === item.key;
-          const label = lang === 'ar' ? item.label : item.labelEn;
-          const isExpanded = expandedGroups.has(item.key);
-
-          // All items are now card-wrapped
-          return (
-            <div key={item.key} className={styles.cardWrapper}>
-              <button
-                type="button"
-                className={`${styles.navBtn} ${active && !item.isGroup ? styles.activeSubItem : ''}`}
-                onClick={() => (item.isGroup ? onToggleGroup(item.key) : onNavigate(item))}
-                aria-expanded={item.isGroup ? isExpanded : undefined}
-              >
-                <div className={styles.navBtnContent}>
-                  {sideOpen && <span className={styles.navLabel}>{label}</span>}
-                  <span className={styles.icon}>{item.key === 'dash' ? Icons.dashboard : (Icons[item.iconKey] || Icons.alertCircle)}</span>
-                </div>
-
-                {sideOpen && item.isGroup && (
-                   <span className={styles.chevron} style={{ transform: isExpanded ? 'rotate(90deg)' : (lang === 'ar' ? 'rotate(180deg)' : 'rotate(0deg)'), display: 'flex' }}>
-                     {Icons.chevron}
-                   </span>
-                )}
-              </button>
-
-              {item.isGroup && isExpanded && sideOpen && (
-                <div className={styles.childrenList}>
-                  {item.children?.map((child) => {
-                    const childActive = page === child.key;
-                    const childLabel = lang === 'ar' ? child.label : child.labelEn;
-                    return (
-                      <button
-                        type="button"
-                        key={child.key}
-                        className={`${styles.childBtn} ${childActive ? styles.childBtnActive : ''}`}
-                        onClick={() => onNavigate(child)}
-                      >
-                        <span className={styles.navLabel}>{childLabel}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+      <nav className={styles.nav} aria-label={t('التنقل', 'Navigation')}>
+        {list.map((item) =>
+          item.isGroup ? (
+            <div key={item.key} className={styles.section}>
+              {collapsed ? (
+                <div className={styles.sectionDivider} aria-hidden="true" />
+              ) : (
+                <div className={styles.sectionLabel}>{lang === 'ar' ? item.label : item.labelEn}</div>
               )}
+              <ul className={styles.list}>{item.children?.map(renderItem)}</ul>
             </div>
-          );
-        })}
+          ) : (
+            <ul key={item.key} className={styles.list}>
+              {renderItem(item)}
+            </ul>
+          ),
+        )}
       </nav>
 
-      <button 
-        className={styles.pullTab} 
-        onClick={onToggleSidebar}
-        aria-label={sideOpen ? "Close sidebar" : "Open sidebar"}
-      >
-        <span style={{ transform: sideOpen ? (lang === 'ar' ? 'rotate(0deg)' : 'rotate(180deg)') : (lang === 'ar' ? 'rotate(180deg)' : 'rotate(0deg)'), display: 'flex' }}>
-          {Icons.chevron}
-        </span>
-      </button>
-
-      {/* Footer Profile Section */}
       <div className={styles.footer}>
-        <div className={styles.profileCard}>
-          {sideOpen && (
-            <div className={styles.profileInfo}>
-              <div className={styles.profileName}>
-                {lang === 'ar' ? 'د. أحمد المحمد' : 'Dr. Ahmed'}
-              </div>
-              <div className={styles.profileRole}>admin</div>
+        <div className={styles.profile} title={collapsed ? name : undefined}>
+          <span className={styles.avatar}>{getInitials(name)}</span>
+          {!collapsed && (
+            <div className={styles.profileText}>
+              <span className={styles.profileName}>{name}</span>
+              <span className={styles.profileRole}>{lang === 'ar' ? role.ar : role.en}</span>
             </div>
           )}
-          <div className={styles.avatar}>
-             <img src="https://i.pravatar.cc/150?u=dean" alt="Profile" />
-          </div>
         </div>
-        
-        <button type="button" className={styles.logoutBtn} onClick={onLogout}>
-           {sideOpen && <span>{lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}</span>}
-           <span className={styles.logoutIcon}>{Icons.redLogout}</span>
+        <button
+          type="button"
+          className={styles.logout}
+          onClick={onLogout}
+          aria-label={t('تسجيل الخروج', 'Log out')}
+          title={t('تسجيل الخروج', 'Log out')}
+        >
+          {Icons.logout}
         </button>
       </div>
     </aside>
@@ -120,15 +117,14 @@ Sidebar.propTypes = {
   page: PropTypes.string.isRequired,
   lang: PropTypes.oneOf(['ar', 'en']).isRequired,
   navItems: PropTypes.arrayOf(PropTypes.object).isRequired,
-  expandedGroups: PropTypes.instanceOf(Set).isRequired,
-  onToggleGroup: PropTypes.func.isRequired,
   onNavigate: PropTypes.func.isRequired,
   user: PropTypes.shape({
-    nameAr: PropTypes.string,
-    nameEn: PropTypes.string,
+    full_name: PropTypes.string,
+    full_name_en: PropTypes.string,
+    email: PropTypes.string,
     role: PropTypes.string,
   }),
   onLogout: PropTypes.func.isRequired,
   filteredNavItems: PropTypes.arrayOf(PropTypes.object).isRequired,
-  onToggleSidebar: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
 };

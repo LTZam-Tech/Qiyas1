@@ -23,36 +23,15 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       const lang = this.props.lang || 'ar';
       return (
-        <section
-          role="alert"
-          style={{
-            minHeight: "100vh",
-            display: "grid",
-            placeItems: "center",
-            background: "#f8f6fb",
-            padding: 24,
-            textAlign: "center",
-            fontFamily: "Cairo, sans-serif",
-          }}
-        >
-          <div>
-            <h1 style={{ marginBottom: 12, color: "#5C3A73" }}>{lang === 'ar' ? 'حدث خطا غير متوقع' : 'An Unexpected Error Occurred'}</h1>
-            <p style={{ marginBottom: 16, color: "#7A6B8A" }}>{this.state.errorMessage}</p>
-            <button
-              type="button"
-              onClick={this.reset}
-              style={{
-                border: "none",
-                borderRadius: 8,
-                padding: "10px 14px",
-                background: "#80519F",
-                color: "#fff",
-                cursor: "pointer",
-              }}
-            >
-              {lang === 'ar' ? 'حاول مرة اخرى' : 'Try Again'}
-            </button>
-          </div>
+        <section role="alert" className="q-state" style={{ minHeight: "100vh", background: "var(--bg)" }}>
+          <span className="q-state-icon" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>!</span>
+          <h1 className="q-state-title" style={{ fontSize: "1.3rem" }}>
+            {lang === 'ar' ? 'حدث خطأ غير متوقع' : 'Something went wrong'}
+          </h1>
+          <p className="q-muted" style={{ maxWidth: 480 }}>{this.state.errorMessage}</p>
+          <button type="button" className="q-btn q-btn-primary" onClick={this.reset}>
+            {lang === 'ar' ? 'حاول مرة أخرى' : 'Try again'}
+          </button>
         </section>
       );
     }

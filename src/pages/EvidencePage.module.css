@@ -1,171 +1,94 @@
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.heading {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: #5c3a73;
+.count {
+  margin-inline-start: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--border);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-2);
 }
 
 .grid {
   display: grid;
-  gap: 20px;
-  padding: 10px 0;
-}
-
-.gridDesktop {
-  grid-template-columns: repeat(5, 1fr);
-}
-
-.gridMobile {
-  grid-template-columns: 1fr;
-}
-
-/* Responsive steps for 5-column grid */
-@media (max-width: 1600px) {
-  .gridDesktop {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (max-width: 1280px) {
-  .gridDesktop {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 968px) {
-  .gridDesktop {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .gridDesktop {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
 }
 
 .card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  width: 100%;
-  min-height: 160px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 12px;
-  border-top: 4px solid #43a047;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: 14px;
+  padding: 18px 20px;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
-
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
-
-.cardNon {
-  border-top-color: #d32f2f;
-}
-
-.cardPartial {
-  border-top-color: #f57c00;
-}
-
-.cardFull {
-  border-top-color: #43a047;
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
 }
 
 .cardHead {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
-}
-
-.code {
-  font-size: 15px;
-  font-weight: 800;
-  color: #5c3a73;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .title {
-  font-size: 13px;
+  font-size: 0.98rem;
   font-weight: 600;
-  color: #2d1b3d;
-  margin-bottom: 4px;
+  line-height: 1.45;
+  color: var(--text);
+  flex: 1;
 }
 
-.titleEn {
-  font-size: 11px;
-  color: #7a6b8a;
-  margin-bottom: 10px;
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .meta {
-  font-size: 11px;
-  color: #7a6b8a;
-  text-align: center;
-  margin-top: 6px;
-}
-
-.uploader {
-  border: 2px dashed #e0d4ea;
-  border-radius: 10px;
-  padding: 40px;
-  text-align: center;
-  background: #f4eff9;
-  cursor: pointer;
-  width: 100%;
-  font-family: inherit;
-}
-
-.uploaderIcon {
-  color: #6b4a86;
-  margin-bottom: 10px;
   display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-3);
+}
+.meta b {
+  color: var(--text-2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.addCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-}
-
-.uploaderTitle {
-  font-size: 14px;
-  font-weight: 700;
-  color: #5c3a73;
-}
-
-.uploaderHint {
-  font-size: 12px;
-  color: #7a6b8a;
-  margin-top: 4px;
-}
-
-.uploaderPattern {
-  font-size: 11px;
-  color: #8a5bb0;
-  margin-top: 8px;
-}
-
-.emptyState,
-.loadingState,
-.errorState {
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 16px;
+  gap: 6px;
+  min-height: 168px;
+  padding: 20px;
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--text-2);
   text-align: center;
+  transition: border-color 0.15s var(--ease), background-color 0.15s var(--ease), color 0.15s var(--ease);
 }
-
-.emptyState,
-.loadingState {
-  color: #7a6b8a;
+.addCard:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-text);
 }
-
-.errorState {
-  color: #d32f2f;
-  font-weight: 700;
+.addIcon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--primary-text);
+  margin-bottom: 4px;
 }
+.addTitle { font-weight: 600; font-size: 0.92rem; }
+.addHint { font-size: 0.8rem; color: var(--text-3); }

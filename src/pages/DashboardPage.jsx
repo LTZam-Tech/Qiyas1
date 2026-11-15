@@ -1,28 +1,23 @@
 import PropTypes from 'prop-types';
-import { cardGradients } from '../utils/theme.js';
 import StatCard from '../components/StatCard.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
+import PageHeader from '../components/PageHeader.jsx';
+import StateView from '../components/StateView.jsx';
 import { Icons } from '../utils/icons.jsx';
+import { canAccessPage } from '../utils/permissions.js';
+import { getDisplayName } from '../utils/user.js';
 import useDashboardData from '../hooks/useDashboardData.js';
 import styles from './DashboardPage.module.css';
 
 const EMPTY_DASHBOARD = {
-  kpis: {
-    totalStandards: 0,
-    fullCompliance: 0,
-    partialCompliance: 0,
-    nonCompliance: 0,
-  },
+  kpis: { totalStandards: 0, fullCompliance: 0, partialCompliance: 0, nonCompliance: 0 },
   perspectives: [],
   activities: [],
   alerts: [],
 };
 
 const normalizeDashboardData = (data) => {
-  if (!data || typeof data !== 'object') {
-    return EMPTY_DASHBOARD;
-  }
-
+  if (!data || typeof data !== 'object') return EMPTY_DASHBOARD;
   const kpis = data.kpis && typeof data.kpis === 'object' ? data.kpis : EMPTY_DASHBOARD.kpis;
   return {
     kpis: {
@@ -37,92 +32,224 @@ const normalizeDashboardData = (data) => {
   };
 };
 
-const DashboardPage = ({ isMobile, lang }) => {
+const ACTIVITY_STYLE = {
+  approve: { icon: 'checkCircle', tone: 'success' },
+  reject: { icon: 'xCircle', tone: 'danger' },
+  revision: { icon: 'edit', tone: 'warning' },
+};
+
+function ComplianceRing({ full, partial, total }) {
+  const r = 52;
+  const c = 2 * Math.PI * r;
+  const fullLen = total ? (full / total) * c : 0;
+  const partialLen = total ? (partial / total) * c : 0;
+  return (
+    <svg viewBox="0 0 128 128" className={styles.ring} aria-hidden="true">
+      <circle cx="64" cy="64" r={r} fill="none" stroke="var(--track)" strokeWidth="14" />
+      <circle
+        cx="64" cy="64" r={r} fill="none" stroke="var(--warning)" strokeWidth="14"
+        strokeDasharray={`${partialLen} ${c}`} strokeDashoffset={-fullLen}
+        transform="rotate(-90 64 64)" strokeLinecap="butt"
+      />
+      <circle
+        cx="64" cy="64" r={r} fill="none" stroke="var(--brand-500)" strokeWidth="14"
+        strokeDasharray={`${fullLen} ${c}`} transform="rotate(-90 64 64)" strokeLinecap="butt"
+      />
+    </svg>
+  );
+}
+
+ComplianceRing.propTypes = {
+  full: PropTypes.number.isRequired,
+  partial: PropTypes.number.isRequired,
+  total: PropTypes.number.isRequired,
+};
+
+const DashboardPage = ({ lang, user, onNavigate }) => {
+  const t = (ar, en) => (lang === 'ar' ? ar : en);
   const { data, isLoading, error } = useDashboardData();
-  const safeData = normalizeDashboardData(data);
-  const totalStd = safeData.kpis.totalStandards;
-  const full = safeData.kpis.fullCompliance;
-  const partial = safeData.kpis.partialCompliance;
-  const non = safeData.kpis.nonCompliance;
-  const perspectives = safeData.perspectives;
-  const activities = safeData.activities;
-  const alerts = safeData.alerts;
+  const { kpis, perspectives, activities, alerts } = normalizeDashboardData(data);
+  const { totalStandards: total, fullCompliance: full, partialCompliance: partial, nonCompliance: non } = kpis;
+  const fullPct = total ? Math.round((full / total) * 100) : 0;
+  const needsWork = partial + non;
+  const firstName = getDisplayName(user, lang).replace(/^(د\.|dr\.?)\s*/i, '').split(' ')[0];
+  const go = (key) => onNavigate && canAccessPage(key, user?.role) && onNavigate(key);
+  const canSee = (key) => canAccessPage(key, user?.role);
+
+  const header = (
+    <PageHeader
+      title={firstName ? t(`مرحباً، ${firstName}`, `Welcome back, ${firstName}`) : t('نظرة عامة', 'Overview')}
+      subtitle={t('ملخص مستوى الالتزام والأنشطة الأخيرة في جميع المناظير.', 'Your compliance posture and latest activity across every perspective.')}
+      actions={
+        <>
+          {canSee('tasks') && (
+            <button type="button" className="q-btn q-btn-secondary" onClick={() => go('tasks')}>
+              {Icons.tasks}
+              {t('المهام', 'View tasks')}
+            </button>
+          )}
+          {canSee('evidence') && (
+            <button type="button" className="q-btn q-btn-primary" onClick={() => go('evidence')}>
+              {Icons.upload}
+              {t('رفع شاهد', 'Upload evidence')}
+            </button>
+          )}
+        </>
+      }
+    />
+  );
 
   if (isLoading) {
-    return <p className={styles.emptyState}>{lang === 'ar' ? 'جاري تحميل لوحة التحكم...' : 'Loading dashboard...'}</p>;
+    return (
+      <div className="q-page">
+        {header}
+        <div className={styles.skeletonGrid}>
+          {[0, 1, 2, 3].map((i) => <div key={i} className="q-skeleton" style={{ height: 120, borderRadius: 16 }} />)}
+        </div>
+        <div className="q-skeleton" style={{ height: 280, borderRadius: 16 }} />
+      </div>
+    );
   }
 
   if (error) {
-    return <p className={styles.errorState}>{error}</p>;
+    return (
+      <div className="q-page">
+        {header}
+        <div className="q-card"><StateView kind="error" title={t('تعذر تحميل لوحة التحكم', 'Could not load the dashboard')} message={error} /></div>
+      </div>
+    );
   }
 
   return (
-    <div className={styles.page}>
-      <h2 className={styles.heading}>{lang === 'ar' ? 'المؤشرات الرئيسية للأداء' : 'Key Performance Indicators'}</h2>
-      <div className={`${styles.kpiGrid} ${isMobile ? styles.kpiGridMobile : styles.kpiGridDesktop}`}>
-        <StatCard label={lang === 'ar' ? 'إجمالي المعايير' : 'Total Standards'} value={totalStd} gradient={cardGradients.purple} icon="catalog" change={0} lang={lang} />
-        <StatCard label={lang === 'ar' ? 'التزام كلي' : 'Full Compliance'} value={full} gradient={cardGradients.green} icon="check" change={12.3} lang={lang} />
-        <StatCard label={lang === 'ar' ? 'التزام جزئي' : 'Partial Compliance'} value={partial} gradient={cardGradients.accent} icon="clock" change={8.5} lang={lang} />
-        <StatCard label={lang === 'ar' ? 'عدم الالتزام' : 'Non-Compliance'} value={`${non}`} gradient={cardGradients.teal} icon="x" change={5.2} lang={lang} />
-      </div>
+    <div className="q-page">
+      {header}
 
-      <div className={`${styles.panelGrid} ${isMobile ? styles.panelGridMobile : styles.panelGridDesktop}`}>
-        <div className={styles.panel}>
-          <h3 className={styles.panelTitle}>{lang === 'ar' ? 'نسبة الإنجاز حسب المنظور' : 'Completion by Perspective'}</h3>
-          <div className={styles.rows}>
-            {perspectives.length > 0 ? perspectives.map((p) => (
-              <div key={p.id} className={styles.row}>
-                <span className={styles.percent}>{p.completion}%</span>
-                <div className={styles.progressWrapper}><ProgressBar value={p.completion} height={8} /></div>
-                <span className={styles.perspectiveLabel}>{lang === 'ar' ? p.name : p.nameEn}</span>
-              </div>
-            )) : (
-              <p className={styles.emptyState}>{lang === 'ar' ? 'لا توجد بيانات للمناظير حاليا' : 'No perspective data available'}</p>
+      {alerts.length > 0 && (
+        <section className={styles.alertBar} aria-label={t('تنبيهات', 'Alerts')}>
+          <span className={`q-icon-chip q-tone-warning ${styles.alertIcon}`}>{Icons.alert}</span>
+          <div className={styles.alertText}>
+            <strong>{t('يتطلب انتباهك', 'Needs your attention')}</strong>
+            <ul className={styles.alertList}>
+              {alerts.map((a) => <li key={a}>{a}</li>)}
+            </ul>
+          </div>
+        </section>
+      )}
+
+      <section className={styles.topGrid}>
+        <div className={`q-card ${styles.hero}`}>
+          <div className={styles.ringWrap}>
+            <ComplianceRing full={full} partial={partial} total={total} />
+            <div className={styles.ringCenter}>
+              <span className={styles.ringValue}>{fullPct}%</span>
+              <span className={styles.ringLabel}>{t('التزام كلي', 'fully compliant')}</span>
+            </div>
+          </div>
+          <div className={styles.heroText}>
+            <h2 className="q-section-title">{t('مؤشر الالتزام العام', 'Overall compliance')}</h2>
+            <p className={styles.heroLead}>
+              {total === 0
+                ? t('لا توجد معايير بعد.', 'No standards yet.')
+                : t(`${full} من ${total} معياراً مستوفاة بالكامل.`, `${full} of ${total} standards are fully met.`)}
+            </p>
+            <ul className={styles.legend}>
+              <li><span style={{ background: 'var(--brand-500)' }} />{t('كلي', 'Full')}<b>{full}</b></li>
+              <li><span style={{ background: 'var(--warning)' }} />{t('جزئي', 'Partial')}<b>{partial}</b></li>
+              <li><span style={{ background: 'var(--track)' }} />{t('غير ملتزم', 'Not met')}<b>{non}</b></li>
+            </ul>
+            {needsWork > 0 && canSee('evidence') && (
+              <button type="button" className={styles.linkBtn} onClick={() => go('evidence')}>
+                {t(`${needsWork} معايير تحتاج أدلة`, `${needsWork} standards need evidence`)}
+                <span className={styles.linkArrow}>{Icons.arrowRight}</span>
+              </button>
             )}
           </div>
         </div>
 
-        <div className={styles.panel}>
-          <h3 className={styles.panelTitle}>{lang === 'ar' ? 'النشاطات الأخيرة' : 'Recent Activity'}</h3>
-          <div className={styles.activityRows}>
-            {activities.length > 0 ? activities.map((a, i) => {
-              const dotClass = a.type === 'approve' ? styles.activityDotApprove :
-                               a.type === 'reject' ? styles.activityDotReject :
-                               a.type === 'revision' ? styles.activityDotRevision :
-                               styles.activityDotDefault;
-              const isLast = i === activities.length - 1;
-              return (
-                <div key={a.id} className={`${styles.activityRow} ${isLast ? styles.activityRowLast : ''}`}>
-                  <div className={`${styles.activityDot} ${dotClass}`} />
-                  <div className={styles.activityText}>
-                    <div className={styles.activityMain}><strong>{lang === 'ar' ? a.user_ar : a.user_en}</strong> — {lang === 'ar' ? a.action_ar : a.action_en}</div>
-                    <div className={styles.activityMeta}>{lang === 'ar' ? 'المعيار' : 'Standard'} {a.standard} | {lang === 'ar' ? a.time_ar : a.time_en}</div>
-                  </div>
-                </div>
-              );
-            }) : (
-              <p className={styles.emptyState}>{lang === 'ar' ? 'لا توجد نشاطات حديثة' : 'No recent activities'}</p>
+        <div className={styles.kpiGrid}>
+          <StatCard label={t('إجمالي المعايير', 'Total standards')} value={total} icon="catalog" tone="brand" hint={t('ضمن نطاق التقييم', 'In assessment scope')} />
+          <StatCard label={t('التزام كلي', 'Full compliance')} value={full} icon="checkCircle" tone="success" hint={t(`${fullPct}% من الإجمالي`, `${fullPct}% of total`)} />
+          <StatCard label={t('التزام جزئي', 'Partial compliance')} value={partial} icon="clock" tone="warning" hint={t('أدلة غير مكتملة', 'Evidence incomplete')} />
+          <StatCard label={t('عدم الالتزام', 'Non-compliance')} value={non} icon="xCircle" tone="danger" hint={t('لا توجد أدلة معتمدة', 'No approved evidence')} />
+        </div>
+      </section>
+
+      <section className={styles.panelGrid}>
+        <div className="q-card">
+          <div className="q-card-head">
+            <div>
+              <h2 className="q-section-title">{t('الإنجاز حسب المنظور', 'Progress by perspective')}</h2>
+              <p className="q-section-sub">{t('نسبة الأدلة المعتمدة لكل منظور', 'Share of approved evidence per perspective')}</p>
+            </div>
+            {canSee('catalog') && (
+              <button type="button" className="q-btn q-btn-ghost q-btn-sm" onClick={() => go('catalog')}>
+                {t('الفهرس', 'Catalog')}
+                <span className={styles.flip}>{Icons.arrowRight}</span>
+              </button>
+            )}
+          </div>
+          <div className="q-card-body">
+            {perspectives.length > 0 ? (
+              <ul className={styles.perspList}>
+                {[...perspectives].sort((a, b) => b.completion - a.completion).map((p) => (
+                  <li key={p.id} className={styles.perspRow}>
+                    <div className={styles.perspTop}>
+                      <span className={styles.perspName}>{lang === 'ar' ? p.name : p.nameEn}</span>
+                      <span className={styles.perspPct}>{p.completion}%</span>
+                    </div>
+                    <ProgressBar value={p.completion} height={8} label={lang === 'ar' ? p.name : p.nameEn} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <StateView title={t('لا توجد بيانات', 'No data yet')} message={t('ستظهر نسب الإنجاز عند رفع الأدلة.', 'Progress appears once evidence is uploaded.')} icon="chart" />
             )}
           </div>
         </div>
-      </div>
 
-      <div className={styles.alertBox}>
-        <span className={styles.alertIcon}>{Icons.alert}</span>
-        <div className={styles.alertText}>
-          <div className={styles.alertTitle}>{lang === 'ar' ? 'تنبيهات الاختناقات' : 'Bottleneck Alerts'}</div>
-          <div className={styles.alertBody}>
-            {alerts.length > 0 ? alerts.join(' — ') : (lang === 'ar' ? 'لا توجد تنبيهات حالية' : 'No current alerts')}
+        <div className="q-card">
+          <div className="q-card-head">
+            <div>
+              <h2 className="q-section-title">{t('آخر النشاطات', 'Recent activity')}</h2>
+              <p className="q-section-sub">{t('ما حدث مؤخراً على الأدلة', 'Latest actions on evidence')}</p>
+            </div>
+          </div>
+          <div className="q-card-body">
+            {activities.length > 0 ? (
+              <ol className={styles.timeline}>
+                {activities.map((a) => {
+                  const s = ACTIVITY_STYLE[a.type] || { icon: 'upload', tone: 'brand' };
+                  return (
+                    <li key={a.id} className={styles.event}>
+                      <span className={`q-icon-chip q-tone-${s.tone} ${styles.eventIcon}`}>{Icons[s.icon]}</span>
+                      <div className={styles.eventText}>
+                        <div className={styles.eventMain}>
+                          <strong>{lang === 'ar' ? a.user_ar : a.user_en}</strong> {lang === 'ar' ? a.action_ar : a.action_en}
+                        </div>
+                        <div className={styles.eventMeta}>
+                          <span className="q-code">{a.standard}</span>
+                          <span>{lang === 'ar' ? a.time_ar : a.time_en}</span>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <StateView title={t('لا توجد نشاطات', 'No activity yet')} icon="clock" />
+            )}
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };
 
 DashboardPage.propTypes = {
-  isMobile: PropTypes.bool.isRequired,
+  isMobile: PropTypes.bool,
   lang: PropTypes.oneOf(['ar', 'en']).isRequired,
+  user: PropTypes.object,
+  onNavigate: PropTypes.func,
 };
 
 export default DashboardPage;

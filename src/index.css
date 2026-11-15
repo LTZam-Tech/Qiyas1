@@ -1,30 +1,95 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  scrollbar-color: #80519F #E5D9ED;
-  scrollbar-width: thin;
-}
+/* ==========================================================================
+   Qiyas design tokens — IltizamTech brand
+   Brand core: teal #349C9C, bright teal #4FD1C5, deep teal #0A3030 / #0E2A2A,
+   gold accent #E8C468. Type: Poppins (Latin) + IBM Plex Sans Arabic.
+   Every component reads these variables, so light/dark switch in one place.
+   ========================================================================== */
 
 :root {
-  --app-bg: #FAFAFE;
-  --text-main: #2D1B3D;
-  --text-muted: #7A6B8A;
-  --deep: #3D2650;
-  --primary: #80519F;
-  --soft: #C9B3D8;
-  --border: #E0D4EA;
-  --border-strong: #5C3A73;
-  --danger: #D32F2F;
+  /* Brand scale */
+  --brand-950: #061616;
+  --brand-900: #0A2222;
+  --brand-850: #0E2A2A;
+  --brand-800: #0A3030;
+  --brand-700: #1B6A6A;
+  --brand-600: #237E7E;
+  --brand-500: #349C9C;
+  --brand-400: #4FD1C5;
+  --brand-200: #BFE6E2;
+  --brand-100: #E3F3F1;
+  --brand-50: #F1F9F8;
+  --gold-500: #E8C468;
+  --gold-600: #B98F22;
+  --gold-100: #FBF3DD;
 
-  font-family: 'Cairo', 'Segoe UI', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  /* Surfaces & text (light) */
+  --bg: #F3F7F7;
+  --surface: #FFFFFF;
+  --surface-2: #F7FAFA;
+  --surface-3: #EEF4F4;
+  --border: #E1EBEA;
+  --border-strong: #C9DAD8;
+  --text: #0E2A2A;
+  --text-2: #46605E;
+  --text-3: #7B9391;
+  --text-inverse: #FFFFFF;
+
+  /* Interactive */
+  --primary: var(--brand-600);
+  --primary-hover: var(--brand-700);
+  --primary-soft: var(--brand-100);
+  --primary-text: var(--brand-700);
+  --on-primary: #FFFFFF;
+  --focus-ring: 0 0 0 3px rgba(52, 156, 156, 0.32);
+
+  /* Status */
+  --success: #1E9466;
+  --success-soft: #E5F5EE;
+  --warning: #B7790B;
+  --warning-soft: #FDF3DE;
+  --danger: #CC3D3D;
+  --danger-soft: #FCEBEB;
+  --info: #2C6CB0;
+  --info-soft: #E8F1FB;
+  --neutral: #5E7472;
+  --neutral-soft: #EDF2F2;
+
+  /* Chart track */
+  --track: #E4EEED;
+
+  /* Shape & depth */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-xs: 0 1px 2px rgba(10, 48, 48, 0.06);
+  --shadow-sm: 0 1px 3px rgba(10, 48, 48, 0.08), 0 1px 2px rgba(10, 48, 48, 0.04);
+  --shadow-md: 0 8px 24px -8px rgba(10, 48, 48, 0.16), 0 2px 6px rgba(10, 48, 48, 0.05);
+  --shadow-lg: 0 24px 48px -16px rgba(6, 22, 22, 0.28);
+
+  /* Layout */
+  --sidebar-w: 268px;
+  --sidebar-w-collapsed: 76px;
+  --header-h: 68px;
+  --page-pad: 28px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Sidebar always stays deep teal, in both themes */
+  --side-bg: linear-gradient(180deg, #0E2A2A 0%, #082020 100%);
+  --side-text: #CFE4E2;
+  --side-muted: #7FA3A0;
+  --side-hover: rgba(79, 209, 197, 0.08);
+  --side-active: rgba(79, 209, 197, 0.14);
+  --side-line: rgba(120, 210, 210, 0.12);
+
+  --font: "Poppins", "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  font-family: var(--font);
+  line-height: 1.55;
   font-weight: 400;
-
   color-scheme: light;
-  color: #2D1B3D;
-  background-color: #FAFAFE;
-
+  color: var(--text);
+  background-color: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -32,96 +97,144 @@
 }
 
 :root[data-theme='dark'] {
-  --app-bg: #21182c;
-  --text-main: #f2eaf8;
-  --text-muted: #d2c2de;
-  --deep: #2d1f3c;
-  --primary: #a87dc0;
-  --soft: #8e6ba5;
-  --border: #4f3b61;
-  --border-strong: #6e4a89;
-  --danger: #f06b6b;
+  --bg: #061616;
+  --surface: #0B2121;
+  --surface-2: #0E2A2A;
+  --surface-3: #113333;
+  --border: rgba(120, 210, 210, 0.13);
+  --border-strong: rgba(120, 210, 210, 0.26);
+  --text: #EAF6F5;
+  --text-2: #A9C6C3;
+  --text-3: #7D9F9C;
+
+  --primary: #3FBFB3;
+  --primary-hover: #4FD1C5;
+  --primary-soft: rgba(79, 209, 197, 0.12);
+  --primary-text: #6FDDD2;
+  --on-primary: #052020;
+  --focus-ring: 0 0 0 3px rgba(79, 209, 197, 0.35);
+
+  --success: #4CC793;
+  --success-soft: rgba(76, 199, 147, 0.13);
+  --warning: #E8C468;
+  --warning-soft: rgba(232, 196, 104, 0.13);
+  --danger: #F07A7A;
+  --danger-soft: rgba(240, 122, 122, 0.13);
+  --info: #7DB3EE;
+  --info-soft: rgba(125, 179, 238, 0.13);
+  --neutral: #9DB6B4;
+  --neutral-soft: rgba(157, 182, 180, 0.12);
+  --track: rgba(120, 210, 210, 0.12);
+
+  --shadow-xs: none;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 10px 28px -10px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 24px 56px -16px rgba(0, 0, 0, 0.7);
+
+  --side-bg: linear-gradient(180deg, #081D1D 0%, #041212 100%);
+  color-scheme: dark;
 }
 
-html, body, #root {
-  width: 100%;
-  height: 100%;
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
 }
 
 body {
-  margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: var(--app-bg);
-  color: var(--text-main);
+  background-color: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  transition: background-color 0.2s var(--ease), color 0.2s var(--ease);
 }
 
-#root {
-  width: 100%;
-  min-height: 100vh;
+[dir='rtl'] body,
+[dir='rtl'] {
+  letter-spacing: 0;
 }
 
-/* Scrollbar Styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+h1, h2, h3, h4 {
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--text);
 }
 
-::-webkit-scrollbar-track {
-  background: #E5D9ED;
+a {
+  color: var(--primary-text);
+  text-decoration: none;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #80519F;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #5C3A73;
-}
-
-/* Button Reset */
 button {
   border: none;
-  font-family: inherit;
+  background: none;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-button:active {
-  transform: scale(0.98);
+button:disabled {
+  cursor: not-allowed;
 }
 
-/* Input Styling */
-input, textarea, select {
-  font-family: inherit;
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
 }
 
-/* Responsive Typography */
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: rgba(79, 209, 197, 0.3);
+}
+
+/* Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
 @media (max-width: 1024px) {
-  :root {
-    font-size: 15px;
-  }
+  :root { --page-pad: 20px; }
 }
 
-@media (max-width: 768px) {
-  :root {
-    font-size: 14px;
-  }
+@media (max-width: 640px) {
+  :root { --page-pad: 16px; --header-h: 60px; }
 }
 
-@media (max-width: 480px) {
-  :root {
-    font-size: 13px;
-  }
-}
-
-/* Prevent overflow on mobile */
-@media (max-width: 768px) {
-  body, html, #root {
-    overflow-x: hidden;
-    width: 100vw;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

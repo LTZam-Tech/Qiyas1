@@ -1,22 +1,42 @@
-import React, { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Icons } from '../utils/icons.jsx';
-import useEvidenceData from '../hooks/useEvidenceData.js';
+import useEvidenceFiles from '../hooks/useEvidenceFiles.js';
 import { downloadEvidenceFile } from '../services/evidenceService.js';
+import PageHeader from '../components/PageHeader.jsx';
+import StateView from '../components/StateView.jsx';
+import Badge from '../components/Badge.jsx';
+import { Icons } from '../utils/icons.jsx';
 import styles from './EvidenceListPage.module.css';
 
-export default function EvidenceListPage({ lang = 'ar' }) {
-  const { data: files, isLoading, error } = useEvidenceData();
+const FILE_KINDS = {
+  pdf: { label: 'PDF', tone: 'danger' },
+  doc: { label: 'DOC', tone: 'info' },
+  docx: { label: 'DOC', tone: 'info' },
+  xls: { label: 'XLS', tone: 'success' },
+  xlsx: { label: 'XLS', tone: 'success' },
+  png: { label: 'IMG', tone: 'gold' },
+  jpg: { label: 'IMG', tone: 'gold' },
+  jpeg: { label: 'IMG', tone: 'gold' },
+};
+
+const fileKind = (name = '') => FILE_KINDS[name.split('.').pop()?.toLowerCase()] || { label: 'FILE', tone: 'neutral' };
+
+const STATUS_FOR_BADGE = { approved: 'approved', partial: 'submitted', non: 'submitted', rejected: 'reject' };
+
+export default function EvidenceListPage({ lang = 'ar', isMobile = false }) {
+  const t = (ar, en) => (lang === 'ar' ? ar : en);
+  const { data: files, isLoading, error } = useEvidenceFiles();
   const [searchTerm, setSearchTerm] = useState('');
 
+  const pick = (ar, en) => (lang === 'ar' ? ar || en : en || ar) || '—';
+
   const filteredFiles = useMemo(() => {
-    if (!searchTerm) return files;
-    const term = searchTerm.toLowerCase();
-    return files.filter(f => 
-      f.original_filename?.toLowerCase().includes(term) ||
-      f.standard_title?.toLowerCase().includes(term) ||
-      f.standard_title_en?.toLowerCase().includes(term) ||
-      f.uploaded_by_name?.toLowerCase().includes(term)
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return files;
+    return files.filter((f) =>
+      [f.original_filename, f.standard_title, f.standard_title_en, f.standard_code, f.uploaded_by_name, f.domain_title, f.domain_title_en]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(term)),
     );
   }, [files, searchTerm]);
 
@@ -30,101 +50,129 @@ export default function EvidenceListPage({ lang = 'ar' }) {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    return new Date(dateStr).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>
-          {lang === 'ar' ? 'سجل الأدلة والمرفقات' : 'Evidence & Files Ledger'}
-        </h2>
-        <div className={styles.searchWrapper}>
-          {Icons.searchIcon}
-          <input
-            type="text"
-            placeholder={lang === 'ar' ? 'بحث في الملفات...' : 'Search files...'}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
-          />
+  const fileCell = (file) => {
+    const kind = fileKind(file.original_filename);
+    return (
+      <div className={styles.fileCell}>
+        <span className={`q-tone-${kind.tone} ${styles.fileKind}`}>{kind.label}</span>
+        <div className={styles.fileText}>
+          <span className={styles.fileName} title={file.original_filename}>{file.original_filename}</span>
+          <span className={styles.fileSub}><bdi>{file.uploaded_by_name || '—'}</bdi> · <bdi>{formatDate(file.uploaded_at)}</bdi></span>
         </div>
       </div>
+    );
+  };
 
-      <div className={styles.tableCard}>
-        <div className={styles.tableResponsive}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>{lang === 'ar' ? 'اسم الملف' : 'File Name'}</th>
-                <th>{lang === 'ar' ? 'المجال' : 'Domain'}</th>
-                <th>{lang === 'ar' ? 'المحور' : 'Axis'}</th>
-                <th>{lang === 'ar' ? 'المعيار' : 'Standard'}</th>
-                <th>{lang === 'ar' ? 'بواسطة' : 'Uploaded By'}</th>
-                <th>{lang === 'ar' ? 'التاريخ' : 'Date'}</th>
-                <th className={styles.actionsHeader}>{lang === 'ar' ? 'الإجراءات' : 'Actions'}</th>
+  const downloadBtn = (file) => (
+    <button
+      type="button"
+      onClick={() => handleDownload(file.submission_id, file.file_id)}
+      className="q-icon-btn"
+      aria-label={t(`تحميل ${file.original_filename}`, `Download ${file.original_filename}`)}
+      title={t('تحميل الملف', 'Download file')}
+    >
+      {Icons.download}
+    </button>
+  );
+
+  let body;
+  if (isLoading) body = <StateView kind="loading" message={t('جاري تحميل الملفات...', 'Loading files...')} />;
+  else if (error) body = <StateView kind="error" title={t('تعذر تحميل الملفات', 'Could not load files')} message={error} />;
+  else if (filteredFiles.length === 0) {
+    body = (
+      <StateView
+        icon="folderIcon"
+        title={searchTerm ? t('لا توجد ملفات مطابقة', 'No matching files') : t('لا توجد ملفات بعد', 'No files yet')}
+        message={searchTerm ? t('جرّب كلمة بحث أخرى.', 'Try a different search term.') : undefined}
+      />
+    );
+  } else if (isMobile) {
+    body = (
+      <ul className={styles.cards}>
+        {filteredFiles.map((file) => (
+          <li key={file.file_id} className={styles.cardItem}>
+            {fileCell(file)}
+            <div className={styles.cardMeta}>
+              <span className="q-code">{file.standard_code || '—'}</span>
+              <span className={styles.cardStd}>{pick(file.standard_title, file.standard_title_en)}</span>
+              {downloadBtn(file)}
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  } else {
+    body = (
+      <div className="q-table-wrap">
+        <table className="q-table">
+          <thead>
+            <tr>
+              <th>{t('الملف', 'File')}</th>
+              <th>{t('المعيار', 'Standard')}</th>
+              <th>{t('المنظور / المحور', 'Perspective / axis')}</th>
+              <th>{t('الحالة', 'Status')}</th>
+              <th><span className="q-sr-only">{t('الإجراءات', 'Actions')}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredFiles.map((file) => (
+              <tr key={file.file_id}>
+                <td>{fileCell(file)}</td>
+                <td>
+                  <div className={styles.stdCell}>
+                    {file.standard_code ? <span className="q-code">{file.standard_code}</span> : null}
+                    <span>{pick(file.standard_title, file.standard_title_en)}</span>
+                  </div>
+                </td>
+                <td className="q-cell-muted">
+                  <div className={styles.pathCell}>
+                    <span>{pick(file.domain_title, file.domain_title_en)}</span>
+                    <span className={styles.fileSub}>{pick(file.axis_title, file.axis_title_en)}</span>
+                  </div>
+                </td>
+                <td><Badge status={STATUS_FOR_BADGE[file.status] || 'submitted'} lang={lang} /></td>
+                <td className={styles.actionsCell}>{downloadBtn(file)}</td>
               </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan="7" className={styles.loadingCell}>
-                    {lang === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'}
-                  </td>
-                </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan="7" className={styles.errorCell}>{error}</td>
-                </tr>
-              ) : filteredFiles.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className={styles.emptyCell}>
-                    {lang === 'ar' ? 'لا توجد ملفات مطابقة' : 'No matching files found'}
-                  </td>
-                </tr>
-              ) : (
-                filteredFiles.map((file) => (
-                  <tr key={file.file_id}>
-                    <td className={styles.fileNameCell}>
-                      <div className={styles.fileIconWrapper}>
-                        {Icons.documentIcon}
-                      </div>
-                      <span title={file.original_filename}>{file.original_filename}</span>
-                    </td>
-                    <td>{lang === 'ar' ? (file.domain_title || '—') : (file.domain_title_en || file.domain_title || '—')}</td>
-                    <td>{lang === 'ar' ? (file.axis_title || '—') : (file.axis_title_en || file.axis_title || '—')}</td>
-                    <td>
-                      <div className={styles.standardCell}>
-                        {lang === 'ar' ? (file.standard_title || '—') : (file.standard_title_en || file.standard_title || '—')}
-                      </div>
-                    </td>
-                    <td>{file.uploaded_by_name || '—'}</td>
-                    <td className={styles.dateCell}>{formatDate(file.uploaded_at)}</td>
-                    <td className={styles.actionsCell}>
-                      <button
-                        onClick={() => handleDownload(file.submission_id, file.file_id)}
-                        className={styles.downloadBtn}
-                        title={lang === 'ar' ? 'تحميل الملف' : 'Download file'}
-                      >
-                        {Icons.download}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
+    );
+  }
+
+  return (
+    <div className="q-page">
+      <PageHeader
+        title={t('سجل الملفات', 'Files ledger')}
+        subtitle={t('كل ملف مرفوع كشاهد، مع معياره ومن رفعه ومتى.', 'Every file uploaded as evidence, with its standard, uploader and date.')}
+      />
+      <section className="q-card">
+        <div className={styles.toolbar}>
+          <span className={styles.total}>
+            {isLoading ? '' : t(`${filteredFiles.length} ملف`, `${filteredFiles.length} file${filteredFiles.length === 1 ? '' : 's'}`)}
+          </span>
+          <label className={`q-search ${styles.search}`}>
+            {Icons.searchIcon}
+            <span className="q-sr-only">{t('بحث في الملفات', 'Search files')}</span>
+            <input
+              type="search"
+              className="q-input"
+              placeholder={t('بحث بالاسم أو المعيار أو الشخص...', 'Search by name, standard or person...')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </label>
+        </div>
+        {body}
+      </section>
     </div>
   );
 }
 
 EvidenceListPage.propTypes = {
-  lang: PropTypes.oneOf(['ar', 'en'])
+  lang: PropTypes.oneOf(['ar', 'en']),
+  isMobile: PropTypes.bool,
 };

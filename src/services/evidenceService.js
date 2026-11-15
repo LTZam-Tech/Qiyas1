@@ -44,6 +44,20 @@ export async function getEvidenceItems() {
   }
 }
 
+// Raw file rows (one per uploaded file) for the Files ledger.
+export async function getEvidenceFiles() {
+  try {
+    const res = await httpClient.get('/submissions/files');
+    return Array.isArray(res.data?.files) ? res.data.files : [];
+  } catch (err) {
+    errorLogger.logWarning('Evidence files API failed', 'backend', {
+      message: err?.message,
+      status: err?.status,
+    });
+    throw err;
+  }
+}
+
 export async function downloadEvidenceFile(submissionId, fileId) {
   try {
     const res = await httpClient.get(`/submissions/${submissionId}/files/${fileId}/download`);

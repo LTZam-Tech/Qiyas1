@@ -179,14 +179,22 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.header}>
-          <h2 className={styles.title}>{t('رفع شاهد جديد', 'Upload New Evidence')}</h2>
+          <div className={styles.headingText}>
+            <h2 className={styles.title}>{t('رفع شاهد جديد', 'Upload New Evidence')}</h2>
+            <p className={styles.subtitle}>
+              {t('اختر المعيار ثم أرفق ملفات الشاهد.', 'Pick the standard, then attach the evidence files.')}
+            </p>
+          </div>
           <button
             type="button"
             className={styles.closeBtn}
             onClick={handleClose}
             aria-label={t('إغلاق', 'Close')}
           >
-            ×
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
 
@@ -248,7 +256,7 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
           </div>
 
           {/* Standard DDL */}
-          <div className={styles.field}>
+          <div className={`${styles.field} ${styles.fullWidth}`}>
             <label className={styles.label}>
               {t('المعيار', 'Standard')} <span className={styles.req}>*</span>
             </label>
@@ -276,7 +284,7 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
           </div>
 
           {/* File picker */}
-          <div className={styles.field}>
+          <div className={`${styles.field} ${styles.fullWidth}`}>
             <label className={styles.label}>
               {t('الملفات', 'Files')} <span className={styles.req}>*</span>
             </label>
@@ -289,7 +297,7 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
                 disabled={isUploading}
                 className={styles.hiddenInput}
               />
-              <span className={styles.filePickerIcon}>{Icons.upload}</span>
+              <span className={styles.filePickerIcon} aria-hidden="true">{Icons.upload}</span>
               <span className={styles.filePickerText}>
                 {files.length > 0
                   ? t(`${files.length} ملف مختار`, `${files.length} file(s) selected`)
@@ -300,9 +308,9 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
               <ul className={styles.fileList}>
                 {files.map((f, i) => (
                   <li key={i} className={styles.fileItem}>
-                    <span className={styles.fileIcon}>{Icons.documentIcon}</span>
+                    <span className={styles.fileIcon} aria-hidden="true">{Icons.documentIcon}</span>
                     <span className={styles.fileName}>{f.name}</span>
-                    <span className={styles.fileSize}>({(f.size / 1024).toFixed(0)} KB)</span>
+                    <span className={styles.fileSize}>{(f.size / 1024).toFixed(0)} KB</span>
                   </li>
                 ))}
               </ul>

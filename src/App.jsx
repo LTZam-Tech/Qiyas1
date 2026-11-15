@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { C } from './utils/theme.js';
-import { NAV_ITEMS } from './utils/data.js';
+import { NAV_ITEMS, PAGE_ALIASES } from './utils/data.js';
 import { filterNavByRole, canAccessPage } from './utils/permissions.js';
 import { APP_LOADING_DELAY_MS, BREAKPOINTS, PAGES } from './constants/index.js';
+import BrandMark from './components/BrandMark.jsx';
 import useResponsive from './hooks/useResponsive.js';
 import usePageLoad from './hooks/usePageLoad.js';
 import useAuth from './context/useAuth.js';
@@ -32,48 +32,51 @@ const PAGE_COMPONENTS = {
   'error-logs': ErrorLogPage,
 };
 
-const getDefaultExpandedGroups = () => {
-  const firstGroup = NAV_ITEMS.find((item) => item.isGroup);
-  return firstGroup ? new Set([firstGroup.key]) : new Set();
+const THEME_KEY = 'qiyas_theme';
+
+const readInitialDark = () => {
+  if (typeof document === 'undefined') return false;
+  return document.documentElement.dataset.theme === 'dark';
+};
+
+// Read language from URL path (/en/ or /ar/)
+const getLanguageFromPath = () => {
+  const path = window.location.pathname;
+  if (path.startsWith('/en/') || path === '/en') return 'en';
+  if (path.startsWith('/ar/') || path === '/ar') return 'ar';
+  if (path === '/' || path === '') {
+    const browserLang = navigator.language?.toLowerCase();
+    return browserLang?.startsWith('ar') ? 'ar' : 'en';
+  }
+  return 'ar';
+};
+
+// Read page from query params (?page=tasks)
+const getPageFromQuery = () => {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('page') || PAGES.dashboard;
+};
+
+// Find a nav entry and the section (group) it lives in.
+const findNavEntry = (key) => {
+  for (const item of NAV_ITEMS) {
+    if (item.key === key) return { item, group: null };
+    const child = item.children?.find((c) => c.key === key);
+    if (child) return { item: child, group: item };
+  }
+  if (PAGE_ALIASES[key]) return { item: PAGE_ALIASES[key], group: null };
+  return { item: NAV_ITEMS[0], group: null };
 };
 
 export default function App() {
   const { isMobile, isTablet, vw } = useResponsive();
-  const {
-    user,
-    login,
-    logout,
-    isLoading: authLoading,
-    isAuthenticating,
-  } = useAuth();
-  
-  // Read language from URL path (/en/ or /ar/)
-  const getLanguageFromPath = () => {
-    const path = window.location.pathname;
-    if (path.startsWith('/en/') || path === '/en') return 'en';
-    if (path.startsWith('/ar/') || path === '/ar') return 'ar';
-    
-    // If at root path, detect browser language or default to Arabic
-    if (path === '/' || path === '') {
-      const browserLang = navigator.language?.toLowerCase();
-      return browserLang?.startsWith('ar') ? 'ar' : 'en'; // default to English for non-Arabic browsers
-    }
-    
-    return 'ar'; // default to Arabic
-  };
-
-  // Read page from query params (?page=tasks)
-  const getPageFromQuery = () => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('page') || PAGES.dashboard;
-  };
+  const { user, login, logout, isLoading: authLoading, isAuthenticating } = useAuth();
 
   const [lang, setLang] = useState(getLanguageFromPath);
   const [page, setPage] = useState(getPageFromQuery);
   const [sideOpen, setSideOpen] = useState(vw > BREAKPOINTS.tablet);
-  const [expandedGroups, setExpandedGroups] = useState(getDefaultExpandedGroups);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(readInitialDark);
   const [isLoading, setIsLoading] = useState(true);
 
   usePageLoad(page);
@@ -83,14 +86,18 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Drawer closes when we drop to tablet size; sidebar re-expands on desktop.
+  const [prevIsTablet, setPrevIsTablet] = useState(isTablet);
+  if (prevIsTablet !== isTablet) {
+    setPrevIsTablet(isTablet);
+    setSideOpen(!isTablet);
+  }
+
   // Sync URL with language and page state (also handles initial redirect from root)
   useEffect(() => {
     const currentPath = window.location.pathname;
-    const newPath = `/${lang}/`;
     const params = page !== PAGES.dashboard ? `?page=${page}` : '';
-    const newUrl = newPath + params;
-    
-    // Use replace for initial load at root, push for subsequent changes
+    const newUrl = `/${lang}/${params}`;
     const isRootPath = currentPath === '/' || currentPath === '';
     if (window.location.pathname + window.location.search !== newUrl) {
       if (isRootPath) {
@@ -101,116 +108,107 @@ export default function App() {
     }
   }, [lang, page]);
 
+  // Keep <html lang/dir> in sync so the whole document (including portals) flips.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  }, [lang]);
+
   // Handle browser back/forward buttons
   useEffect(() => {
     const handlePopState = () => {
       setLang(getLanguageFromPath());
       setPage(getPageFromQuery());
     };
-    
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+    try {
+      localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+    } catch {
+      // Storage may be unavailable (private mode); theme still applies for this session.
+    }
   }, [isDark]);
 
-  const toggleGroup = useCallback((groupKey) => {
-    setExpandedGroups((prev) => {
-      // Accordion behavior: if it's already open, close it. 
-      // If it's closed, close all others and open this one.
-      if (prev.has(groupKey)) {
-        return new Set();
-      }
-      return new Set([groupKey]);
-    });
-  }, []);
-
   const navigateTo = useCallback((item) => {
-    // Check if user has access to this page
     if (!canAccessPage(item.key, user?.role)) {
       console.warn(`Access denied to page: ${item.key}`);
       return;
     }
-    
     setPage(item.key);
-    // URL will be updated by the useEffect that watches [lang, page]
-    if (isMobile) {
+    setSearchQuery('');
+    window.scrollTo({ top: 0 });
+    if (isTablet) {
       setSideOpen(false);
     }
-  }, [isMobile, user?.role]);
+  }, [isTablet, user?.role]);
 
   const toggleLanguage = useCallback(() => {
-    const newLang = lang === 'ar' ? 'en' : 'ar';
-    setLang(newLang);
-    // URL will be updated by the useEffect that watches [lang, page]
-  }, [lang]);
+    setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
+  }, []);
 
-  // Filter navigation based on user role
   const roleBasedNavItems = useMemo(() => {
     if (!user?.role) return [];
     return filterNavByRole(NAV_ITEMS, user.role);
   }, [user]);
 
+  const matches = useCallback(
+    (item, query) => item.label.toLowerCase().includes(query) || item.labelEn.toLowerCase().includes(query),
+    [],
+  );
+
   const onSearchSubmit = (event) => {
     event.preventDefault();
     const query = searchQuery.trim().toLowerCase();
     if (!query) return;
-
-    const flattened = roleBasedNavItems.flatMap((item) => [item, ...(item.children || [])]);
-    const match = flattened.find(
-      (item) =>
-        item.label.toLowerCase().includes(query) || item.labelEn.toLowerCase().includes(query),
-    );
-
-    if (match) {
-      navigateTo(match);
-    }
+    const flattened = roleBasedNavItems.flatMap((item) => (item.isGroup ? item.children || [] : [item]));
+    const match = flattened.find((item) => matches(item, query));
+    if (match) navigateTo(match);
   };
 
   const filteredNavItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return [];
+    return roleBasedNavItems
+      .map((item) => {
+        if (!item.isGroup) return matches(item, query) ? item : null;
+        const children = matches(item, query) ? item.children : item.children?.filter((c) => matches(c, query));
+        return children?.length ? { ...item, children } : null;
+      })
+      .filter(Boolean);
+  }, [searchQuery, roleBasedNavItems, matches]);
 
-    return roleBasedNavItems.filter((item) => {
-      const groupMatch =
-        item.label.toLowerCase().includes(query) || item.labelEn.toLowerCase().includes(query);
-      const childMatch = item.children?.some(
-        (child) =>
-          child.label.toLowerCase().includes(query) ||
-          child.labelEn.toLowerCase().includes(query),
-      );
-      return groupMatch || childMatch;
-    }).map((item) => ({
-      ...item,
-      children:
-        item.children?.filter(
-          (child) =>
-            child.label.toLowerCase().includes(query) ||
-            child.labelEn.toLowerCase().includes(query),
-        ) || item.children,
-    }));
-  }, [searchQuery, roleBasedNavItems]);
+  const { item: pageEntry, group: pageGroup } = findNavEntry(page);
+  const pageTitle = lang === 'ar' ? pageEntry.label : pageEntry.labelEn;
+  const sectionTitle = pageGroup ? (lang === 'ar' ? pageGroup.label : pageGroup.labelEn) : undefined;
 
-  const pageTitle =
-    NAV_ITEMS.flatMap((item) => [item, ...(item.children || [])]).find((item) => item.key === page) ||
-    NAV_ITEMS[0];
+  useEffect(() => {
+    document.title = user ? `${pageTitle} · ${lang === 'ar' ? 'قياس' : 'Qiyas'}` : 'Qiyas | قياس';
+  }, [pageTitle, lang, user]);
 
   const PageComponent = PAGE_COMPONENTS[page] || DashboardPage;
 
   if (!user) {
-    return <LoginPage onLogin={login} isLoading={isAuthenticating} lang={lang} />;
+    return (
+      <LoginPage
+        onLogin={login}
+        isLoading={isAuthenticating}
+        lang={lang}
+        onToggleLanguage={toggleLanguage}
+      />
+    );
   }
 
   if (isLoading || authLoading) {
     return (
-      <section
-        className={styles.app}
-        style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}
-        aria-label="Loading application"
-      >
-        <p style={{ color: C.textLight }}>{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
+      <section className={styles.loading} aria-label="Loading application">
+        <div className={styles.loadingInner}>
+          <span className={styles.loadingMark}><BrandMark size={52} /></span>
+          <span>{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</span>
+        </div>
       </section>
     );
   }
@@ -225,31 +223,37 @@ export default function App() {
         page={page}
         lang={lang}
         navItems={roleBasedNavItems}
-        expandedGroups={expandedGroups}
-        onToggleGroup={toggleGroup}
         onNavigate={navigateTo}
         user={user}
         onLogout={logout}
         filteredNavItems={filteredNavItems}
-        onToggleSidebar={() => setSideOpen((prev) => !prev)}
+        onClose={() => setSideOpen(false)}
       />
 
       <div className={styles.mainWrapper}>
         <Header
           isMobile={isMobile}
-          isTablet={isTablet}
-          title={lang === 'ar' ? pageTitle.label : pageTitle.labelEn}
+          title={pageTitle}
+          section={sectionTitle}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onSearchSubmit={onSearchSubmit}
           onToggleSidebar={() => setSideOpen((prev) => !prev)}
           onToggleTheme={() => setIsDark((prev) => !prev)}
           onToggleLanguage={toggleLanguage}
+          isDark={isDark}
           lang={lang}
         />
 
-        <main className={styles.content} role="main" aria-label="Portal content">
-          <PageComponent isMobile={isMobile} isTablet={isTablet} lang={lang} user={user} />
+        <main className={styles.content} aria-label={pageTitle}>
+          <PageComponent
+            key={page}
+            isMobile={isMobile}
+            isTablet={isTablet}
+            lang={lang}
+            user={user}
+            onNavigate={(key) => navigateTo({ key })}
+          />
         </main>
       </div>
     </div>

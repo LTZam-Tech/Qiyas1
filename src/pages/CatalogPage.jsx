@@ -1,176 +1,172 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { PERSPECTIVES, AXES, STANDARD_DETAILS } from '../utils/data.js';
 import { Icons } from '../utils/icons.jsx';
+import PageHeader from '../components/PageHeader.jsx';
+import StateView from '../components/StateView.jsx';
 import styles from './CatalogPage.module.css';
 
 const AXES_BY_PERSPECTIVE = AXES.reduce((acc, axis) => {
-  if (!acc[axis.perspId]) acc[axis.perspId] = [];
-  acc[axis.perspId].push(axis);
+  (acc[axis.perspId] ||= []).push(axis);
   return acc;
 }, {});
 
 const CatalogPage = ({ lang }) => {
-  const [selectedPerspective, setSelectedPerspective] = useState(null);
-  const [selectedAxis, setSelectedAxis] = useState(null);
+  const t = (ar, en) => (lang === 'ar' ? ar : en);
+  const [perspId, setPerspId] = useState(null);
+  const [axisId, setAxisId] = useState(null);
+  const [query, setQuery] = useState('');
 
-  const currentAxes = selectedPerspective ? (AXES_BY_PERSPECTIVE[selectedPerspective] || []) : [];
-  const currentPerspective = PERSPECTIVES.find((p) => p.id === selectedPerspective);
+  const perspective = PERSPECTIVES.find((p) => p.id === perspId);
+  const axis = AXES.find((a) => a.id === axisId);
+  const axes = perspId ? AXES_BY_PERSPECTIVE[perspId] || [] : [];
+  const detail = axisId ? STANDARD_DETAILS[axisId] : null;
+  const name = (x) => (lang === 'ar' ? x.name : x.nameEn);
 
-  const handlePerspectiveClick = (perspId) => {
-    setSelectedPerspective(perspId === selectedPerspective ? null : perspId);
+  const visiblePerspectives = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return PERSPECTIVES;
+    return PERSPECTIVES.filter((p) => [p.name, p.nameEn, p.code].some((v) => v.toLowerCase().includes(q)));
+  }, [query]);
+
+  const openPerspective = (id) => {
+    setPerspId(id);
+    setAxisId(null);
   };
 
-  const handleBackClick = () => {
-    if (selectedAxis) {
-      setSelectedAxis(null);
-    } else {
-      setSelectedPerspective(null);
-    }
-  };
-
-  const handleAxisClick = (axisId) => {
-    setSelectedAxis(axisId);
-  };
-
-  const currentAxis = AXES.find((a) => a.id === selectedAxis);
-  const standardDetail = selectedAxis ? STANDARD_DETAILS[selectedAxis] : null;
+  const crumbs = (
+    <nav className={styles.crumbs} aria-label={t('موقعك في الفهرس', 'Catalog location')}>
+      <button type="button" onClick={() => openPerspective(null)} className={styles.crumbLink}>
+        {t('كل المناظير', 'All perspectives')}
+      </button>
+      {perspective && (
+        <>
+          <span className={styles.crumbSep} aria-hidden="true">{Icons.arrowRight}</span>
+          {axis ? (
+            <button type="button" onClick={() => setAxisId(null)} className={styles.crumbLink}>{name(perspective)}</button>
+          ) : (
+            <span className={styles.crumbCurrent}>{name(perspective)}</span>
+          )}
+        </>
+      )}
+      {axis && (
+        <>
+          <span className={styles.crumbSep} aria-hidden="true">{Icons.arrowRight}</span>
+          <span className={styles.crumbCurrent}>{name(axis)}</span>
+        </>
+      )}
+    </nav>
+  );
 
   return (
-    <div className={styles.page}>
-      <h2 className={styles.heading}>
-        {Icons.bookmarkIcon}
-        <span>{lang === 'ar' ? 'فهرس المقاييس' : 'Standards Catalog Navigator'}</span>
-      </h2>
+    <div className="q-page">
+      <PageHeader
+        title={t('فهرس المعايير', 'Standards catalog')}
+        subtitle={t('تصفح المناظير، ثم المحاور، ثم متطلبات كل معيار والأدلة المطلوبة له.', 'Browse perspectives, then axes, then each standard’s requirements and the evidence it needs.')}
+        actions={
+          !perspId ? (
+            <label className="q-search">
+              {Icons.searchIcon}
+              <span className="q-sr-only">{t('بحث في المناظير', 'Search perspectives')}</span>
+              <input type="search" className="q-input" placeholder={t('بحث في المناظير...', 'Search perspectives...')} value={query} onChange={(e) => setQuery(e.target.value)} />
+            </label>
+          ) : null
+        }
+      />
 
-      {!selectedPerspective ? (
-        // Domain Boxes Grid
-        <div className={styles.domainsGrid}>
-          {PERSPECTIVES.map((perspective) => (
-            <button
-              key={perspective.id}
-              type="button"
-              onClick={() => handlePerspectiveClick(perspective.id)}
-              className={styles.domainBox}
-            >
-              <div className={styles.domainIcon}>{Icons.layersIcon}</div>
-              <div className={styles.domainCode}>{perspective.code}</div>
-              <div className={styles.domainTitle}>{lang === 'ar' ? perspective.name : perspective.nameEn}</div>
-              <div className={styles.domainStats}>
-                <span>{perspective.axes} {lang === 'ar' ? 'محاور' : 'axes'}</span>
-                <span>•</span>
-                <span>{perspective.standards} {lang === 'ar' ? 'معيار' : 'standard'}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      ) : selectedAxis && standardDetail ? (
-        // Standard Details View
-        <div className={styles.standardsView}>
-          <button type="button" onClick={handleBackClick} className={styles.backButton}>
-            {Icons.arrowLeft}
-            <span>{lang === 'ar' ? 'العودة للعناصر' : 'Back to Items'}</span>
-          </button>
+      {perspId && crumbs}
 
-          {currentAxis && (
-            <div className={styles.standardDetailCard}>
-              <div className={styles.standardHeader}>
-                {Icons.documentIcon}
-                <div>
-                  <h3 className={styles.standardCode}>{currentAxis.code}</h3>
-                  <h2 className={styles.standardTitle}>{lang === 'ar' ? currentAxis.name : currentAxis.nameEn}</h2>
+      {!perspId && (
+        visiblePerspectives.length === 0 ? (
+          <div className="q-card"><StateView icon="searchIcon" title={t('لا توجد نتائج', 'No matches')} /></div>
+        ) : (
+          <div className={styles.grid}>
+            {visiblePerspectives.map((p) => (
+              <button key={p.id} type="button" className={`q-card q-card-interactive ${styles.domain}`} onClick={() => openPerspective(p.id)}>
+                <div className={styles.domainTop}>
+                  <span className={`q-icon-chip q-tone-brand ${styles.domainIcon}`}>{Icons.layersIcon}</span>
+                  <span className="q-code">{p.code}</span>
                 </div>
-              </div>
+                <span className={styles.domainTitle}>{name(p)}</span>
+                <span className={styles.domainStats}>
+                  <span>{t(`${p.axes} محاور`, `${p.axes} axes`)}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{t(`${p.standards} معايير`, `${p.standards} standards`)}</span>
+                  <span className={styles.domainArrow}>{Icons.arrowRight}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )
+      )}
 
-              <div className={styles.standardSection}>
-                <h4 className={styles.sectionHeading}>
-                  {Icons.target}
-                  <span>{lang === 'ar' ? 'الهدف' : 'Goal'}</span>
-                </h4>
-                <p className={styles.sectionContent}>{standardDetail.goal}</p>
-              </div>
+      {perspId && !axisId && (
+        axes.length === 0 ? (
+          <div className="q-card"><StateView icon="folderIcon" title={t('لا توجد محاور في هذا المنظور', 'No axes in this perspective')} /></div>
+        ) : (
+          <ul className={`q-card ${styles.axisList}`}>
+            {axes.map((a) => (
+              <li key={a.id}>
+                <button type="button" className={styles.axisRow} onClick={() => setAxisId(a.id)}>
+                  <span className={`q-icon-chip q-tone-neutral ${styles.axisIcon}`}>{Icons.folderIcon}</span>
+                  <span className={styles.axisText}>
+                    <span className={styles.axisName}>{name(a)}</span>
+                    <span className={styles.axisSub}>
+                      {STANDARD_DETAILS[a.id] ? t('المتطلبات والأدلة متاحة', 'Requirements and evidence available') : t('التفاصيل غير متاحة بعد', 'Details not added yet')}
+                    </span>
+                  </span>
+                  <span className="q-code">{a.code}</span>
+                  <span className={styles.axisArrow}>{Icons.arrowRight}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )
+      )}
 
-              <div className={styles.standardSection}>
-                <h4 className={styles.sectionHeading}>
-                  {Icons.checklistIcon}
-                  <span>{lang === 'ar' ? 'متطلبات التطبيق' : 'Application Requirements'}</span>
-                </h4>
-                {standardDetail.requirements.map((req, idx) => (
-                  <div key={idx} className={styles.requirementBlock}>
-                    <p className={styles.requirementTitle}>{idx + 1}) {req.title}</p>
+      {axis && (
+        detail ? (
+          <article className={`q-card ${styles.detail}`}>
+            <header className={styles.detailHead}>
+              <span className="q-code">{axis.code}</span>
+              <h2 className={styles.detailTitle}>{name(axis)}</h2>
+            </header>
+
+            <section className={styles.block}>
+              <h3 className={styles.blockTitle}><span className={`q-icon-chip q-tone-brand ${styles.blockIcon}`}>{Icons.target}</span>{t('الهدف', 'Goal')}</h3>
+              <p className={styles.goal}>{detail.goal}</p>
+            </section>
+
+            <section className={styles.block}>
+              <h3 className={styles.blockTitle}><span className={`q-icon-chip q-tone-info ${styles.blockIcon}`}>{Icons.checklistIcon}</span>{t('متطلبات التطبيق', 'Requirements')}</h3>
+              <ol className={styles.reqList}>
+                {detail.requirements.map((req) => (
+                  <li key={req.title}>
+                    <p className={styles.reqTitle}>{req.title}</p>
                     {req.items && (
-                      <ul className={styles.requirementList}>
-                        {req.items.map((item, itemIdx) => (
-                          <li key={itemIdx}>{String.fromCharCode(1571 + itemIdx)}. {item}</li>
-                        ))}
+                      <ul className={styles.reqItems}>
+                        {req.items.map((item) => <li key={item}>{item}</li>)}
                       </ul>
                     )}
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ol>
+            </section>
 
-              <div className={styles.standardSection}>
-                <h4 className={styles.sectionHeading}>
-                  {Icons.clipboardIcon}
-                  <span>{lang === 'ar' ? 'مستندات الإثبات' : 'Evidence Documentation'}</span>
-                </h4>
-                <ul className={styles.evidenceList}>
-                  {standardDetail.evidence.map((item, idx) => (
-                    <li key={idx}>{idx + 1}) {item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        // Axes View
-        <div className={styles.standardsView}>
-          <button type="button" onClick={handleBackClick} className={styles.backButton}>
-            {Icons.arrowLeft}
-            <span>{lang === 'ar' ? 'العودة للمجالات' : 'Back to Domains'}</span>
-          </button>
-
-          {currentPerspective && (
-            <div className={styles.perspectiveHeader}>
-              <div className={styles.perspectiveHeaderContent}>
-                {Icons.layersIcon}
-                <div>
-                  <h3 className={styles.perspectiveTitle}>
-                    {currentPerspective.code} - {lang === 'ar' ? currentPerspective.name : currentPerspective.nameEn}
-                  </h3>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {currentAxes.length > 0 ? (
-            <div className={styles.axesGrid}>
-              {currentAxes.map((axis) => (
-                <button
-                  key={axis.id}
-                  type="button"
-                  onClick={() => handleAxisClick(axis.id)}
-                  className={styles.axisSection}
-                >
-                  <div className={styles.axisHeader}>
-                    <div className={styles.axisIconWrapper}>{Icons.folderIcon}</div>
-                    <div className={styles.axisTitle}>{lang === 'ar' ? axis.name : axis.nameEn}</div>
-                    <div className={styles.axisLabel}>{axis.code}</div>
-                  </div>
-                  {STANDARD_DETAILS[axis.id] && (
-                    <div className={styles.axisPreview}>
-                      <span>{lang === 'ar' ? 'انقر لعرض التفاصيل' : 'Click to view details'}</span>
-                      {Icons.arrowRight}
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className={styles.emptyState}>{lang === 'ar' ? 'لا توجد عناصر في هذا المجال' : 'No items in this domain'}</div>
-          )}
-        </div>
+            <section className={styles.block}>
+              <h3 className={styles.blockTitle}><span className={`q-icon-chip q-tone-gold ${styles.blockIcon}`}>{Icons.clipboardIcon}</span>{t('الأدلة المطلوبة', 'Evidence required')}</h3>
+              <ul className={styles.evidenceList}>
+                {detail.evidence.map((item) => (
+                  <li key={item}><span className={styles.check}>{Icons.check}</span>{item}</li>
+                ))}
+              </ul>
+            </section>
+          </article>
+        ) : (
+          <div className="q-card">
+            <StateView icon="documentIcon" title={t('التفاصيل غير متاحة بعد', 'Details not added yet')} message={t('لم تتم إضافة متطلبات هذا المحور إلى الفهرس.', 'This axis has no requirements in the catalog yet.')} />
+          </div>
+        )
       )}
     </div>
   );

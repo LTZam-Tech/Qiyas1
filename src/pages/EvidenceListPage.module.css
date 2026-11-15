@@ -1,230 +1,108 @@
-.page {
-  padding: 5px;
+.toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 24px;
-  animation: fadeIn 0.4s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.header {
-  display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  gap: 20px;
+  gap: 12px;
   flex-wrap: wrap;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
 }
 
-.title {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--deep);
-  margin: 0;
-  position: relative;
-  padding-bottom: 8px;
+.total {
+  font-size: 0.86rem;
+  color: var(--text-3);
 }
 
-.title::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 60px;
-  height: 4px;
-  background: var(--primary);
-  border-radius: 99px;
-}
+.search { width: 340px; }
 
-[dir="ltr"] .title::after {
-  right: auto;
-  left: 0;
-}
-
-.searchWrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 1;
-  max-width: 400px;
-}
-
-.searchWrapper svg {
-  position: absolute;
-  right: 12px;
-  color: var(--text-light);
-  width: 18px;
-}
-
-[dir="ltr"] .searchWrapper svg {
-  right: auto;
-  left: 12px;
-}
-
-.searchInput {
-  width: 100%;
-  padding: 10px 40px 10px 12px;
-  border-radius: 10px;
-  border: 1.5px solid var(--soft);
-  background: #fff;
-  font-family: inherit;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-[dir="ltr"] .searchInput {
-  padding: 10px 12px 10px 40px;
-}
-
-.searchInput:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
-}
-
-.tableCard {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--border-soft);
-  overflow: hidden;
-}
-
-.tableResponsive {
-  overflow-x: auto;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: right;
-  font-size: 14px;
-}
-
-[dir="ltr"] .table {
-  text-align: left;
-}
-
-.table th {
-  padding: 16px;
-  background: var(--app-bg);
-  color: var(--text-muted);
-  font-weight: 700;
-  text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.table td {
-  padding: 16px;
-  border-bottom: 1px solid var(--border-soft);
-  color: var(--text-main);
-  vertical-align: middle;
-}
-
-.table tbody tr:hover {
-  background: rgba(var(--primary-rgb), 0.02);
-}
-
-.fileNameCell {
+.fileCell {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-weight: 600;
-  max-width: 250px;
+  min-width: 240px;
 }
 
-.fileNameCell span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.fileIconWrapper {
-  width: 32px;
-  height: 32px;
-  background: rgba(var(--primary-rgb), 0.1);
-  color: var(--primary);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.fileKind {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   flex-shrink: 0;
 }
 
-.standardCell {
-  max-width: 200px;
+.fileText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fileName {
+  font-weight: 500;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--text-muted);
-  font-size: 13px;
+  max-width: 280px;
+  direction: ltr;
+  text-align: start;
+  unicode-bidi: plaintext;
 }
 
-.dateCell {
-  white-space: nowrap;
-  color: var(--text-light);
-  font-size: 13px;
+.fileSub {
+  font-size: 0.78rem;
+  color: var(--text-3);
 }
 
-.actionsHeader {
-  text-align: center !important;
+.stdCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.pathCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .actionsCell {
-  text-align: center;
+  width: 56px;
+  text-align: end;
 }
 
-.downloadBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: 1px solid var(--soft);
-  background: #fff;
-  color: var(--primary);
-  cursor: pointer;
+.cards {
+  list-style: none;
+}
+.cardItem {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.cardItem:last-child { border-bottom: none; }
+.cardMeta {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-2);
+}
+.cardStd {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.downloadBtn:hover {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.2);
-}
-
-.loadingCell, .errorCell, .emptyCell {
-  padding: 60px !important;
-  text-align: center;
-  color: var(--text-light);
-  font-style: italic;
-}
-
-.errorCell {
-  color: var(--danger);
-  font-weight: 600;
-}
-
-@media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .searchWrapper {
-    max-width: none;
-  }
-  
-  .table th, .table td {
-    padding: 12px 10px;
-    font-size: 13px;
-  }
+@media (max-width: 720px) {
+  .search { width: 100%; }
+  .toolbar { padding: 14px 16px; }
 }

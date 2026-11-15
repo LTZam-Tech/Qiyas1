@@ -1,4 +1,3 @@
-import { C } from './theme.js';
 
 export const PERSPECTIVES = [
   { id: 1, code: "D1", name: "الاستراتيجية والتخطيط", nameEn: "Strategy & Planning", axes: 3, standards: 3, completion: 0 },
@@ -47,18 +46,24 @@ export const TASKS_DATA = [
   { id: 8, code: "5.9.1", req_ar: "ميثاق لجنة BCM", req_en: "BCM Charter", assignee_ar: "محمد الدوسري", assignee_en: "Mohammed Al-Dosari", due: "2025-04-10", status: "approved", priority: "normal" },
 ];
 
+// Status / priority badges. `tone` maps to .q-tone-* classes in styles/ui.css.
 export const BADGE_MAP = {
-  full: { bg: C.greenLight, color: C.green, label_ar: "التزام كلي", label_en: "Full" },
-  partial: { bg: C.orangeLight, color: C.orange, label_ar: "التزام جزئي", label_en: "Partial" },
-  non: { bg: C.redLight, color: C.red, label_ar: "عدم التزام", label_en: "Non" },
-  approved: { bg: C.greenLight, color: C.green, label_ar: "معتمد", label_en: "Approved" },
-  submitted: { bg: "#E3F2FD", color: "#1565C0", label_ar: "مُقدَّم", label_en: "Submitted" },
-  revision: { bg: C.orangeLight, color: C.orange, label_ar: "مراجعة", label_en: "Review" },
-  active: { bg: C.light, color: C.primary, label_ar: "نشط", label_en: "Active" },
-  reject: { bg: C.redLight, color: C.red, label_ar: "مرفوض", label_en: "Rejected" },
-  critical: { bg: C.redLight, color: C.red, label_ar: "حرج", label_en: "Critical" },
-  high: { bg: C.orangeLight, color: C.orange, label_ar: "عالي", label_en: "High" },
-  normal: { bg: "#E3F2FD", color: "#1565C0", label_ar: "متوسط", label_en: "Normal" },
+  full: { tone: "success", label_ar: "التزام كلي", label_en: "Full" },
+  partial: { tone: "warning", label_ar: "التزام جزئي", label_en: "Partial" },
+  non: { tone: "danger", label_ar: "عدم التزام", label_en: "Non-compliant" },
+  approved: { tone: "success", label_ar: "معتمد", label_en: "Approved" },
+  submitted: { tone: "info", label_ar: "مُقدَّم", label_en: "Submitted" },
+  under_review: { tone: "info", label_ar: "قيد المراجعة", label_en: "Under review" },
+  revision: { tone: "warning", label_ar: "مطلوب تعديل", label_en: "Needs changes" },
+  resubmission_required: { tone: "warning", label_ar: "إعادة تقديم", label_en: "Resubmit" },
+  active: { tone: "brand", label_ar: "نشط", label_en: "Active" },
+  reject: { tone: "danger", label_ar: "مرفوض", label_en: "Rejected" },
+  rejected: { tone: "danger", label_ar: "مرفوض", label_en: "Rejected" },
+  critical: { tone: "danger", label_ar: "حرجة", label_en: "Critical" },
+  high: { tone: "warning", label_ar: "عالية", label_en: "High" },
+  medium: { tone: "info", label_ar: "متوسطة", label_en: "Medium" },
+  normal: { tone: "info", label_ar: "متوسطة", label_en: "Medium" },
+  low: { tone: "neutral", label_ar: "منخفضة", label_en: "Low" },
 };
 
 // Sub-items under each domain in Standards Catalog Navigator
@@ -179,56 +184,54 @@ export const STANDARDS_HIERARCHY = [
   { id: 38, code: "10.2.2", title: "تقييم التكرار", titleEn: "Repetition Evaluation", axisId: 21, metrics: { total: 4, approved: 2, pending: 2, rejected: 0 } },
 ];
 
+// Sidebar navigation. Groups render as always-visible labelled sections.
+// "approvals" and "analytics" still route (to Review / Reports) for old links,
+// but they are not separate menu entries because they opened the same pages.
 export const NAV_ITEMS = [
   { key: "dashboard", label: "لوحة التحكم", labelEn: "Dashboard", iconKey: "dashboard", isGroup: false },
-  
-  { 
-    key: "management", 
-    label: "إدارة المعايير", 
-    labelEn: "Standards Management", 
-    iconKey: "catalog",
+  {
+    key: "group-standards",
+    label: "المعايير",
+    labelEn: "Standards",
     isGroup: true,
     children: [
-      { key: "catalog", label: "فهرس المقاييس", labelEn: "Catalog", iconKey: "catalog", isGroup: false },
-      { key: "tasks", label: "إدارة المهام", labelEn: "Tasks", iconKey: "tasks", isGroup: false },
-    ]
+      { key: "catalog", label: "فهرس المعايير", labelEn: "Standards catalog", iconKey: "catalog", isGroup: false },
+      { key: "tasks", label: "المهام", labelEn: "Tasks", iconKey: "tasks", isGroup: false },
+    ],
   },
-
-  { 
-    key: "evidence", 
-    label: "خزنة الأدلة", 
-    labelEn: "Evidence Locker", 
-    iconKey: "upload",
+  {
+    key: "group-evidence",
+    label: "الأدلة",
+    labelEn: "Evidence",
     isGroup: true,
     children: [
-      { key: "evidence", label: "رفع الأدلة", labelEn: "Upload Evidence", iconKey: "upload", isGroup: false },
-      { key: "evidence-list", label: "سجل الأدلة", labelEn: "Evidence List", iconKey: "list", isGroup: false },
-    ]
+      { key: "evidence", label: "خزنة الأدلة", labelEn: "Evidence locker", iconKey: "archive", isGroup: false },
+      { key: "evidence-list", label: "سجل الملفات", labelEn: "Files ledger", iconKey: "list", isGroup: false },
+    ],
   },
-
-  { 
-    key: "review", 
-    label: "المراجعة والاعتماد", 
-    labelEn: "Review & Approval", 
-    iconKey: "review",
+  {
+    key: "group-review",
+    label: "المراجعة والتقارير",
+    labelEn: "Review & insights",
     isGroup: true,
     children: [
-      { key: "review", label: "المراجعات", labelEn: "Reviews", iconKey: "review", isGroup: false },
-      { key: "approvals", label: "الاعتمادات", labelEn: "Approvals", iconKey: "check", isGroup: false },
-    ]
+      { key: "review", label: "المراجعة والاعتماد", labelEn: "Review & approval", iconKey: "shield", isGroup: false },
+      { key: "reports", label: "التقارير", labelEn: "Reports", iconKey: "chart", isGroup: false },
+    ],
   },
-
-  { 
-    key: "reporting", 
-    label: "التقارير والتحليلات", 
-    labelEn: "Reports & Analytics", 
-    iconKey: "report",
+  {
+    key: "group-system",
+    label: "النظام",
+    labelEn: "System",
     isGroup: true,
     children: [
-      { key: "reports", label: "التقارير", labelEn: "Reports", iconKey: "report", isGroup: false },
-      { key: "analytics", label: "التحليلات", labelEn: "Analytics", iconKey: "chart", isGroup: false },
-    ]
+      { key: "error-logs", label: "سجل الأخطاء", labelEn: "Error log", iconKey: "alertCircle", isGroup: false },
+    ],
   },
-
-  { key: "error-logs", label: "سجل الأخطاء", labelEn: "Error Logs", iconKey: "error", isGroup: false },
 ];
+
+// Page titles for routes that are not menu entries.
+export const PAGE_ALIASES = {
+  approvals: { label: "المراجعة والاعتماد", labelEn: "Review & approval" },
+  analytics: { label: "التقارير", labelEn: "Reports" },
+};
