@@ -23,6 +23,9 @@ import dashboardRoutes from '@/modules/dashboard/dashboard.routes';
 import reportRoutes from '@/modules/reports/reports.routes';
 import orgStructureRoutes from '@/modules/org-structure/org-structure.routes';
 import notificationRoutes from '@/modules/notifications/notifications.routes';
+import db from '@/db';
+import { authenticate } from '@/middleware/auth';
+import { evidenceDepsFromEnv, mountComplianceApi } from '@/compliance/runtime';
 
 const app: Application = express();
 
@@ -165,6 +168,9 @@ app.use('/api/v1/reviews', reviewRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/reports', reportRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+
+// Phase 1 compliance API (docs/phase1), alongside the legacy v1 routes
+mountComplianceApi(app, { connect: () => db.getClient() }, authenticate, evidenceDepsFromEnv(logger));
 
 // 404 handler
 app.use((req: Request, res: Response) => {

@@ -4,6 +4,7 @@ import logger from '@/utils/logger';
 import db from '@/db';
 import redis from '@/db/redis';
 import { runPendingMigrations } from '@/db/migrations';
+import { prepareComplianceDatabase, startComplianceScheduler } from '@/compliance/runtime';
 
 console.log('=== SERVER STARTING ===');
 
@@ -31,6 +32,12 @@ async function startServer() {
     console.log('Applying pending database migrations...');
     await runPendingMigrations();
     logger.info('Database migrations checked/applied successfully');
+
+    // Phase 1 schema "qiyas": migrations + role matrix, then the deadline scheduler
+    const compliancePool = { connect: () => db.getClient() };
+    const ran = await prepareComplianceDatabase(compliancePool);
+    logger.info('Qiyas compliance schema ready', { applied: ran });
+    startComplianceScheduler(compliancePool, logger);
 
     console.log('Testing Redis connection...');
     
