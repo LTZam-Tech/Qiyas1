@@ -113,7 +113,7 @@ export default function CataloguePage({ lang, onNavigate }) {
                               <div className={s.listMain}>
                                 <span style={{ fontSize: '0.86rem' }} dir="auto">{pickText(lang, r.text)}</span>
                                 <span className={s.sub}>
-                                  {r.code} · {t(`${r.coveredProofItems} من ${r.expectedProofItems} أدلة مطلوبة مقبولة`, `${r.coveredProofItems} of ${r.expectedProofItems} required proofs accepted`, `${r.expectedProofItems} میں سے ${r.coveredProofItems} مطلوبہ ثبوت منظور`)}
+                                  <bdi dir="ltr">{r.code}</bdi> · {t(`${r.coveredProofItems} من ${r.expectedProofItems} أدلة مطلوبة مقبولة`, `${r.coveredProofItems} of ${r.expectedProofItems} required proofs accepted`, `${r.expectedProofItems} میں سے ${r.coveredProofItems} مطلوبہ ثبوت منظور`)}
                                   {!r.applicable && r.notApplicableReason ? ` · ${r.notApplicableReason}` : ''}
                                 </span>
                               </div>

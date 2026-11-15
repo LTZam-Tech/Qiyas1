@@ -26,7 +26,12 @@ import { seedRbac } from '../db/seedRbac';
 import { createComplianceRouter } from '../api/router';
 import { runComplianceTick } from '../runtime';
 import { assignTask, createAssignment, publishAssignment } from '../work/tasks';
-import demoFramework from './demo-framework.json';
+import { existsSync as fileExists, readFileSync } from 'fs';
+
+// The official DGA v5.0 framework when available, otherwise the small demo framework.
+const OFFICIAL = path.resolve(__dirname, '../framework/data/dga-v5.0.json');
+const demoFramework = JSON.parse(readFileSync(fileExists(OFFICIAL) ? OFFICIAL : path.resolve(__dirname, 'demo-framework.json'), 'utf8'));
+const official = fileExists(OFFICIAL);
 
 const ROOT = path.resolve(__dirname, '../../../.devdata');
 const PG_PORT = Number(process.env.QIYAS_DEV_PG_PORT || 54330);
@@ -118,7 +123,11 @@ async function seedDemo(db: Client): Promise<void> {
   const { frameworkVersionId } = await run('alaa', (c) => importFramework(c, demoFramework));
   await run('alaa', (c) => activateFramework(c, frameworkVersionId));
   const year = now.getFullYear();
-  const { cycleId } = await run('alaa', (c) => createCycle(c, { frameworkVersionId, year, name: `Qiyas ${year} / v5.0 (demo)`, startsOn: `${year}-01-01`, endsOn: `${year}-12-31` }));
+  const { cycleId } = await run('alaa', (c) => createCycle(c, { frameworkVersionId, year, name: official ? `Qiyas ${year} / v5.0` : `Qiyas ${year} / v5.0 (demo)`, startsOn: `${year}-01-01`, endsOn: `${year}-12-31` }));
+  // Requirement codes used by the sample tasks, in the official or the demo framework
+  const C = official
+    ? { plan: '5.1.1-R1', exec: '5.1.2-R1', ea: '5.3.1-R1', hr: '5.6.1-R1' }
+    : { plan: '1.1.1-R1', exec: '1.1.2-R1', ea: '1.2.1-R1', hr: '2.1.1-R1' };
   await run('alaa', (c) => transitionCycle(c, cycleId, 'open'));
   const reqs = (await db.query(`SELECT cr.id, r.code FROM qiyas.cycle_requirements cr JOIN qiyas.requirements r ON r.id = cr.requirement_id WHERE cr.cycle_id = $1 ORDER BY r.code`, [cycleId])).rows;
   const req = (code: string) => reqs.find((r) => r.code === code)!.id as string;
@@ -130,20 +139,20 @@ async function seedDemo(db: Client): Promise<void> {
       cycleId, departmentId: dept, cycleRequirementIds: codes.map(req), title, instructions: 'Upload the approved, signed version dated within this cycle.',
       implementationDueAt: addBusinessDays(now, days, c.calendar), managerDueAt: addBusinessDays(now, Math.min(2, days), c.calendar),
     })));
-  await assign(it, ['1.1.1-R1'], 'Digital transformation strategic plan', 10);                 // waiting for Mona to assign
-  const t2 = await assign(it, ['1.1.2-R1'], 'Strategic objectives review', 6);
+  await assign(it, [C.plan], 'Digital transformation strategic plan', 10);                 // waiting for Mona to assign
+  const t2 = await assign(it, [C.exec], 'Digital transformation execution plan', 6);
   await run('mona', (c) => assignTask(c, t2, ids.ali));                                         // Ali working on it
-  const t3 = await assign(it, ['1.2.1-R1'], 'Basic needs identification', 8);
+  const t3 = await assign(it, [C.ea], 'Enterprise architecture', 8);
   await run('mona', (c) => assignTask(c, t3, ids.sara));
-  const up = await run('sara', (c) => uploadEvidence(c, evidence, { taskId: t3, title: 'Needs assessment report', file: { content: Buffer.from('%PDF demo needs assessment'), filename: 'needs-assessment.pdf', mimeType: 'application/pdf' } }));
-  const p3 = await proof('1.2.1-R1');
-  await run('sara', (c) => linkEvidence(c, up.versionId, { taskId: t3, cycleRequirementId: req('1.2.1-R1'), proofItemId: p3 }));
+  const up = await run('sara', (c) => uploadEvidence(c, evidence, { taskId: t3, title: 'Enterprise architecture unit charter', file: { content: Buffer.from('%PDF demo EA charter'), filename: 'ea-unit-charter.pdf', mimeType: 'application/pdf' } }));
+  const p3 = await proof(C.ea);
+  await run('sara', (c) => linkEvidence(c, up.versionId, { taskId: t3, cycleRequirementId: req(C.ea), proofItemId: p3 }));
   await run('sara', (c) => submitEvidence(c, t3));                                               // waiting for review
-  const t4 = await assign(hr, ['2.1.1-R1'], 'General policies preparation', 5);
+  const t4 = await assign(hr, [C.hr], 'Capability building plan', 5);
   await run('khalid', (c) => assignTask(c, t4, ids.huda));
-  const up4 = await run('huda', (c) => uploadEvidence(c, evidence, { taskId: t4, title: 'HR policy manual', file: { content: Buffer.from('%PDF demo hr policy'), filename: 'hr-policy.pdf', mimeType: 'application/pdf' } }));
-  const p4 = await proof('2.1.1-R1');
-  const link4 = await run('huda', (c) => linkEvidence(c, up4.versionId, { taskId: t4, cycleRequirementId: req('2.1.1-R1'), proofItemId: p4 }));
+  const up4 = await run('huda', (c) => uploadEvidence(c, evidence, { taskId: t4, title: 'Digital capability building plan', file: { content: Buffer.from('%PDF demo capability plan'), filename: 'capability-plan.pdf', mimeType: 'application/pdf' } }));
+  const p4 = await proof(C.hr);
+  const link4 = await run('huda', (c) => linkEvidence(c, up4.versionId, { taskId: t4, cycleRequirementId: req(C.hr), proofItemId: p4 }));
   await run('huda', (c) => submitEvidence(c, t4));
   await run('ahmad', (c) => claimEvidence(c, link4));
   await run('ahmad', (c) => acceptEvidence(c, link4, 'Approved and dated in cycle'));             // accepted, not yet posted
