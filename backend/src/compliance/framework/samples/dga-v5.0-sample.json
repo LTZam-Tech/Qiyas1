@@ -1,0 +1,66 @@
+{
+  "format": "qiyas-framework/1",
+  "issuer": "DGA",
+  "documentCode": "DGA-1-2-1-111",
+  "version": "5.0-sample",
+  "publishedOn": "2026-04-01",
+  "title": {
+    "ar": "المعايير الأساسية للتحول الرقمي (عينة)",
+    "en": "Basic Digital Transformation Standards (sample)",
+    "ur": "ڈیجیٹل تبدیلی کے بنیادی معیارات (نمونہ)"
+  },
+  "perspectives": [
+    {
+      "code": "P1",
+      "name": { "ar": "الاستراتيجية والتخطيط", "en": "Strategy & Planning", "ur": "حکمتِ عملی اور منصوبہ بندی" },
+      "axes": [
+        {
+          "code": "5.1",
+          "name": { "ar": "التخطيط للتحول الرقمي", "en": "Digital Transformation Planning", "ur": "ڈیجیٹل تبدیلی کی منصوبہ بندی" },
+          "standards": [
+            {
+              "code": "5.1.1",
+              "title": {
+                "ar": "إعداد خطة استراتيجية للتحول الرقمي",
+                "en": "Digital transformation strategic plan",
+                "ur": "ڈیجیٹل تبدیلی کا اسٹریٹجک منصوبہ"
+              },
+              "goal": {
+                "ar": "تطوير خطة استراتيجية للتحول الرقمي متوائمة مع استراتيجية الجهة ومستهدفات رؤية السعودية 2030.",
+                "en": "Develop a digital transformation strategic plan aligned with the entity's strategy and the targets of Saudi Vision 2030.",
+                "ur": "ڈیجیٹل تبدیلی کا ایک اسٹریٹجک منصوبہ تیار کرنا جو ادارے کی حکمتِ عملی اور سعودی ویژن 2030 کے اہداف سے ہم آہنگ ہو۔"
+              },
+              "requirements": [
+                {
+                  "code": "5.1.1-R1",
+                  "kind": "sequential",
+                  "text": {
+                    "ar": "إعداد استراتيجية للتحول الرقمي/ للتحول للتعاملات الإلكترونية الحكومية، بحيث تشمل ما يأتي:",
+                    "en": "Prepare a strategy for digital transformation / the shift to e-government transactions that includes the following:"
+                  },
+                  "children": [
+                    { "code": "5.1.1-R1a", "text": { "ar": "رؤية ورسالة وركائز وأهداف استراتيجية وربطها باستراتيجية الجهة.", "en": "A vision, mission, pillars and strategic objectives, linked to the entity's strategy." } },
+                    { "code": "5.1.1-R1b", "text": { "ar": "المبادرات والمشاريع الاستراتيجية ومؤشرات الأداء الاستراتيجية.", "en": "Strategic initiatives and projects, and strategic performance indicators." } },
+                    { "code": "5.1.1-R1c", "text": { "ar": "نموذج تحقيق التكامل مع الجهات الخارجية ذات العلاقة، لتحقيق المستهدفات.", "en": "A model for integrating with relevant external entities to achieve the targets." } },
+                    { "code": "5.1.1-R1d", "text": { "ar": "الكفاءات والقدرات والمهارات اللازمة، لتحقيق مستهدفات الخطة.", "en": "The competencies, capabilities and skills needed to achieve the plan's targets." } }
+                  ]
+                }
+              ],
+              "proofItems": [
+                {
+                  "code": "5.1.1-E1",
+                  "expectedKind": "plan",
+                  "requirementCodes": ["5.1.1-R1"],
+                  "description": {
+                    "ar": "إرفاق الخطة الاستراتيجية المعتمدة للتحول الرقمي، التي تتضمن جميع متطلبات تطبيق المعيار، ويكون تاريخ اعتمادها خلال فترة لا تزيد عن (36) شهرًا.",
+                    "en": "Attach the approved digital transformation strategic plan, covering every requirement of the standard, approved within the last 36 months."
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
