@@ -119,12 +119,6 @@
   justify-content: flex-end;
 }
 
-.langBtn {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-2);
-}
-
 /* ---------- Content ---------- */
 .content {
   flex: 1;

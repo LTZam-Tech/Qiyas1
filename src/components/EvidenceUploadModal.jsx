@@ -1,14 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import perspectivesService from '../services/perspectivesService.js';
 import axesService from '../services/axesService.js';
 import standardsService from '../services/standardsService.js';
 import styles from './EvidenceUploadModal.module.css';
 import { Icons } from '../utils/icons.jsx';
+import { makePick, makeT } from '../i18n/index.js';
 
 const ACCEPTED_TYPES = '.pdf,.png,.jpg,.jpeg,.xlsx,.docx';
 
 const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
+  const t = useMemo(() => makeT(lang), [lang]);
+  const pick = useMemo(() => makePick(lang), [lang]);
   const [perspectives, setPerspectives] = useState([]);
   const [axes, setAxes] = useState([]);
   const [standards, setStandards] = useState([]);
@@ -34,10 +37,10 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
       .getPerspectives()
       .then((data) => setPerspectives(data))
       .catch(() =>
-        setError(lang === 'ar' ? 'فشل تحميل المجالات' : 'Failed to load domains')
+        setError(t('فشل تحميل المجالات', 'Failed to load domains'))
       )
       .finally(() => setIsLoadingDomains(false));
-  }, [isOpen, lang]);
+  }, [isOpen, t]);
 
   // Load axes when domain changes
   useEffect(() => {
@@ -51,10 +54,10 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
       .getAxes(selectedDomain)
       .then((data) => setAxes(data))
       .catch(() =>
-        setError(lang === 'ar' ? 'فشل تحميل المحاور' : 'Failed to load axes')
+        setError(t('فشل تحميل المحاور', 'Failed to load axes'))
       )
       .finally(() => setIsLoadingAxes(false));
-  }, [selectedDomain, lang]);
+  }, [selectedDomain, t]);
 
   // Load standards when axis changes
   useEffect(() => {
@@ -66,10 +69,10 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
       .getStandards(selectedAxis)
       .then((data) => setStandards(data))
       .catch(() =>
-        setError(lang === 'ar' ? 'فشل تحميل المعايير' : 'Failed to load standards')
+        setError(t('فشل تحميل المعايير', 'Failed to load standards'))
       )
       .finally(() => setIsLoadingStandards(false));
-  }, [selectedAxis, lang]);
+  }, [selectedAxis, t]);
 
   const reset = () => {
     setSelectedDomain('');
@@ -99,19 +102,19 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
     setSuccessMsg('');
 
     if (!selectedDomain) {
-      setError(lang === 'ar' ? 'يرجى اختيار المجال' : 'Please select a domain');
+      setError(t('يرجى اختيار المجال', 'Please select a domain'));
       return;
     }
     if (!selectedAxis) {
-      setError(lang === 'ar' ? 'يرجى اختيار المحور' : 'Please select an axis');
+      setError(t('يرجى اختيار المحور', 'Please select an axis'));
       return;
     }
     if (!selectedStandard) {
-      setError(lang === 'ar' ? 'يرجى اختيار المعيار' : 'Please select a standard');
+      setError(t('يرجى اختيار المعيار', 'Please select a standard'));
       return;
     }
     if (files.length === 0) {
-      setError(lang === 'ar' ? 'يرجى اختيار ملف واحد على الأقل' : 'Please select at least one file');
+      setError(t('يرجى اختيار ملف واحد على الأقل', 'Please select at least one file'));
       return;
     }
 
@@ -156,15 +159,17 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
       }
 
       setSuccessMsg(
-        lang === 'ar'
-          ? `تم رفع ${files.length} ملف بنجاح!`
-          : `${files.length} file(s) uploaded successfully!`
+        t(
+          `تم رفع ${files.length} ملف بنجاح!`,
+          `${files.length} file(s) uploaded successfully!`,
+          `${files.length} فائل کامیابی سے اپ لوڈ ہو گئی!`,
+        )
       );
       setTimeout(() => {
         handleClose();
       }, 1500);
     } catch (err) {
-      setError(err.message || (lang === 'ar' ? 'فشل رفع الملفات' : 'Upload failed'));
+      setError(err.message || (t('فشل رفع الملفات', 'Upload failed')));
     } finally {
       setIsUploading(false);
     }
@@ -172,7 +177,6 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
 
   if (!isOpen) return null;
 
-  const t = (ar, en) => (lang === 'ar' ? ar : en);
 
   return (
     <div className={styles.overlay} onClick={handleClose}>
@@ -221,7 +225,7 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
               </option>
               {perspectives.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.code} – {lang === 'ar' ? p.name_ar : p.name_en}
+                  {p.code} – {pick(p.name_ar, p.name_en)}
                 </option>
               ))}
             </select>
@@ -249,7 +253,7 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
               </option>
               {axes.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.code} – {lang === 'ar' ? a.name_ar : a.name_en}
+                  {a.code} – {pick(a.name_ar, a.name_en)}
                 </option>
               ))}
             </select>
@@ -277,7 +281,7 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
               </option>
               {standards.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.code} – {lang === 'ar' ? s.name_ar : s.name_en}
+                  {s.code} – {pick(s.name_ar, s.name_en)}
                 </option>
               ))}
             </select>
@@ -300,7 +304,7 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
               <span className={styles.filePickerIcon} aria-hidden="true">{Icons.upload}</span>
               <span className={styles.filePickerText}>
                 {files.length > 0
-                  ? t(`${files.length} ملف مختار`, `${files.length} file(s) selected`)
+                  ? t(`${files.length} ملف مختار`, `${files.length} file(s) selected`, `${files.length} فائلیں منتخب`)
                   : t('اضغط لاختيار الملفات (PDF, PNG, XLSX, DOCX)', 'Click to select files (PDF, PNG, XLSX, DOCX)')}
               </span>
             </label>
@@ -346,7 +350,7 @@ const EvidenceUploadModal = ({ isOpen, onClose, lang = 'ar' }) => {
 EvidenceUploadModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  lang: PropTypes.oneOf(['ar', 'en']),
+  lang: PropTypes.oneOf(['ar', 'en', 'ur']),
 };
 
 export default EvidenceUploadModal;

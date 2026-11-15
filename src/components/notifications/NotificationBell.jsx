@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { Icons } from '../../utils/icons.jsx';
 import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../../services/notificationsService.js';
 import styles from './Notifications.module.css';
+import { makePick, makeT } from '../../i18n/index.js';
 
 const TYPE_STYLE = {
   task_assigned: { icon: 'tasks', tone: 'brand' },
@@ -15,7 +16,7 @@ const relativeTime = (dateString, lang) => {
   const then = new Date(dateString).getTime();
   if (Number.isNaN(then)) return '';
   const diffSec = Math.round((then - Date.now()) / 1000);
-  const rtf = new Intl.RelativeTimeFormat(lang === 'ar' ? 'ar' : 'en', { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
   const abs = Math.abs(diffSec);
   if (abs < 60) return rtf.format(diffSec, 'second');
   if (abs < 3600) return rtf.format(Math.round(diffSec / 60), 'minute');
@@ -24,7 +25,9 @@ const relativeTime = (dateString, lang) => {
 };
 
 export default function NotificationBell({ lang = 'ar' }) {
-  const t = (ar, en) => (lang === 'ar' ? ar : en);
+  const t = makeT(lang);
+  // Titles may come as plain text or with per-language fields (title_en, title_ur).
+  const pick = makePick(lang);
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const dropdownRef = useRef(null);
@@ -85,7 +88,7 @@ export default function NotificationBell({ lang = 'ar' }) {
         onClick={toggleDropdown}
         aria-haspopup="true"
         aria-expanded={isOpen}
-        aria-label={unreadCount > 0 ? t(`التنبيهات (${unreadCount} غير مقروءة)`, `Notifications (${unreadCount} unread)`) : t('التنبيهات', 'Notifications')}
+        aria-label={unreadCount > 0 ? t(`التنبيهات (${unreadCount} غير مقروءة)`, `Notifications (${unreadCount} unread)`, `اطلاعات (${unreadCount} بغیر پڑھی)`) : t('التنبيهات', 'Notifications')}
       >
         {Icons.bellIcon}
         {unreadCount > 0 && <span className={styles.badge}>{unreadCount > 9 ? '9+' : unreadCount}</span>}
@@ -97,7 +100,7 @@ export default function NotificationBell({ lang = 'ar' }) {
             <div>
               <h3>{t('التنبيهات', 'Notifications')}</h3>
               <span className={styles.headerSub}>
-                {unreadCount > 0 ? t(`${unreadCount} غير مقروءة`, `${unreadCount} unread`) : t('لا جديد', 'All caught up')}
+                {unreadCount > 0 ? t(`${unreadCount} غير مقروءة`, `${unreadCount} unread`, `${unreadCount} بغیر پڑھی`) : t('لا جديد', 'All caught up')}
               </span>
             </div>
             {unreadCount > 0 && (
@@ -124,8 +127,8 @@ export default function NotificationBell({ lang = 'ar' }) {
                     >
                       <span className={`q-icon-chip q-tone-${ts.tone} ${styles.itemIcon}`}>{Icons[ts.icon]}</span>
                       <span className={styles.itemText}>
-                        <span className={styles.itemTitle}>{note.title}</span>
-                        {note.body ? <span className={styles.itemBody}>{note.body}</span> : null}
+                        <span className={styles.itemTitle}>{pick(note.title_ar || note.title, note.title_en, note.title_ur)}</span>
+                        {note.body ? <span className={styles.itemBody}>{pick(note.body_ar || note.body, note.body_en, note.body_ur)}</span> : null}
                         <span className={styles.itemTime}>{relativeTime(note.createdAt, lang)}</span>
                       </span>
                       {!note.isRead && <span className={styles.unreadDot} aria-label={t('غير مقروء', 'Unread')} />}
@@ -142,5 +145,5 @@ export default function NotificationBell({ lang = 'ar' }) {
 }
 
 NotificationBell.propTypes = {
-  lang: PropTypes.oneOf(['ar', 'en']),
+  lang: PropTypes.oneOf(['ar', 'en', 'ur']),
 };

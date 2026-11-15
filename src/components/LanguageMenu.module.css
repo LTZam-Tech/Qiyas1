@@ -1,0 +1,75 @@
+.root {
+  position: relative;
+  display: inline-flex;
+}
+
+.trigger {
+  width: auto;
+  min-width: 40px;
+  padding: 0 8px;
+  gap: 4px;
+  display: inline-flex;
+  align-items: center;
+}
+.trigger svg { width: 18px; height: 18px; }
+
+.triggerText svg { width: 16px; height: 16px; }
+
+.code {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.chev { display: inline-grid; opacity: 0.7; }
+.chev svg { width: 14px; height: 14px; }
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-end: 0;
+  z-index: 120;
+  min-width: 190px;
+  padding: 6px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  animation: q-fade-up 0.16s var(--ease) both;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  text-align: start;
+  transition: background-color 0.12s var(--ease);
+}
+.item:hover,
+.item:focus-visible {
+  background: var(--surface-3);
+  outline: none;
+}
+.itemOn { color: var(--primary-text); }
+
+.itemText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.native { font-size: 0.95rem; font-weight: 600; }
+.english { font-size: 0.72rem; color: var(--text-3); }
+
+.check {
+  display: inline-grid;
+  width: 18px;
+  color: var(--primary);
+}
+.check svg { width: 18px; height: 18px; }

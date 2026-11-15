@@ -7,6 +7,7 @@ import axesService from '../services/axesService.js';
 import standardsService from '../services/standardsService.js';
 import { createTask } from '../services/tasksService.js';
 import styles from './TaskModal.module.css';
+import { makePick, makeT, pickName } from '../i18n/index.js';
 
 const PRIORITY_OPTIONS = [
   ['critical', 'حرج', 'Critical'],
@@ -34,6 +35,8 @@ const isMockId = (value) => {
 };
 
 const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
+  const t = useMemo(() => makeT(lang), [lang]);
+  const pick = useMemo(() => makePick(lang), [lang]);
   const [formData, setFormData] = useState({
     title: '',
     perspectiveId: '',
@@ -82,7 +85,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
       } catch (err) {
         if (!active) return;
         setAxes([]);
-        setError(err.message || (lang === 'ar' ? 'فشل تحميل المحاور' : 'Failed to load axes'));
+        setError(err.message || (t('فشل تحميل المحاور', 'Failed to load axes')));
       }
     };
 
@@ -90,7 +93,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
     return () => {
       active = false;
     };
-  }, [formData.perspectiveId, lang]);
+  }, [formData.perspectiveId, t]);
 
   // Load standards when axis changes
   useEffect(() => {
@@ -109,7 +112,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
       } catch (err) {
         if (!active) return;
         setStandards([]);
-        setError(err.message || (lang === 'ar' ? 'فشل تحميل المعايير' : 'Failed to load standards'));
+        setError(err.message || (t('فشل تحميل المعايير', 'Failed to load standards')));
       }
     };
 
@@ -117,24 +120,28 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
     return () => {
       active = false;
     };
-  }, [formData.axisId, lang]);
+  }, [formData.axisId, t]);
 
   const targetEntities = useMemo(() => {
     return [
       ...departments.map((department) => ({
         value: `department:${department.id}`,
-        label: lang === 'ar' 
-          ? `إدارة - ${department.name}` 
-          : `Department - ${department.name_en || department.name}`,
+        label: t(
+          `إدارة - ${department.name}`,
+          `Department - ${department.name_en || department.name}`,
+          `شعبہ - ${pick(department.name, department.name_en)}`,
+        ),
       })),
       ...units.map((unit) => ({
         value: `unit:${unit.id}`,
-        label: lang === 'ar' 
-          ? `وحدة - ${unit.name}` 
-          : `Unit - ${unit.name_en || unit.name}`,
+        label: t(
+          `وحدة - ${unit.name}`,
+          `Unit - ${unit.name_en || unit.name}`,
+          `یونٹ - ${pick(unit.name, unit.name_en)}`,
+        ),
       })),
     ];
-  }, [departments, units, lang]);
+  }, [departments, units, t, pick]);
 
   const selectedStandard = useMemo(() => {
     return standards.find((standard) => String(standard.id) === String(formData.standardId));
@@ -191,13 +198,11 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
 
       if (perspectivesData.length === 0) {
         setError(
-          lang === 'ar'
-            ? 'لا توجد منظورات بعد. أضف المنظورات والمحاور والمعايير أولاً من إدارة المنظومة، ثم عد لإنشاء المهمة.'
-            : 'No perspectives found. Please add perspectives, axes and standards first, then come back to create a task.'
+          t('لا توجد منظورات بعد. أضف المنظورات والمحاور والمعايير أولاً من إدارة المنظومة، ثم عد لإنشاء المهمة.', 'No perspectives found. Please add perspectives, axes and standards first, then come back to create a task.')
         );
       }
     } catch {
-      setError(lang === 'ar' ? 'تعذر تحميل بيانات النموذج. الرجاء المحاولة مرة أخرى.' : 'Failed to load form data. Please try again.');
+      setError(t('تعذر تحميل بيانات النموذج. الرجاء المحاولة مرة أخرى.', 'Failed to load form data. Please try again.'));
     } finally {
       setIsLoadingData(false);
     }
@@ -277,13 +282,13 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
       isMockId(formData.perspectiveId) ||
       isMockId(targetId)
     ) {
-      setError(lang === 'ar' ? 'تم تحميل بيانات تجريبية. يرجى تحديث الصفحة والتأكد من اتصال الـ API.' : 'Mock IDs detected. Refresh and ensure API connectivity.');
+      setError(t('تم تحميل بيانات تجريبية. يرجى تحديث الصفحة والتأكد من اتصال الـ API.', 'Mock IDs detected. Refresh and ensure API connectivity.'));
       return;
     }
 
     const selectedStandardTitle = selectedStandard?.name_ar || selectedStandard?.name || selectedStandard?.title;
     if (!selectedStandardTitle) {
-      setError(lang === 'ar' ? 'لم يتم العثور على بيانات المعيار المحدد' : 'Selected standard data is missing');
+      setError(t('لم يتم العثور على بيانات المعيار المحدد', 'Selected standard data is missing'));
       return;
     }
 
@@ -313,7 +318,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
       onClose();
     } catch (err) {
       console.error('Error creating task:', err);
-      setError(err.message || (lang === 'ar' ? 'فشل إنشاء المهمة. الرجاء المحاولة مرة أخرى.' : 'Failed to create task. Please try again.'));
+      setError(err.message || (t('فشل إنشاء المهمة. الرجاء المحاولة مرة أخرى.', 'Failed to create task. Please try again.')));
     } finally {
       setIsLoading(false);
     }
@@ -326,11 +331,9 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <div className={styles.headingText}>
-            <h2 className={styles.title}>{lang === 'ar' ? 'إنشاء مهمة جديدة' : 'Create New Task'}</h2>
+            <h2 className={styles.title}>{t('إنشاء مهمة جديدة', 'Create New Task')}</h2>
             <p className={styles.subtitle}>
-              {lang === 'ar'
-                ? 'حدد المعيار والمسؤول والموعد النهائي للشاهد المطلوب.'
-                : 'Choose the standard, owner and due date for the required evidence.'}
+              {t('حدد المعيار والمسؤول والموعد النهائي للشاهد المطلوب.', 'Choose the standard, owner and due date for the required evidence.')}
             </p>
           </div>
           <button
@@ -347,14 +350,14 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
         </div>
 
         {isLoadingData ? (
-          <div className={styles.loadingState}>{lang === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'}</div>
+          <div className={styles.loadingState}>{t('جاري تحميل البيانات...', 'Loading data...')}</div>
         ) : (
           <form className={styles.form} onSubmit={handleSubmit}>
             {error && <div className={styles.error}>{error}</div>}
 
             <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <label htmlFor="title" className={styles.label}>
-                {lang === 'ar' ? 'عنوان المهمة' : 'Task Title'} <span className={styles.required}>*</span>
+                {t('عنوان المهمة', 'Task Title')} <span className={styles.required}>*</span>
               </label>
               <input
                 type="text"
@@ -363,7 +366,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
                 value={formData.title}
                 onChange={handleChange}
                 className={styles.input}
-                placeholder={lang === 'ar' ? 'أدخل عنوان المهمة' : 'Enter task title'}
+                placeholder={t('أدخل عنوان المهمة', 'Enter task title')}
                 disabled={isLoading}
                 maxLength={50}
               />
@@ -371,7 +374,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
 
             <div className={styles.formGroup}>
               <label htmlFor="perspectiveId" className={styles.label}>
-                {lang === 'ar' ? 'المنظور' : 'Perspective'} <span className={styles.required}>*</span>
+                {t('المنظور', 'Perspective')} <span className={styles.required}>*</span>
               </label>
               <select
                 id="perspectiveId"
@@ -381,11 +384,9 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
                 className={styles.select}
                 disabled={isLoading}
               >
-                <option value="">{lang === 'ar' ? 'اختر المنظور' : 'Select Perspective'}</option>
+                <option value="">{t('اختر المنظور', 'Select Perspective')}</option>
                 {perspectives.map((perspective) => {
-                  const displayLabel = lang === 'ar' 
-                    ? (perspective.name_ar || perspective.name) 
-                    : (perspective.name_en || perspective.name);
+                  const displayLabel = pick(perspective.name_ar || perspective.name, perspective.name_en || perspective.name);
                   return (
                     <option key={perspective.id} value={perspective.id}>
                       {perspective.code} - {displayLabel}
@@ -397,7 +398,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
 
             <div className={styles.formGroup}>
               <label htmlFor="axisId" className={styles.label}>
-                {lang === 'ar' ? 'المحور' : 'Axis'} <span className={styles.required}>*</span>
+                {t('المحور', 'Axis')} <span className={styles.required}>*</span>
               </label>
               <select
                 id="axisId"
@@ -408,12 +409,10 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
                 disabled={isLoading || !formData.perspectiveId}
               >
                 <option value="">
-                  {formData.perspectiveId ? (lang === 'ar' ? 'اختر المحور' : 'Select Axis') : (lang === 'ar' ? 'اختر المنظور أولاً' : 'Select Perspective first')}
+                  {formData.perspectiveId ? (t('اختر المحور', 'Select Axis')) : (t('اختر المنظور أولاً', 'Select Perspective first'))}
                 </option>
                 {axes.map((axis) => {
-                  const displayLabel = lang === 'ar' 
-                    ? (axis.name_ar || axis.name) 
-                    : (axis.name_en || axis.name);
+                  const displayLabel = pick(axis.name_ar || axis.name, axis.name_en || axis.name);
                   return (
                     <option key={axis.id} value={axis.id}>
                       {axis.code} - {displayLabel}
@@ -425,7 +424,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
 
             <div className={styles.formGroup}>
               <label htmlFor="standardId" className={styles.label}>
-                {lang === 'ar' ? 'المعيار' : 'Standard'} <span className={styles.required}>*</span>
+                {t('المعيار', 'Standard')} <span className={styles.required}>*</span>
               </label>
               <select
                 id="standardId"
@@ -436,12 +435,10 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
                 disabled={isLoading || !formData.axisId}
               >
                 <option value="">
-                  {formData.axisId ? (lang === 'ar' ? 'اختر المعيار' : 'Select Standard') : (lang === 'ar' ? 'اختر المحور أولاً' : 'Select Axis first')}
+                  {formData.axisId ? (t('اختر المعيار', 'Select Standard')) : (t('اختر المحور أولاً', 'Select Axis first'))}
                 </option>
                 {standards.map((standard) => {
-                  const displayLabel = lang === 'ar' 
-                    ? (standard.name_ar || standard.title) 
-                    : (standard.name_en || standard.titleEn);
+                  const displayLabel = pick(standard.name_ar || standard.title, standard.name_en || standard.titleEn);
                   return (
                     <option key={standard.id} value={standard.id}>
                       {standard.code} - {displayLabel}
@@ -453,7 +450,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
 
             <div className={styles.formGroup}>
               <label htmlFor="evidenceType" className={styles.label}>
-                {lang === 'ar' ? 'نوع الشاهد' : 'Evidence Type'} <span className={styles.required}>*</span>
+                {t('نوع الشاهد', 'Evidence Type')} <span className={styles.required}>*</span>
               </label>
               <select
                 id="evidenceType"
@@ -463,10 +460,10 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
                 className={styles.select}
                 disabled={isLoading}
               >
-                <option value="">{lang === 'ar' ? 'اختر نوع الشاهد' : 'Select Evidence Type'}</option>
+                <option value="">{t('اختر نوع الشاهد', 'Select Evidence Type')}</option>
                 {EVIDENCE_OPTIONS.map(([value, label, labelEn]) => (
                   <option key={value} value={value}>
-                    {lang === 'ar' ? label : labelEn}
+                    {t(label, labelEn)}
                   </option>
                 ))}
               </select>
@@ -474,7 +471,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
 
             <div className={styles.formGroup}>
               <label htmlFor="assignedTo" className={styles.label}>
-                {lang === 'ar' ? 'المسؤول' : 'Responsible'} <span className={styles.required}>*</span>
+                {t('المسؤول', 'Responsible')} <span className={styles.required}>*</span>
               </label>
               <select
                 id="assignedTo"
@@ -484,11 +481,9 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
                 className={styles.select}
                 disabled={isLoading}
               >
-                <option value="">{lang === 'ar' ? 'اختر المسؤول' : 'Select Responsible'}</option>
+                <option value="">{t('اختر المسؤول', 'Select Responsible')}</option>
                 {users.map((user) => {
-                  const displayLabel = lang === 'ar' 
-                    ? user.full_name 
-                    : (user.full_name_en || user.full_name);
+                  const displayLabel = pickName(lang, user.full_name, user.full_name_en);
                   return (
                     <option key={user.id} value={user.id}>
                       {displayLabel || user.email}
@@ -500,7 +495,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
 
             <div className={styles.formGroup}>
               <label htmlFor="targetEntity" className={styles.label}>
-                {lang === 'ar' ? 'الوحدة / الإدارة' : 'Unit / Department'} <span className={styles.required}>*</span>
+                {t('الوحدة / الإدارة', 'Unit / Department')} <span className={styles.required}>*</span>
               </label>
               <select
                 id="targetEntity"
@@ -510,7 +505,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
                 className={styles.select}
                 disabled={isLoading}
               >
-                <option value="">{lang === 'ar' ? 'اختر الوحدة أو الإدارة' : 'Select Unit or Department'}</option>
+                <option value="">{t('اختر الوحدة أو الإدارة', 'Select Unit or Department')}</option>
                 {targetEntities.map((target) => (
                   <option key={target.value} value={target.value}>
                     {target.label}
@@ -522,7 +517,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label htmlFor="dueDate" className={styles.label}>
-                  {lang === 'ar' ? 'الموعد النهائي' : 'Due Date'} <span className={styles.required}>*</span>
+                  {t('الموعد النهائي', 'Due Date')} <span className={styles.required}>*</span>
                 </label>
                 <input
                   type="date"
@@ -538,7 +533,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
 
               <div className={styles.formGroup}>
                 <label htmlFor="priority" className={styles.label}>
-                  {lang === 'ar' ? 'الأولوية' : 'Priority'} <span className={styles.required}>*</span>
+                  {t('الأولوية', 'Priority')} <span className={styles.required}>*</span>
                 </label>
                 <select
                   id="priority"
@@ -550,7 +545,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
                 >
                   {PRIORITY_OPTIONS.map(([value, label, labelEn]) => (
                     <option key={value} value={value}>
-                      {lang === 'ar' ? label : labelEn}
+                      {t(label, labelEn)}
                     </option>
                   ))}
                 </select>
@@ -559,7 +554,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
 
             <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <label htmlFor="description" className={styles.label}>
-                {lang === 'ar' ? 'التعليمات / الوصف' : 'Instructions / Description'}
+                {t('التعليمات / الوصف', 'Instructions / Description')}
               </label>
               <textarea
                 id="description"
@@ -567,7 +562,7 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
                 value={formData.description}
                 onChange={handleChange}
                 className={styles.textarea}
-                placeholder={lang === 'ar' ? 'أدخل تعليمات أو وصف المهمة (اختياري)' : 'Enter instructions or task description (optional)'}
+                placeholder={t('أدخل تعليمات أو وصف المهمة (اختياري)', 'Enter instructions or task description (optional)')}
                 rows={4}
                 disabled={isLoading}
                 maxLength={300}
@@ -581,14 +576,14 @@ const TaskModal = ({ isOpen, onClose, onSuccess, lang = 'ar' }) => {
                 className={styles.cancelButton}
                 disabled={isLoading}
               >
-                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                {t('إلغاء', 'Cancel')}
               </button>
               <button
                 type="submit"
                 className={styles.submitButton}
                 disabled={isLoading}
               >
-                {isLoading ? (lang === 'ar' ? 'جاري الإنشاء...' : 'Creating...') : (lang === 'ar' ? 'إنشاء المهمة' : 'Create Task')}
+                {isLoading ? (t('جاري الإنشاء...', 'Creating...')) : (t('إنشاء المهمة', 'Create Task'))}
               </button>
             </div>
           </form>

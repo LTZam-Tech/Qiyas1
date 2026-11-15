@@ -5,6 +5,7 @@ import { Icons } from '../utils/icons.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import StateView from '../components/StateView.jsx';
 import styles from './CatalogPage.module.css';
+import { makeT } from '../i18n/index.js';
 
 const AXES_BY_PERSPECTIVE = AXES.reduce((acc, axis) => {
   (acc[axis.perspId] ||= []).push(axis);
@@ -12,7 +13,7 @@ const AXES_BY_PERSPECTIVE = AXES.reduce((acc, axis) => {
 }, {});
 
 const CatalogPage = ({ lang }) => {
-  const t = (ar, en) => (lang === 'ar' ? ar : en);
+  const t = makeT(lang);
   const [perspId, setPerspId] = useState(null);
   const [axisId, setAxisId] = useState(null);
   const [query, setQuery] = useState('');
@@ -21,7 +22,7 @@ const CatalogPage = ({ lang }) => {
   const axis = AXES.find((a) => a.id === axisId);
   const axes = perspId ? AXES_BY_PERSPECTIVE[perspId] || [] : [];
   const detail = axisId ? STANDARD_DETAILS[axisId] : null;
-  const name = (x) => (lang === 'ar' ? x.name : x.nameEn);
+  const name = (x) => (t(x.name, x.nameEn));
 
   const visiblePerspectives = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -89,9 +90,9 @@ const CatalogPage = ({ lang }) => {
                 </div>
                 <span className={styles.domainTitle}>{name(p)}</span>
                 <span className={styles.domainStats}>
-                  <span>{t(`${p.axes} محاور`, `${p.axes} axes`)}</span>
+                  <span>{t(`${p.axes} محاور`, `${p.axes} axes`, `${p.axes} محور`)}</span>
                   <span aria-hidden="true">·</span>
-                  <span>{t(`${p.standards} معايير`, `${p.standards} standards`)}</span>
+                  <span>{t(`${p.standards} معايير`, `${p.standards} standards`, `${p.standards} معیارات`)}</span>
                   <span className={styles.domainArrow}>{Icons.arrowRight}</span>
                 </span>
               </button>
@@ -134,7 +135,7 @@ const CatalogPage = ({ lang }) => {
 
             <section className={styles.block}>
               <h3 className={styles.blockTitle}><span className={`q-icon-chip q-tone-brand ${styles.blockIcon}`}>{Icons.target}</span>{t('الهدف', 'Goal')}</h3>
-              <p className={styles.goal}>{detail.goal}</p>
+              <p className={styles.goal}>{t(detail.goal, detail.goalEn, detail.goalUr)}</p>
             </section>
 
             <section className={styles.block}>
@@ -142,10 +143,10 @@ const CatalogPage = ({ lang }) => {
               <ol className={styles.reqList}>
                 {detail.requirements.map((req) => (
                   <li key={req.title}>
-                    <p className={styles.reqTitle}>{req.title}</p>
+                    <p className={styles.reqTitle}>{t(req.title, req.titleEn, req.titleUr)}</p>
                     {req.items && (
                       <ul className={styles.reqItems}>
-                        {req.items.map((item) => <li key={item}>{item}</li>)}
+                        {req.items.map((item, i) => <li key={item}>{t(item, req.itemsEn?.[i], req.itemsUr?.[i])}</li>)}
                       </ul>
                     )}
                   </li>
@@ -156,8 +157,8 @@ const CatalogPage = ({ lang }) => {
             <section className={styles.block}>
               <h3 className={styles.blockTitle}><span className={`q-icon-chip q-tone-gold ${styles.blockIcon}`}>{Icons.clipboardIcon}</span>{t('الأدلة المطلوبة', 'Evidence required')}</h3>
               <ul className={styles.evidenceList}>
-                {detail.evidence.map((item) => (
-                  <li key={item}><span className={styles.check}>{Icons.check}</span>{item}</li>
+                {detail.evidence.map((item, i) => (
+                  <li key={item}><span className={styles.check}>{Icons.check}</span>{t(item, detail.evidenceEn?.[i], detail.evidenceUr?.[i])}</li>
                 ))}
               </ul>
             </section>
@@ -173,7 +174,7 @@ const CatalogPage = ({ lang }) => {
 };
 
 CatalogPage.propTypes = {
-  lang: PropTypes.oneOf(['ar', 'en']).isRequired,
+  lang: PropTypes.oneOf(['ar', 'en', 'ur']).isRequired,
 };
 
 export default CatalogPage;

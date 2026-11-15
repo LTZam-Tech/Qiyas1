@@ -106,19 +106,41 @@ export const AXES = [
 export const STANDARD_DETAILS = {
   1: { // التخطيط للتحول الرقمي
     goal: "تطوير خطة استراتيجية للتحول الرقمي متوائمة مع استراتيجية الجهة ومستهدفات رؤية السعودية 2030.",
+    goalEn: "Develop a digital transformation strategic plan aligned with the entity's strategy and the targets of Saudi Vision 2030.",
+    goalUr: "ڈیجیٹل تبدیلی کا ایک اسٹریٹجک منصوبہ تیار کرنا جو ادارے کی حکمتِ عملی اور سعودی ویژن 2030 کے اہداف سے ہم آہنگ ہو۔",
     requirements: [
       {
         title: "إعداد استراتيجية للتحول الرقمي/ للتحول للتعاملات الإلكترونية الحكومية، بحيث تشمل ما يأتي:",
+        titleEn: "Prepare a strategy for digital transformation / the shift to e-government transactions that includes the following:",
+        titleUr: "ڈیجیٹل تبدیلی / سرکاری الیکٹرانک لین دین کی طرف منتقلی کے لیے حکمتِ عملی تیار کریں جس میں درج ذیل شامل ہوں:",
         items: [
           "رؤية ورسالة وركائز وأهداف استراتيجية وربطها باستراتيجية الجهة.",
           "المبادرات والمشاريع الاستراتيجية ومؤشرات الأداء الاستراتيجية.",
           "نموذج تحقيق التكامل مع الجهات الخارجية ذات العلاقة، لتحقيق المستهدفات.",
           "الكفاءات والقدرات والمهارات اللازمة، لتحقيق مستهدفات الخطة."
+        ],
+        itemsEn: [
+          "A vision, mission, pillars and strategic objectives, linked to the entity's strategy.",
+          "Strategic initiatives and projects, and strategic performance indicators.",
+          "A model for integrating with relevant external entities to achieve the targets.",
+          "The competencies, capabilities and skills needed to achieve the plan's targets."
+        ],
+        itemsUr: [
+          "وژن، مشن، بنیادی ستون اور اسٹریٹجک اہداف، جو ادارے کی حکمتِ عملی سے منسلک ہوں۔",
+          "اسٹریٹجک اقدامات و منصوبے اور اسٹریٹجک کارکردگی کے اشاریے۔",
+          "اہداف کے حصول کے لیے متعلقہ بیرونی اداروں کے ساتھ انضمام کا ماڈل۔",
+          "منصوبے کے اہداف کے حصول کے لیے درکار مہارتیں، صلاحیتیں اور قابلیتیں۔"
         ]
       }
     ],
     evidence: [
       "إرفاق الخطة الاستراتيجية المعتمدة للتحول الرقمي، التي تتضمن جميع متطلبات تطبيق المعيار، ويكون تاريخ اعتمادها خلال فترة لا تزيد عن (36) شهرًا."
+    ],
+    evidenceEn: [
+      "Attach the approved digital transformation strategic plan, covering every requirement of the standard, approved within the last 36 months."
+    ],
+    evidenceUr: [
+      "ڈیجیٹل تبدیلی کا منظور شدہ اسٹریٹجک منصوبہ منسلک کریں، جو معیار کی تمام شرائط پر مشتمل ہو اور جس کی منظوری کو 36 ماہ سے زیادہ نہ گزرے ہوں۔"
     ]
   }
 };

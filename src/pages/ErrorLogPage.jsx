@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import styles from './ErrorLogPage.module.css';
 import errorLogger from '../services/errorLogger.js';
 import { Icons } from '../utils/icons.jsx';
+import { localeOf, makeT } from '../i18n/index.js';
 
 const svgProps = {
   width: 20,
@@ -39,14 +41,30 @@ const StatIcons = {
   ),
 };
 
-const SEVERITY_FILTERS = [
-  ['all', 'All'],
-  ['error', 'Error'],
-  ['warning', 'Warning'],
-  ['info', 'Info'],
-];
+const SEVERITY_LABELS = {
+  all: { ar: 'الكل', en: 'All' },
+  error: { ar: 'خطأ', en: 'Error' },
+  warning: { ar: 'تحذير', en: 'Warning' },
+  info: { ar: 'معلومة', en: 'Info' },
+};
 
-const ErrorLogPage = () => {
+const SEVERITY_FILTERS = ['all', 'error', 'warning', 'info'];
+
+const SOURCE_LABELS = {
+  all: { ar: 'كل المصادر', en: 'All sources' },
+  frontend: { ar: 'الواجهة', en: 'Frontend' },
+  backend: { ar: 'الخادم', en: 'Backend' },
+  database: { ar: 'قاعدة البيانات', en: 'Database' },
+  unknown: { ar: 'غير معروف', en: 'Unknown' },
+};
+
+const ErrorLogPage = ({ lang = 'ar' }) => {
+  const t = makeT(lang);
+  const severityLabel = (s) => (SEVERITY_LABELS[s] ? t(SEVERITY_LABELS[s].ar, SEVERITY_LABELS[s].en) : s);
+  const sourceLabel = (s) => {
+    const l = SOURCE_LABELS[s] || SOURCE_LABELS.unknown;
+    return t(l.ar, l.en);
+  };
   const [errors, setErrors] = useState(() => errorLogger.getAllErrors());
   const [selectedError, setSelectedError] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -97,7 +115,7 @@ const ErrorLogPage = () => {
   }, [errors, filters]);
 
   const handleClearAll = () => {
-    if (confirm('Are you sure you want to clear all error logs?')) {
+    if (window.confirm(t('هل أنت متأكد من مسح جميع سجلات الأخطاء؟', 'Are you sure you want to clear all error logs?'))) {
       errorLogger.clearErrors();
       setSelectedError(null);
     }
@@ -112,7 +130,7 @@ const ErrorLogPage = () => {
 
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleString();
+    return date.toLocaleString(localeOf(lang), { dateStyle: 'medium', timeStyle: 'short' });
   };
 
   const getSeverityTone = (severity) => {
@@ -136,11 +154,11 @@ const ErrorLogPage = () => {
 
   const statTiles = stats
     ? [
-        { key: 'total', label: 'Total Errors', value: stats.total, tone: 'q-tone-brand', icon: StatIcons.list },
-        { key: 'last24h', label: 'Last 24 Hours', value: stats.last24h, tone: 'q-tone-info', icon: StatIcons.calendar },
-        { key: 'lastHour', label: 'Last Hour', value: stats.lastHour, tone: 'q-tone-neutral', icon: StatIcons.clock },
-        { key: 'errors', label: 'Errors', value: stats.bySeverity.error, tone: 'q-tone-danger', icon: StatIcons.error },
-        { key: 'warnings', label: 'Warnings', value: stats.bySeverity.warning, tone: 'q-tone-warning', icon: StatIcons.warning },
+        { key: 'total', label: t('الإجمالي', 'Total entries'), value: stats.total, tone: 'q-tone-brand', icon: StatIcons.list },
+        { key: 'last24h', label: t('آخر 24 ساعة', 'Last 24 hours'), value: stats.last24h, tone: 'q-tone-info', icon: StatIcons.calendar },
+        { key: 'lastHour', label: t('آخر ساعة', 'Last hour'), value: stats.lastHour, tone: 'q-tone-neutral', icon: StatIcons.clock },
+        { key: 'errors', label: t('أخطاء', 'Errors'), value: stats.bySeverity.error, tone: 'q-tone-danger', icon: StatIcons.error },
+        { key: 'warnings', label: t('تحذيرات', 'Warnings'), value: stats.bySeverity.warning, tone: 'q-tone-warning', icon: StatIcons.warning },
       ]
     : [];
 
@@ -148,23 +166,23 @@ const ErrorLogPage = () => {
     <div className={`q-page ${styles.container}`}>
       <div className="q-page-head">
         <div>
-          <h1 className="q-page-title">Error Logs</h1>
-          <p className="q-page-sub">Client, server and database errors captured by the portal.</p>
+          <h1 className="q-page-title">{t('سجل الأخطاء', 'Error log')}</h1>
+          <p className="q-page-sub">{t('أخطاء الواجهة والخادم وقاعدة البيانات التي رصدها النظام.', 'Client, server and database errors captured by the portal.')}</p>
         </div>
         <div className="q-page-actions">
           <button
             type="button"
             className="q-btn q-btn-danger"
             onClick={handleClearAll}
-            aria-label="Clear all error logs"
+            aria-label={t('مسح جميع سجلات الأخطاء', 'Clear all error logs')}
           >
             {StatIcons.trash}
-            Clear All
+            {t('مسح الكل', 'Clear all')}
           </button>
         </div>
       </div>
 
-      {isInitializing ? <div className="q-state">Loading error logs...</div> : null}
+      {isInitializing ? <div className="q-state">{t('جاري تحميل سجل الأخطاء...', 'Loading error logs...')}</div> : null}
 
       {stats && (
         <div className={styles.stats}>
@@ -187,9 +205,9 @@ const ErrorLogPage = () => {
           {Icons.searchIcon}
           <input
             type="text"
-            placeholder="Search errors..."
+            placeholder={t('بحث في الأخطاء...', 'Search errors...')}
             className="q-input"
-            aria-label="Search errors"
+            aria-label={t('بحث في الأخطاء', 'Search errors')}
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
           />
@@ -197,25 +215,24 @@ const ErrorLogPage = () => {
 
         <select
           className={`q-input ${styles.filterSelect}`}
-          aria-label="Filter by source"
+          aria-label={t('تصفية حسب المصدر', 'Filter by source')}
           value={filters.source}
           onChange={(e) => setFilters({ ...filters, source: e.target.value })}
         >
-          <option value="all">All Sources</option>
-          <option value="frontend">Frontend</option>
-          <option value="backend">Backend</option>
-          <option value="database">Database</option>
+          {['all', 'frontend', 'backend', 'database'].map((s) => (
+            <option key={s} value={s}>{sourceLabel(s)}</option>
+          ))}
         </select>
 
-        <div className="q-seg" role="group" aria-label="Filter by severity">
-          {SEVERITY_FILTERS.map(([value, label]) => (
+        <div className="q-seg" role="group" aria-label={t('تصفية حسب الخطورة', 'Filter by severity')}>
+          {SEVERITY_FILTERS.map((value) => (
             <button
               key={value}
               type="button"
               aria-pressed={filters.severity === value}
               onClick={() => setFilters({ ...filters, severity: value })}
             >
-              {label}
+              {severityLabel(value)}
             </button>
           ))}
         </div>
@@ -224,14 +241,14 @@ const ErrorLogPage = () => {
       <div className={`${styles.content} ${selectedError ? styles.contentSplit : ''}`}>
         <div className={`q-card ${styles.errorList}`}>
           <div className={styles.listHead}>
-            <span className="q-section-title">Entries</span>
+            <span className="q-section-title">{t('السجلات', 'Entries')}</span>
             <span className={styles.count}>{filteredErrors.length}</span>
           </div>
           {filteredErrors.length === 0 ? (
             <div className="q-state">
               <span className="q-state-icon">{StatIcons.checkCircle}</span>
-              <p className="q-state-title">No errors found</p>
-              {errors.length > 0 && <p>Try adjusting your filters</p>}
+              <p className="q-state-title">{t('لا توجد أخطاء', 'No errors found')}</p>
+              {errors.length > 0 && <p>{t('جرّب تغيير عوامل التصفية.', 'Try adjusting your filters.')}</p>}
             </div>
           ) : (
             <div className={styles.items}>
@@ -246,7 +263,7 @@ const ErrorLogPage = () => {
                     role="button"
                     tabIndex={0}
                     aria-pressed={isSelected}
-                    aria-label={`Error ${error.source} ${error.severity}: ${error.message}`}
+                    aria-label={`${severityLabel(error.severity)} · ${sourceLabel(error.source)}: ${error.message}`}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
@@ -256,15 +273,15 @@ const ErrorLogPage = () => {
                   >
                     <div className={styles.errorHeader}>
                       <span className={`q-badge ${getSeverityTone(error.severity)}`}>
-                        {error.severity}
+                        {severityLabel(error.severity)}
                       </span>
                       <span className={`${styles.sourceTag} ${badge.tone}`}>
                         {badge.icon}
-                        {error.source}
+                        {sourceLabel(error.source)}
                       </span>
                       <span className={styles.errorTime}>{formatTimestamp(error.timestamp)}</span>
                     </div>
-                    <div className={styles.errorMessage}>{error.message}</div>
+                    <div className={styles.errorMessage} dir="auto">{error.message}</div>
                   </div>
                 );
               })}
@@ -276,59 +293,59 @@ const ErrorLogPage = () => {
           <div className={`q-card ${styles.errorDetails}`}>
             <div className={styles.detailsHeader}>
               <div>
-                <h3 className="q-section-title">Error Details</h3>
+                <h3 className="q-section-title">{t('تفاصيل الخطأ', 'Error details')}</h3>
                 <p className="q-section-sub">{formatTimestamp(selectedError.timestamp)}</p>
               </div>
               <button
                 type="button"
                 className="q-btn q-btn-danger q-btn-sm"
                 onClick={() => handleDeleteError(selectedError.id)}
-                aria-label="Delete selected error"
+                aria-label={t('حذف الخطأ المحدد', 'Delete selected error')}
               >
                 {StatIcons.trash}
-                Delete
+                {t('حذف', 'Delete')}
               </button>
             </div>
 
             <div className={styles.detailsContent}>
               <dl className={styles.metaGrid}>
                 <div className={styles.metaItem}>
-                  <dt>ID</dt>
+                  <dt>{t('المعرّف', 'ID')}</dt>
                   <dd><code className={styles.idCode}>{selectedError.id}</code></dd>
                 </div>
                 <div className={styles.metaItem}>
-                  <dt>Severity</dt>
+                  <dt>{t('الخطورة', 'Severity')}</dt>
                   <dd>
                     <span className={`q-badge ${getSeverityTone(selectedError.severity)}`}>
-                      {selectedError.severity}
+                      {severityLabel(selectedError.severity)}
                     </span>
                   </dd>
                 </div>
                 <div className={styles.metaItem}>
-                  <dt>Source</dt>
-                  <dd>{selectedError.source}</dd>
+                  <dt>{t('المصدر', 'Source')}</dt>
+                  <dd>{sourceLabel(selectedError.source)}</dd>
                 </div>
                 <div className={styles.metaItem}>
-                  <dt>Type</dt>
-                  <dd>{selectedError.type || '-'}</dd>
+                  <dt>{t('النوع', 'Type')}</dt>
+                  <dd dir="auto">{selectedError.type || '-'}</dd>
                 </div>
               </dl>
 
               <div className={styles.detailRow}>
-                <strong>Message</strong>
-                <span className={styles.messageText}>{selectedError.message}</span>
+                <strong>{t('الرسالة', 'Message')}</strong>
+                <span className={styles.messageText} dir="auto">{selectedError.message}</span>
               </div>
 
               {selectedError.url && (
                 <div className={styles.detailRow}>
-                  <strong>URL</strong>
+                  <strong>{t('الرابط', 'URL')}</strong>
                   <code className={styles.codeBlock}>{selectedError.url}</code>
                 </div>
               )}
 
               {selectedError.details && Object.keys(selectedError.details).length > 0 && (
                 <div className={styles.detailRow}>
-                  <strong>Details</strong>
+                  <strong>{t('التفاصيل', 'Details')}</strong>
                   <pre className={styles.codeBlock}>
                     {JSON.stringify(selectedError.details, null, 2)}
                   </pre>
@@ -337,7 +354,7 @@ const ErrorLogPage = () => {
 
               {selectedError.stack && (
                 <div className={styles.detailRow}>
-                  <strong>Stack Trace</strong>
+                  <strong>{t('تتبع الاستدعاءات', 'Stack trace')}</strong>
                   <pre className={styles.codeBlock}>{selectedError.stack}</pre>
                 </div>
               )}
@@ -347,6 +364,10 @@ const ErrorLogPage = () => {
       </div>
     </div>
   );
+};
+
+ErrorLogPage.propTypes = {
+  lang: PropTypes.oneOf(['ar', 'en', 'ur']),
 };
 
 export default ErrorLogPage;

@@ -4,7 +4,9 @@ import styles from './LoginPage.module.css';
 import { env } from '../config/env.js';
 import { Icons } from '../utils/icons.jsx';
 import BrandMark from '../components/BrandMark.jsx';
+import LanguageMenu from '../components/LanguageMenu.jsx';
 import joufLogo from '../assets/jouf_logo.png';
+import { dirOf, makeT } from '../i18n/index.js';
 
 const getBackendPortLabel = () => {
   try {
@@ -15,8 +17,8 @@ const getBackendPortLabel = () => {
   }
 };
 
-const LoginPage = ({ onLogin, isLoading, lang = 'ar', onToggleLanguage }) => {
-  const t = (ar, en) => (lang === 'ar' ? ar : en);
+const LoginPage = ({ onLogin, isLoading, lang = 'ar', onChangeLanguage }) => {
+  const t = makeT(lang);
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -41,6 +43,7 @@ const LoginPage = ({ onLogin, isLoading, lang = 'ar', onToggleLanguage }) => {
         userMessage = t(
           `تعذر الوصول إلى الخادم. تأكد من تشغيله على المنفذ ${getBackendPortLabel()}.`,
           `Can't reach the server. Make sure it is running on port ${getBackendPortLabel()}.`,
+          `سرور تک رسائی نہیں ہو سکی۔ یقینی بنائیں کہ یہ پورٹ ${getBackendPortLabel()} پر چل رہا ہے۔`,
         );
       } else if (err.status === 401) {
         userMessage = t('البريد الإلكتروني أو كلمة المرور غير صحيحة.', 'Incorrect email or password.');
@@ -60,7 +63,7 @@ const LoginPage = ({ onLogin, isLoading, lang = 'ar', onToggleLanguage }) => {
   };
 
   return (
-    <div className={styles.page} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={styles.page} dir={dirOf(lang)} lang={lang}>
       <aside className={styles.brandPanel}>
         <div className={styles.brandTop}>
           <BrandMark size={44} />
@@ -90,12 +93,7 @@ const LoginPage = ({ onLogin, isLoading, lang = 'ar', onToggleLanguage }) => {
       <main className={styles.formPanel}>
         <div className={styles.formTop}>
           <div className={styles.mobileBrand}><BrandMark size={34} /><span>{t('قياس', 'Qiyas')}</span></div>
-          {onToggleLanguage && (
-            <button type="button" className="q-btn q-btn-ghost q-btn-sm" onClick={onToggleLanguage}>
-              {Icons.globeIcon}
-              {lang === 'ar' ? 'English' : 'العربية'}
-            </button>
-          )}
+          {onChangeLanguage && <LanguageMenu lang={lang} onChange={onChangeLanguage} variant="text" />}
         </div>
 
         <div className={styles.formWrap}>
@@ -185,7 +183,7 @@ LoginPage.propTypes = {
   onLogin: PropTypes.func.isRequired,
   isLoading: PropTypes.bool,
   lang: PropTypes.string,
-  onToggleLanguage: PropTypes.func,
+  onChangeLanguage: PropTypes.func,
 };
 
 export default LoginPage;

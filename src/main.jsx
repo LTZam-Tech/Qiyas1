@@ -5,11 +5,11 @@ import './styles/ui.css'
 import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
+import { detectPreferredLang, isSupportedLang } from './i18n/index.js'
 
 const detectLang = () => {
-  const htmlLang = document.documentElement.lang?.toLowerCase();
-  if (htmlLang === 'en' || htmlLang === 'ar') return htmlLang;
-  return navigator.language?.toLowerCase().startsWith('ar') ? 'ar' : 'en';
+  const first = window.location.pathname.split('/').filter(Boolean)[0];
+  return isSupportedLang(first) ? first : detectPreferredLang();
 }
 
 createRoot(document.getElementById('root')).render(

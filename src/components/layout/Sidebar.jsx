@@ -3,6 +3,7 @@ import { Icons } from '../../utils/icons.jsx';
 import BrandMark from '../BrandMark.jsx';
 import styles from './Sidebar.module.css';
 import { ROLE_LABELS, getDisplayName, getInitials } from '../../utils/user.js';
+import { makeT } from '../../i18n/index.js';
 
 
 export default function Sidebar({
@@ -17,7 +18,7 @@ export default function Sidebar({
   filteredNavItems,
   onClose,
 }) {
-  const t = (ar, en) => (lang === 'ar' ? ar : en);
+  const t = makeT(lang);
   const list = filteredNavItems.length > 0 ? filteredNavItems : navItems;
   // On tablet/mobile the sidebar is a drawer: always full width when visible.
   const collapsed = !isTablet && !sideOpen;
@@ -26,7 +27,7 @@ export default function Sidebar({
 
   const renderItem = (item) => {
     const active = page === item.key || (page === 'approvals' && item.key === 'review') || (page === 'analytics' && item.key === 'reports');
-    const label = lang === 'ar' ? item.label : item.labelEn;
+    const label = t(item.label, item.labelEn);
     return (
       <li key={item.key}>
         <button
@@ -75,7 +76,7 @@ export default function Sidebar({
               {collapsed ? (
                 <div className={styles.sectionDivider} aria-hidden="true" />
               ) : (
-                <div className={styles.sectionLabel}>{lang === 'ar' ? item.label : item.labelEn}</div>
+                <div className={styles.sectionLabel}>{t(item.label, item.labelEn)}</div>
               )}
               <ul className={styles.list}>{item.children?.map(renderItem)}</ul>
             </div>
@@ -93,7 +94,7 @@ export default function Sidebar({
           {!collapsed && (
             <div className={styles.profileText}>
               <span className={styles.profileName}>{name}</span>
-              <span className={styles.profileRole}>{lang === 'ar' ? role.ar : role.en}</span>
+              <span className={styles.profileRole}>{t(role.ar, role.en)}</span>
             </div>
           )}
         </div>
@@ -115,7 +116,7 @@ Sidebar.propTypes = {
   sideOpen: PropTypes.bool.isRequired,
   isTablet: PropTypes.bool.isRequired,
   page: PropTypes.string.isRequired,
-  lang: PropTypes.oneOf(['ar', 'en']).isRequired,
+  lang: PropTypes.oneOf(['ar', 'en', 'ur']).isRequired,
   navItems: PropTypes.arrayOf(PropTypes.object).isRequired,
   onNavigate: PropTypes.func.isRequired,
   user: PropTypes.shape({

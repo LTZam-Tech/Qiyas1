@@ -8,7 +8,12 @@ const normalizeNotification = (n) => ({
   id: n.id,
   type: n.type,
   title: n.title,
+  // Optional per-language versions; the UI falls back to `title`.
+  title_en: n.title_en,
+  title_ur: n.title_ur,
   body: n.body || '',
+  body_en: n.body_en,
+  body_ur: n.body_ur,
   data: typeof n.data === 'string' ? JSON.parse(n.data) : (n.data || {}),
   isRead: n.is_read,
   createdAt: n.created_at

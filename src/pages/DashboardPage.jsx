@@ -8,6 +8,7 @@ import { canAccessPage } from '../utils/permissions.js';
 import { getDisplayName } from '../utils/user.js';
 import useDashboardData from '../hooks/useDashboardData.js';
 import styles from './DashboardPage.module.css';
+import { makePick, makeT, pickName } from '../i18n/index.js';
 
 const EMPTY_DASHBOARD = {
   kpis: { totalStandards: 0, fullCompliance: 0, partialCompliance: 0, nonCompliance: 0 },
@@ -66,7 +67,7 @@ ComplianceRing.propTypes = {
 };
 
 const DashboardPage = ({ lang, user, onNavigate }) => {
-  const t = (ar, en) => (lang === 'ar' ? ar : en);
+  const t = makeT(lang);
   const { data, isLoading, error } = useDashboardData();
   const { kpis, perspectives, activities, alerts } = normalizeDashboardData(data);
   const { totalStandards: total, fullCompliance: full, partialCompliance: partial, nonCompliance: non } = kpis;
@@ -78,7 +79,7 @@ const DashboardPage = ({ lang, user, onNavigate }) => {
 
   const header = (
     <PageHeader
-      title={firstName ? t(`مرحباً، ${firstName}`, `Welcome back, ${firstName}`) : t('نظرة عامة', 'Overview')}
+      title={firstName ? t(`مرحباً، ${firstName}`, `Welcome back, ${firstName}`, `خوش آمدید، ${firstName}`) : t('نظرة عامة', 'Overview')}
       subtitle={t('ملخص مستوى الالتزام والأنشطة الأخيرة في جميع المناظير.', 'Your compliance posture and latest activity across every perspective.')}
       actions={
         <>
@@ -130,7 +131,11 @@ const DashboardPage = ({ lang, user, onNavigate }) => {
           <div className={styles.alertText}>
             <strong>{t('يتطلب انتباهك', 'Needs your attention')}</strong>
             <ul className={styles.alertList}>
-              {alerts.map((a) => <li key={a}>{a}</li>)}
+              {alerts.map((a, i) => {
+                // Alerts may be plain text or { ar, en, ur } from the API.
+                const text = typeof a === 'string' ? a : makePick(lang)(a.ar, a.en, a.ur);
+                return <li key={`${i}-${text}`}>{text}</li>;
+              })}
             </ul>
           </div>
         </section>
@@ -150,7 +155,7 @@ const DashboardPage = ({ lang, user, onNavigate }) => {
             <p className={styles.heroLead}>
               {total === 0
                 ? t('لا توجد معايير بعد.', 'No standards yet.')
-                : t(`${full} من ${total} معياراً مستوفاة بالكامل.`, `${full} of ${total} standards are fully met.`)}
+                : t(`${full} من ${total} معياراً مستوفاة بالكامل.`, `${full} of ${total} standards are fully met.`, `${total} میں سے ${full} معیارات مکمل طور پر پورے ہیں۔`)}
             </p>
             <ul className={styles.legend}>
               <li><span style={{ background: 'var(--brand-500)' }} />{t('كلي', 'Full')}<b>{full}</b></li>
@@ -159,7 +164,7 @@ const DashboardPage = ({ lang, user, onNavigate }) => {
             </ul>
             {needsWork > 0 && canSee('evidence') && (
               <button type="button" className={styles.linkBtn} onClick={() => go('evidence')}>
-                {t(`${needsWork} معايير تحتاج أدلة`, `${needsWork} standards need evidence`)}
+                {t(`${needsWork} معايير تحتاج أدلة`, `${needsWork} standards need evidence`, `${needsWork} معیارات کو ثبوت درکار ہے`)}
                 <span className={styles.linkArrow}>{Icons.arrowRight}</span>
               </button>
             )}
@@ -168,7 +173,7 @@ const DashboardPage = ({ lang, user, onNavigate }) => {
 
         <div className={styles.kpiGrid}>
           <StatCard label={t('إجمالي المعايير', 'Total standards')} value={total} icon="catalog" tone="brand" hint={t('ضمن نطاق التقييم', 'In assessment scope')} />
-          <StatCard label={t('التزام كلي', 'Full compliance')} value={full} icon="checkCircle" tone="success" hint={t(`${fullPct}% من الإجمالي`, `${fullPct}% of total`)} />
+          <StatCard label={t('التزام كلي', 'Full compliance')} value={full} icon="checkCircle" tone="success" hint={t(`${fullPct}% من الإجمالي`, `${fullPct}% of total`, `کل کا ${fullPct}%`)} />
           <StatCard label={t('التزام جزئي', 'Partial compliance')} value={partial} icon="clock" tone="warning" hint={t('أدلة غير مكتملة', 'Evidence incomplete')} />
           <StatCard label={t('عدم الالتزام', 'Non-compliance')} value={non} icon="xCircle" tone="danger" hint={t('لا توجد أدلة معتمدة', 'No approved evidence')} />
         </div>
@@ -194,10 +199,10 @@ const DashboardPage = ({ lang, user, onNavigate }) => {
                 {[...perspectives].sort((a, b) => b.completion - a.completion).map((p) => (
                   <li key={p.id} className={styles.perspRow}>
                     <div className={styles.perspTop}>
-                      <span className={styles.perspName}>{lang === 'ar' ? p.name : p.nameEn}</span>
+                      <span className={styles.perspName}>{t(p.name, p.nameEn)}</span>
                       <span className={styles.perspPct}>{p.completion}%</span>
                     </div>
-                    <ProgressBar value={p.completion} height={8} label={lang === 'ar' ? p.name : p.nameEn} />
+                    <ProgressBar value={p.completion} height={8} label={t(p.name, p.nameEn)} />
                   </li>
                 ))}
               </ul>
@@ -224,11 +229,11 @@ const DashboardPage = ({ lang, user, onNavigate }) => {
                       <span className={`q-icon-chip q-tone-${s.tone} ${styles.eventIcon}`}>{Icons[s.icon]}</span>
                       <div className={styles.eventText}>
                         <div className={styles.eventMain}>
-                          <strong>{lang === 'ar' ? a.user_ar : a.user_en}</strong> {lang === 'ar' ? a.action_ar : a.action_en}
+                          <strong>{pickName(lang, a.user_ar, a.user_en)}</strong> {t(a.action_ar, a.action_en)}
                         </div>
                         <div className={styles.eventMeta}>
                           <span className="q-code">{a.standard}</span>
-                          <span>{lang === 'ar' ? a.time_ar : a.time_en}</span>
+                          <span>{t(a.time_ar, a.time_en)}</span>
                         </div>
                       </div>
                     </li>
@@ -247,7 +252,7 @@ const DashboardPage = ({ lang, user, onNavigate }) => {
 
 DashboardPage.propTypes = {
   isMobile: PropTypes.bool,
-  lang: PropTypes.oneOf(['ar', 'en']).isRequired,
+  lang: PropTypes.oneOf(['ar', 'en', 'ur']).isRequired,
   user: PropTypes.object,
   onNavigate: PropTypes.func,
 };

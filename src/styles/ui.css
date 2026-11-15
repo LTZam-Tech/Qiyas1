@@ -403,4 +403,7 @@
   .q-page-title { font-size: 1.3rem; }
   .q-search { min-width: 0; width: 100%; }
   .q-page-actions { width: 100%; }
+  /* Filters wrap instead of hiding off-screen (longer Urdu/Arabic labels). */
+  .q-seg { flex-wrap: wrap; overflow: visible; width: 100%; }
+  .q-seg button { flex: 1 1 auto; }
 }

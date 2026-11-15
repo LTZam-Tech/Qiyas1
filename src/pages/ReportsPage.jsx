@@ -4,6 +4,7 @@ import PageHeader from '../components/PageHeader.jsx';
 import useToast from '../hooks/useToast.js';
 import { Icons } from '../utils/icons.jsx';
 import styles from './ReportsPage.module.css';
+import { makeT } from '../i18n/index.js';
 
 const REPORT_ITEMS = [
   {
@@ -45,7 +46,7 @@ const REPORT_ITEMS = [
 ];
 
 const ReportsPage = ({ lang }) => {
-  const t = (ar, en) => (lang === 'ar' ? ar : en);
+  const t = makeT(lang);
   const { toast, showToast } = useToast();
   const [preview, setPreview] = useState(null);
 
@@ -65,7 +66,7 @@ const ReportsPage = ({ lang }) => {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    showToast(t(`تم تنزيل: ${report.title}`, `Downloaded: ${report.titleEn}`));
+    showToast(t(`تم تنزيل: ${report.title}`, `Downloaded: ${report.titleEn}`, `ڈاؤن لوڈ ہو گیا: ${t(report.title, report.titleEn)}`));
   };
 
   return (
@@ -77,7 +78,7 @@ const ReportsPage = ({ lang }) => {
 
       <div className={styles.grid}>
         {REPORT_ITEMS.map((report) => {
-          const title = lang === 'ar' ? report.title : report.titleEn;
+          const title = t(report.title, report.titleEn);
           return (
             <article key={report.id} className={`q-card ${styles.card}`} aria-label={title}>
               <div className={styles.top}>
@@ -85,13 +86,13 @@ const ReportsPage = ({ lang }) => {
                 <span className={styles.format}>{report.format}</span>
               </div>
               <h2 className={styles.title}>{title}</h2>
-              <p className={styles.desc}>{lang === 'ar' ? report.desc : report.descEn}</p>
+              <p className={styles.desc}>{t(report.desc, report.descEn)}</p>
               <div className={styles.actions}>
-                <button type="button" className="q-btn q-btn-secondary q-btn-sm" onClick={() => setPreview(report)} aria-label={t(`معاينة ${report.title}`, `Preview ${report.titleEn}`)}>
+                <button type="button" className="q-btn q-btn-secondary q-btn-sm" onClick={() => setPreview(report)} aria-label={t(`معاينة ${report.title}`, `Preview ${report.titleEn}`, `${title} کا پیش منظر`)}>
                   {Icons.eyeSmall}
                   {t('معاينة', 'Preview')}
                 </button>
-                <button type="button" className="q-btn q-btn-primary q-btn-sm" onClick={() => handleDownload(report)} aria-label={t(`تنزيل ${report.title}`, `Download ${report.titleEn}`)}>
+                <button type="button" className="q-btn q-btn-primary q-btn-sm" onClick={() => handleDownload(report)} aria-label={t(`تنزيل ${report.title}`, `Download ${report.titleEn}`, `${title} ڈاؤن لوڈ کریں`)}>
                   {Icons.download}
                   {t('تنزيل', 'Download')}
                 </button>
@@ -107,8 +108,8 @@ const ReportsPage = ({ lang }) => {
             <div className={styles.dialogHead}>
               <span className={`q-icon-chip q-tone-${preview.tone}`}>{Icons[preview.icon]}</span>
               <div>
-                <h2 id="report-preview-title" className={styles.title}>{lang === 'ar' ? preview.title : preview.titleEn}</h2>
-                <p className={styles.desc}>{lang === 'ar' ? preview.desc : preview.descEn}</p>
+                <h2 id="report-preview-title" className={styles.title}>{t(preview.title, preview.titleEn)}</h2>
+                <p className={styles.desc}>{t(preview.desc, preview.descEn)}</p>
               </div>
               <button type="button" className="q-icon-btn" onClick={() => setPreview(null)} aria-label={t('إغلاق', 'Close')}>{Icons.x}</button>
             </div>
@@ -139,7 +140,7 @@ const ReportsPage = ({ lang }) => {
 
 ReportsPage.propTypes = {
   isMobile: PropTypes.bool,
-  lang: PropTypes.oneOf(['ar', 'en']).isRequired,
+  lang: PropTypes.oneOf(['ar', 'en', 'ur']).isRequired,
 };
 
 export default ReportsPage;

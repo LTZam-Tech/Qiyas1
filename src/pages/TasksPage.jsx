@@ -10,6 +10,7 @@ import errorLogger from '../services/errorLogger.js';
 import { Icons } from '../utils/icons.jsx';
 import { getInitials } from '../utils/user.js';
 import styles from './TasksPage.module.css';
+import { localeOf, makePick, makeT, pickName } from '../i18n/index.js';
 
 const FILTERS = [
   ['all', 'الكل', 'All'],
@@ -41,27 +42,29 @@ const toDate = (task) => {
 };
 
 const dueInfo = (task, lang) => {
+  const t = makeT(lang);
   const d = toDate(task);
   if (!d) return { text: '—', tone: '' };
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const days = Math.round((d - today) / 86400000);
-  const label = d.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const label = d.toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short', year: 'numeric' });
   if (task.status === 'approved') return { text: label, sub: '', tone: '' };
-  if (days < 0) return { text: label, sub: lang === 'ar' ? `متأخرة ${-days} يوم` : `${-days}d overdue`, tone: 'danger' };
-  if (days === 0) return { text: label, sub: lang === 'ar' ? 'اليوم' : 'Due today', tone: 'warning' };
-  if (days <= 3) return { text: label, sub: lang === 'ar' ? `خلال ${days} أيام` : `In ${days}d`, tone: 'warning' };
+  if (days < 0) return { text: label, sub: t(`متأخرة ${-days} يوم`, `${-days}d overdue`, `${-days} دن تاخیر`), tone: 'danger' };
+  if (days === 0) return { text: label, sub: t('اليوم', 'Due today'), tone: 'warning' };
+  if (days <= 3) return { text: label, sub: t(`خلال ${days} أيام`, `In ${days}d`, `${days} دن میں`), tone: 'warning' };
   return { text: label, sub: '', tone: '' };
 };
 
 const evidenceLabel = (type, lang) => {
-  if (type === 'file') return { icon: 'file', text: lang === 'ar' ? 'ملف' : 'File' };
-  if (type === 'screenshot') return { icon: 'image', text: lang === 'ar' ? 'لقطة شاشة' : 'Screenshot' };
+  const t = makeT(lang);
+  if (type === 'file') return { icon: 'file', text: t('ملف', 'File') };
+  if (type === 'screenshot') return { icon: 'image', text: t('لقطة شاشة', 'Screenshot') };
   return { icon: 'file', text: '—' };
 };
 
 const TasksPage = ({ isMobile, user: pageUser, lang }) => {
-  const t = (ar, en) => (lang === 'ar' ? ar : en);
+  const t = makeT(lang);
   const [filter, setFilter] = useState('all');
   const [query, setQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -82,7 +85,7 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
   }, [refetch]);
 
   const standardName = useCallback(
-    (task) => (lang === 'ar' ? task.standard_name_ar : task.standard_name_en) || task.standard_name || task.code || '—',
+    (task) => makePick(lang)(task.standard_name_ar, task.standard_name_en) || task.standard_name || task.code || '—',
     [lang],
   );
 
@@ -148,7 +151,7 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
                 type="button"
                 key={key}
                 aria-pressed={filter === key}
-                aria-label={t(`فلترة المهام: ${ar}`, `Filter tasks: ${en}`)}
+                aria-label={t(`فلترة المهام: ${ar}`, `Filter tasks: ${en}`, `کام فلٹر کریں: ${t(ar, en)}`)}
                 onClick={() => setFilter(key)}
               >
                 {t(ar, en)}
@@ -172,7 +175,7 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
           <ul className={styles.cards}>
             {visible.map((task) => {
               const due = dueInfo(task, lang);
-              const assignee = task.assigned_to_name || (lang === 'ar' ? task.assignee_ar : task.assignee_en) || '—';
+              const assignee = pickName(lang, task.assignee_ar || task.assigned_to_name, task.assignee_en) || '—';
               return (
                 <li key={task.id} className={styles.cardItem}>
                   <div className={styles.cardTop}>
@@ -205,7 +208,7 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
                 {visible.map((task) => {
                   const due = dueInfo(task, lang);
                   const ev = evidenceLabel(task.evidence_type, lang);
-                  const assignee = task.assigned_to_name || (lang === 'ar' ? task.assignee_ar : task.assignee_en) || '—';
+                  const assignee = pickName(lang, task.assignee_ar || task.assigned_to_name, task.assignee_en) || '—';
                   return (
                     <tr key={task.id}>
                       <td>
@@ -241,7 +244,7 @@ const TasksPage = ({ isMobile, user: pageUser, lang }) => {
 
         {!state && (
           <div className={styles.footer}>
-            {t(`عرض ${visible.length} مهمة`, `Showing ${visible.length} task${visible.length === 1 ? '' : 's'}`)}
+            {t(`عرض ${visible.length} مهمة`, `Showing ${visible.length} task${visible.length === 1 ? '' : 's'}`, `${visible.length} کام دکھائے جا رہے ہیں`)}
           </div>
         )}
       </section>
@@ -261,7 +264,7 @@ TasksPage.propTypes = {
   user: PropTypes.shape({
     role: PropTypes.string,
   }),
-  lang: PropTypes.oneOf(['ar', 'en']).isRequired,
+  lang: PropTypes.oneOf(['ar', 'en', 'ur']).isRequired,
 };
 
 export default TasksPage;

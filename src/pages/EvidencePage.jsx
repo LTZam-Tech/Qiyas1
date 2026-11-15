@@ -11,6 +11,7 @@ import useToast from '../hooks/useToast.js';
 import useAuth from '../context/useAuth.js';
 import { canAccessPage } from '../utils/permissions.js';
 import styles from './EvidencePage.module.css';
+import { makeT } from '../i18n/index.js';
 
 // A standard's state comes from its files: all approved = full, some = partial, none = non.
 const deriveStatus = (item) => {
@@ -27,7 +28,7 @@ const FILTERS = [
 ];
 
 const EvidencePage = ({ lang, onNavigate }) => {
-  const t = (ar, en) => (lang === 'ar' ? ar : en);
+  const t = makeT(lang);
   const { data, isLoading, error, reload } = useEvidenceData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filter, setFilter] = useState('all');
@@ -109,11 +110,11 @@ const EvidencePage = ({ lang, onNavigate }) => {
                   <span className="q-code">{item.code}</span>
                   <Badge status={item.state} lang={lang} />
                 </div>
-                <h3 className={styles.title}>{lang === 'ar' ? item.title : item.titleEn}</h3>
+                <h3 className={styles.title}>{t(item.title, item.titleEn)}</h3>
                 <div className={styles.progress}>
                   <ProgressBar value={pct} height={6} label={t('نسبة الاعتماد', 'Approval progress')} />
                   <div className={styles.meta}>
-                    <span>{t(`${item.approved} من ${item.reqCount} ملفات معتمدة`, `${item.approved} of ${item.reqCount} files approved`)}</span>
+                    <span>{t(`${item.approved} من ${item.reqCount} ملفات معتمدة`, `${item.approved} of ${item.reqCount} files approved`, `${item.reqCount} میں سے ${item.approved} فائلیں منظور شدہ`)}</span>
                     <b>{pct}%</b>
                   </div>
                 </div>
@@ -138,7 +139,7 @@ const EvidencePage = ({ lang, onNavigate }) => {
 
 EvidencePage.propTypes = {
   isMobile: PropTypes.bool,
-  lang: PropTypes.oneOf(['ar', 'en']).isRequired,
+  lang: PropTypes.oneOf(['ar', 'en', 'ur']).isRequired,
   onNavigate: PropTypes.func,
 };
 

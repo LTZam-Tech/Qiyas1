@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "format": "prettier --write \"src/**/*.{js,jsx,css}\""
+    "format": "prettier --write \"src/**/*.{js,jsx,css}\"",
+    "i18n:check": "node scripts/i18n-strings.mjs"
   },
   "dependencies": {
     "prop-types": "^15.8.1",

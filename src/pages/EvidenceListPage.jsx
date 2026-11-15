@@ -7,6 +7,7 @@ import StateView from '../components/StateView.jsx';
 import Badge from '../components/Badge.jsx';
 import { Icons } from '../utils/icons.jsx';
 import styles from './EvidenceListPage.module.css';
+import { localeOf, makePick, makeT, pickName } from '../i18n/index.js';
 
 const FILE_KINDS = {
   pdf: { label: 'PDF', tone: 'danger' },
@@ -24,17 +25,18 @@ const fileKind = (name = '') => FILE_KINDS[name.split('.').pop()?.toLowerCase()]
 const STATUS_FOR_BADGE = { approved: 'approved', partial: 'submitted', non: 'submitted', rejected: 'reject' };
 
 export default function EvidenceListPage({ lang = 'ar', isMobile = false }) {
-  const t = (ar, en) => (lang === 'ar' ? ar : en);
+  const t = makeT(lang);
   const { data: files, isLoading, error } = useEvidenceFiles();
   const [searchTerm, setSearchTerm] = useState('');
 
-  const pick = (ar, en) => (lang === 'ar' ? ar || en : en || ar) || '—';
+  const pickData = makePick(lang);
+  const pick = (ar, en) => pickData(ar, en) || '—';
 
   const filteredFiles = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return files;
     return files.filter((f) =>
-      [f.original_filename, f.standard_title, f.standard_title_en, f.standard_code, f.uploaded_by_name, f.domain_title, f.domain_title_en]
+      [f.original_filename, f.standard_title, f.standard_title_en, f.standard_code, f.uploaded_by_name, f.uploaded_by_name_en, f.domain_title, f.domain_title_en]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(term)),
     );
@@ -50,7 +52,7 @@ export default function EvidenceListPage({ lang = 'ar', isMobile = false }) {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+    return new Date(dateStr).toLocaleDateString(localeOf(lang), { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   const fileCell = (file) => {
@@ -60,7 +62,7 @@ export default function EvidenceListPage({ lang = 'ar', isMobile = false }) {
         <span className={`q-tone-${kind.tone} ${styles.fileKind}`}>{kind.label}</span>
         <div className={styles.fileText}>
           <span className={styles.fileName} title={file.original_filename}>{file.original_filename}</span>
-          <span className={styles.fileSub}><bdi>{file.uploaded_by_name || '—'}</bdi> · <bdi>{formatDate(file.uploaded_at)}</bdi></span>
+          <span className={styles.fileSub}><bdi>{pickName(lang, file.uploaded_by_name, file.uploaded_by_name_en) || '—'}</bdi> · <bdi>{formatDate(file.uploaded_at)}</bdi></span>
         </div>
       </div>
     );
@@ -71,7 +73,7 @@ export default function EvidenceListPage({ lang = 'ar', isMobile = false }) {
       type="button"
       onClick={() => handleDownload(file.submission_id, file.file_id)}
       className="q-icon-btn"
-      aria-label={t(`تحميل ${file.original_filename}`, `Download ${file.original_filename}`)}
+      aria-label={t(`تحميل ${file.original_filename}`, `Download ${file.original_filename}`, `${file.original_filename} ڈاؤن لوڈ کریں`)}
       title={t('تحميل الملف', 'Download file')}
     >
       {Icons.download}
@@ -152,7 +154,7 @@ export default function EvidenceListPage({ lang = 'ar', isMobile = false }) {
       <section className="q-card">
         <div className={styles.toolbar}>
           <span className={styles.total}>
-            {isLoading ? '' : t(`${filteredFiles.length} ملف`, `${filteredFiles.length} file${filteredFiles.length === 1 ? '' : 's'}`)}
+            {isLoading ? '' : t(`${filteredFiles.length} ملف`, `${filteredFiles.length} file${filteredFiles.length === 1 ? '' : 's'}`, `${filteredFiles.length} ${filteredFiles.length === 1 ? 'فائل' : 'فائلیں'}`)}
           </span>
           <label className={`q-search ${styles.search}`}>
             {Icons.searchIcon}
@@ -173,6 +175,6 @@ export default function EvidenceListPage({ lang = 'ar', isMobile = false }) {
 }
 
 EvidenceListPage.propTypes = {
-  lang: PropTypes.oneOf(['ar', 'en']),
+  lang: PropTypes.oneOf(['ar', 'en', 'ur']),
   isMobile: PropTypes.bool,
 };

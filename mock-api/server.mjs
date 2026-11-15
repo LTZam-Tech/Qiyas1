@@ -118,6 +118,7 @@ const makeFile = (standardId, name, status, uploaderId, daysAgo) => {
     domain_title: p.name_ar,
     domain_title_en: p.name_en,
     uploaded_by_name: userById(uploaderId).full_name,
+    uploaded_by_name_en: userById(uploaderId).full_name_en,
     uploaded_at: new Date(Date.now() - daysAgo * 86400000).toISOString(),
   };
 };
@@ -133,9 +134,9 @@ const files = [
 ];
 
 const notifications = [
-  { id: 'n1', type: 'task_assigned', title: 'تم إسناد مهمة جديدة: رفع شاهد 1.1.1', body: '', is_read: false, created_at: new Date(Date.now() - 3600e3).toISOString() },
-  { id: 'n2', type: 'review_completed', title: 'تم اعتماد شاهد المعيار 2.1.1', body: '', is_read: false, created_at: new Date(Date.now() - 86400e3).toISOString() },
-  { id: 'n3', type: 'sla_warning', title: 'اقترب موعد تسليم المعيار 4.2.1', body: '', is_read: true, created_at: new Date(Date.now() - 2 * 86400e3).toISOString() },
+  { id: 'n1', type: 'task_assigned', title: 'تم إسناد مهمة جديدة: رفع شاهد 1.1.1', title_en: 'New task assigned: upload evidence for 1.1.1', title_ur: 'نیا کام تفویض کیا گیا: 1.1.1 کا ثبوت اپ لوڈ کریں', body: '', is_read: false, created_at: new Date(Date.now() - 3600e3).toISOString() },
+  { id: 'n2', type: 'review_completed', title: 'تم اعتماد شاهد المعيار 2.1.1', title_en: 'Evidence for standard 2.1.1 was approved', title_ur: 'معیار 2.1.1 کا ثبوت منظور ہو گیا', body: '', is_read: false, created_at: new Date(Date.now() - 86400e3).toISOString() },
+  { id: 'n3', type: 'sla_warning', title: 'اقترب موعد تسليم المعيار 4.2.1', title_en: 'Standard 4.2.1 is due soon', title_ur: 'معیار 4.2.1 کی آخری تاریخ قریب ہے', body: '', is_read: true, created_at: new Date(Date.now() - 2 * 86400e3).toISOString() },
 ];
 
 const dashboard = () => {
@@ -150,7 +151,10 @@ const dashboard = () => {
       { id: 'ac3', type: 'submit', user_ar: 'محمد الرويلي', user_en: 'Mohammed Alruwaili', action_ar: 'رفع شاهد', action_en: 'uploaded evidence', standard: '4.2.1', time_ar: 'أمس', time_en: 'yesterday' },
       { id: 'ac4', type: 'reject', user_ar: 'سارة الشمري', user_en: 'Sarah Alshammari', action_ar: 'رفضت شاهد', action_en: 'rejected evidence', standard: '4.2.2', time_ar: 'منذ يومين', time_en: '2 days ago' },
     ],
-    alerts: ['مهمة المعيار 1.2.1 متأخرة', 'موعد تسليم المعيار 4.2.1 غداً'],
+    alerts: [
+      { ar: 'مهمة المعيار 1.2.1 متأخرة', en: 'The task for standard 1.2.1 is overdue', ur: 'معیار 1.2.1 کا کام تاخیر کا شکار ہے' },
+      { ar: 'موعد تسليم المعيار 4.2.1 غداً', en: 'Standard 4.2.1 is due tomorrow', ur: 'معیار 4.2.1 کی آخری تاریخ کل ہے' },
+    ],
   };
 };
 

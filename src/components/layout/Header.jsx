@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import { Icons } from '../../utils/icons.jsx';
 import styles from './Layout.module.css';
 import NotificationBell from '../notifications/NotificationBell.jsx';
+import LanguageMenu from '../LanguageMenu.jsx';
+import { makeT } from '../../i18n/index.js';
 
 export default function Header({
   isMobile,
@@ -13,11 +15,11 @@ export default function Header({
   onSearchSubmit,
   onToggleSidebar,
   onToggleTheme,
-  onToggleLanguage,
+  onChangeLanguage,
   isDark = false,
   lang = 'ar',
 }) {
-  const t = (ar, en) => (lang === 'ar' ? ar : en);
+  const t = makeT(lang);
   const searchRef = useRef(null);
 
   // "/" focuses the page search, like most modern dashboards.
@@ -78,15 +80,7 @@ export default function Header({
       )}
 
       <div className={styles.headerEnd}>
-        <button
-          type="button"
-          className={`q-icon-btn ${styles.langBtn}`}
-          onClick={onToggleLanguage}
-          aria-label={t('Switch to English', 'التبديل إلى العربية')}
-          title={t('English', 'العربية')}
-        >
-          {lang === 'ar' ? 'EN' : 'ع'}
-        </button>
+        <LanguageMenu lang={lang} onChange={onChangeLanguage} />
         <button
           type="button"
           className="q-icon-btn"
@@ -111,7 +105,7 @@ Header.propTypes = {
   onSearchSubmit: PropTypes.func.isRequired,
   onToggleSidebar: PropTypes.func.isRequired,
   onToggleTheme: PropTypes.func.isRequired,
-  onToggleLanguage: PropTypes.func.isRequired,
+  onChangeLanguage: PropTypes.func.isRequired,
   isDark: PropTypes.bool,
-  lang: PropTypes.oneOf(['ar', 'en']),
+  lang: PropTypes.oneOf(['ar', 'en', 'ur']),
 };

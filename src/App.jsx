@@ -3,6 +3,7 @@ import { NAV_ITEMS, PAGE_ALIASES } from './utils/data.js';
 import { filterNavByRole, canAccessPage } from './utils/permissions.js';
 import { APP_LOADING_DELAY_MS, BREAKPOINTS, PAGES } from './constants/index.js';
 import BrandMark from './components/BrandMark.jsx';
+import { DEFAULT_LANG, LANG_CODES, detectPreferredLang, dirOf, isSupportedLang, makeT, rememberLang } from './i18n/index.js';
 import useResponsive from './hooks/useResponsive.js';
 import usePageLoad from './hooks/usePageLoad.js';
 import useAuth from './context/useAuth.js';
@@ -39,16 +40,13 @@ const readInitialDark = () => {
   return document.documentElement.dataset.theme === 'dark';
 };
 
-// Read language from URL path (/en/ or /ar/)
+// Read language from the URL path (/ar/, /en/, /ur/); the root path uses the
+// saved choice or the browser language.
 const getLanguageFromPath = () => {
-  const path = window.location.pathname;
-  if (path.startsWith('/en/') || path === '/en') return 'en';
-  if (path.startsWith('/ar/') || path === '/ar') return 'ar';
-  if (path === '/' || path === '') {
-    const browserLang = navigator.language?.toLowerCase();
-    return browserLang?.startsWith('ar') ? 'ar' : 'en';
-  }
-  return 'ar';
+  const first = window.location.pathname.split('/').filter(Boolean)[0];
+  if (isSupportedLang(first)) return first;
+  if (!first) return detectPreferredLang();
+  return DEFAULT_LANG;
 };
 
 // Read page from query params (?page=tasks)
@@ -111,7 +109,8 @@ export default function App() {
   // Keep <html lang/dir> in sync so the whole document (including portals) flips.
   useEffect(() => {
     document.documentElement.lang = lang;
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = dirOf(lang);
+    rememberLang(lang);
   }, [lang]);
 
   // Handle browser back/forward buttons
@@ -146,17 +145,21 @@ export default function App() {
     }
   }, [isTablet, user?.role]);
 
-  const toggleLanguage = useCallback(() => {
-    setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
+  const changeLanguage = useCallback((code) => {
+    if (LANG_CODES.includes(code)) setLang(code);
   }, []);
+
+  const t = makeT(lang);
 
   const roleBasedNavItems = useMemo(() => {
     if (!user?.role) return [];
     return filterNavByRole(NAV_ITEMS, user.role);
   }, [user]);
 
+  // Match a page by its name in any language, so search works whatever the UI language.
   const matches = useCallback(
-    (item, query) => item.label.toLowerCase().includes(query) || item.labelEn.toLowerCase().includes(query),
+    (item, query) =>
+      [item.label, item.labelEn, makeT('ur')(item.label, item.labelEn)].some((name) => name?.toLowerCase().includes(query)),
     [],
   );
 
@@ -182,12 +185,13 @@ export default function App() {
   }, [searchQuery, roleBasedNavItems, matches]);
 
   const { item: pageEntry, group: pageGroup } = findNavEntry(page);
-  const pageTitle = lang === 'ar' ? pageEntry.label : pageEntry.labelEn;
-  const sectionTitle = pageGroup ? (lang === 'ar' ? pageGroup.label : pageGroup.labelEn) : undefined;
+  const pageTitle = t(pageEntry.label, pageEntry.labelEn);
+  const sectionTitle = pageGroup ? t(pageGroup.label, pageGroup.labelEn) : undefined;
 
+  const docTitle = user ? `${pageTitle} · ${t('قياس', 'Qiyas')}` : 'Qiyas | قياس';
   useEffect(() => {
-    document.title = user ? `${pageTitle} · ${lang === 'ar' ? 'قياس' : 'Qiyas'}` : 'Qiyas | قياس';
-  }, [pageTitle, lang, user]);
+    document.title = docTitle;
+  }, [docTitle]);
 
   const PageComponent = PAGE_COMPONENTS[page] || DashboardPage;
 
@@ -197,7 +201,7 @@ export default function App() {
         onLogin={login}
         isLoading={isAuthenticating}
         lang={lang}
-        onToggleLanguage={toggleLanguage}
+        onChangeLanguage={changeLanguage}
       />
     );
   }
@@ -207,14 +211,14 @@ export default function App() {
       <section className={styles.loading} aria-label="Loading application">
         <div className={styles.loadingInner}>
           <span className={styles.loadingMark}><BrandMark size={52} /></span>
-          <span>{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</span>
+          <span>{t('جاري التحميل...', 'Loading...')}</span>
         </div>
       </section>
     );
   }
 
   return (
-    <div dir={lang === 'ar' ? 'rtl' : 'ltr'} className={styles.app}>
+    <div dir={dirOf(lang)} lang={lang} className={styles.app}>
       {isTablet && sideOpen && <div className={styles.overlay} onClick={() => setSideOpen(false)} />}
 
       <Sidebar
@@ -240,7 +244,7 @@ export default function App() {
           onSearchSubmit={onSearchSubmit}
           onToggleSidebar={() => setSideOpen((prev) => !prev)}
           onToggleTheme={() => setIsDark((prev) => !prev)}
-          onToggleLanguage={toggleLanguage}
+          onChangeLanguage={changeLanguage}
           isDark={isDark}
           lang={lang}
         />

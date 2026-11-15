@@ -10,6 +10,7 @@ import { Icons } from '../utils/icons.jsx';
 import { getInitials } from '../utils/user.js';
 import useAuth from '../context/useAuth.js';
 import styles from './ReviewPage.module.css';
+import { localeOf, makePick, makeT, pickName } from '../i18n/index.js';
 
 const BUCKETS = {
   pending: ['submitted', 'under_review'],
@@ -22,11 +23,11 @@ const formatDate = (value, lang) => {
   if (!value) return '—';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-GB', { day: 'numeric', month: 'short' });
+  return d.toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short' });
 };
 
 const ReviewPage = ({ lang }) => {
-  const t = (ar, en) => (lang === 'ar' ? ar : en);
+  const t = makeT(lang);
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -88,7 +89,7 @@ const ReviewPage = ({ lang }) => {
         <div className="q-card-head">
           <div>
             <h2 className="q-section-title">{bucketTitle}</h2>
-            <p className="q-section-sub">{t(`${queue.length} عنصر`, `${queue.length} item${queue.length === 1 ? '' : 's'}`)}</p>
+            <p className="q-section-sub">{t(`${queue.length} عنصر`, `${queue.length} item${queue.length === 1 ? '' : 's'}`, `${queue.length} آئٹم`)}</p>
           </div>
         </div>
 
@@ -105,8 +106,8 @@ const ReviewPage = ({ lang }) => {
         ) : (
           <ul className={styles.queue}>
             {queue.map((task) => {
-              const assignee = task.assigned_to_name || (lang === 'ar' ? task.assignee_ar : task.assignee_en) || '—';
-              const stdName = (lang === 'ar' ? task.standard_name_ar : task.standard_name_en) || task.standard_name || '';
+              const assignee = pickName(lang, task.assignee_ar || task.assigned_to_name, task.assignee_en) || '—';
+              const stdName = makePick(lang)(task.standard_name_ar, task.standard_name_en) || task.standard_name || '';
               const code = (task.title || '').match(/\d+(\.\d+)+/)?.[0];
               return (
                 <li key={task.id} className={styles.row}>
@@ -127,7 +128,7 @@ const ReviewPage = ({ lang }) => {
                   </div>
                   {canReview && bucket !== 'approved' && (
                     <div className={styles.rowActions}>
-                      <button type="button" className="q-btn q-btn-sm q-btn-success" onClick={() => handleReviewAction(task, 'approved')} aria-label={t(`اعتماد ${stdName}`, `Approve ${stdName}`)}>
+                      <button type="button" className="q-btn q-btn-sm q-btn-success" onClick={() => handleReviewAction(task, 'approved')} aria-label={t(`اعتماد ${stdName}`, `Approve ${stdName}`, `${stdName} منظور کریں`)}>
                         {Icons.check}
                         {t('اعتماد', 'Approve')}
                       </button>
@@ -157,7 +158,7 @@ const ReviewPage = ({ lang }) => {
 
 ReviewPage.propTypes = {
   isMobile: PropTypes.bool,
-  lang: PropTypes.oneOf(['ar', 'en']).isRequired,
+  lang: PropTypes.oneOf(['ar', 'en', 'ur']).isRequired,
 };
 
 export default ReviewPage;
