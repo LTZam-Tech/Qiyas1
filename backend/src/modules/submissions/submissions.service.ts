@@ -23,7 +23,7 @@ class SubmissionsService extends BaseRepository<Submission> {
     super('evidence_submissions');
   }
 
-  async getAllSubmissions(filters?: { taskId?: string; status?: string }) {
+  async getAllSubmissions(filters: { taskId?: string; status?: string } | undefined, userId: string, role: string) {
     let query = `
       SELECT 
         es.*,
@@ -35,9 +35,10 @@ class SubmissionsService extends BaseRepository<Submission> {
       LEFT JOIN tasks t ON es.task_id = t.id
       LEFT JOIN evidence_files ef ON es.id = ef.submission_id
       WHERE 1=1
+        AND ($1 = 'admin' OR $1 IN ('dean', 'consultant') OR es.submitted_by = $2 OR t.assigned_to = $2)
     `;
-    const params: any[] = [];
-    let idx = 1;
+    const params: any[] = [role, userId];
+    let idx = 3;
 
     if (filters?.taskId) {
       query += ` AND es.task_id = $${idx}`;
@@ -57,7 +58,7 @@ class SubmissionsService extends BaseRepository<Submission> {
     return result.rows;
   }
 
-  async getAllEvidenceFiles() {
+  async getAllEvidenceFiles(userId: string, role: string) {
     const query = `
       SELECT 
         ef.id as file_id,
@@ -86,9 +87,10 @@ class SubmissionsService extends BaseRepository<Submission> {
       LEFT JOIN standards s2 ON t.standard_id = s2.id
       LEFT JOIN axes ax2 ON s2.axis_id = ax2.id
       LEFT JOIN perspectives d2 ON ax2.perspective_id = d2.id
+      WHERE ($1 = 'admin' OR $1 IN ('dean', 'consultant') OR es.submitted_by = $2 OR t.assigned_to = $2)
       ORDER BY ef.uploaded_at DESC
     `;
-    const result = await db.query(query);
+    const result = await db.query(query, [role, userId]);
     return result.rows;
   }
 

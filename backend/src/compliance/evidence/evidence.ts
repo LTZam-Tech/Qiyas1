@@ -85,8 +85,10 @@ export async function uploadEvidence(ctx: ServiceContext, deps: EvidenceDeps, in
 
   let artifactId = input.artifactId;
   if (artifactId) {
-    const a = await mustOne(db, 'artifact', 'SELECT bank_id FROM qiyas.artifacts WHERE id = $1 FOR UPDATE', [artifactId]);
+    const a = await mustOne(db, 'artifact', 'SELECT bank_id, owner_id, department_id FROM qiyas.artifacts WHERE id = $1 FOR UPDATE', [artifactId]);
     if (a.bank_id !== bank.id) throw new ComplianceError('validation', 'The artifact belongs to another cycle');
+    // Check the referenced artifact's scope; task access must not authorize foreign artifact versioning.
+    requirePermission(ctx, 'evidence.view', { departmentId: a.department_id, ownerIds: [a.owner_id] });
   } else {
     if (!input.title?.trim()) throw new ComplianceError('validation', 'Give the evidence a title');
     const a = await mustOne(db, 'artifact', `INSERT INTO qiyas.artifacts (bank_id, owner_id, department_id, title, kind, description, created_at)
@@ -126,8 +128,9 @@ export async function linkEvidence(ctx: ServiceContext, versionId: string, input
   evidenceRole(ctx, task);
   requirePermission(ctx, 'evidence.link', { departmentId: task.department_id, ownerIds: [task.current_owner_id] });
   if (!WORKABLE.includes(task.execution_status)) throw new ComplianceError('conflict', `Evidence cannot be linked on a ${task.execution_status} task`);
-  const v = await mustOne(db, 'version', `SELECT v.scan_status, b.cycle_id FROM qiyas.artifact_versions v
+  const v = await mustOne(db, 'version', `SELECT v.scan_status, b.cycle_id, a.department_id, a.owner_id FROM qiyas.artifact_versions v
      JOIN qiyas.artifacts a ON a.id = v.artifact_id JOIN qiyas.evidence_banks b ON b.id = a.bank_id WHERE v.id = $1`, [versionId]);
+  requirePermission(ctx, 'evidence.view', { departmentId: v.department_id, ownerIds: [v.owner_id] });
   if (v.scan_status === 'infected') throw new ComplianceError('conflict', 'This file was quarantined by the virus scan and cannot be used');
   if (v.cycle_id !== task.cycle_id) throw new ComplianceError('validation', 'The evidence belongs to another cycle');
   await mustOne(db, 'requirement of this task', 'SELECT 1 FROM qiyas.task_requirements WHERE task_id = $1 AND cycle_requirement_id = $2', [task.id, input.cycleRequirementId]);

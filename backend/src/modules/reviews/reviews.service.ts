@@ -16,7 +16,7 @@ class ReviewsService extends BaseRepository<ReviewDecision> {
     super('review_decisions');
   }
 
-  async getAllReviews(filters?: { submissionId?: string; decision?: string }) {
+  async getAllReviews(filters: { submissionId?: string; decision?: string } | undefined, userId: string, role: string) {
     let query = `
       SELECT 
         rd.*,
@@ -27,10 +27,10 @@ class ReviewsService extends BaseRepository<ReviewDecision> {
       LEFT JOIN users u ON rd.reviewer_id = u.id
       LEFT JOIN evidence_submissions es ON rd.submission_id = es.id
       LEFT JOIN tasks t ON es.task_id = t.id
-      WHERE 1=1
+      WHERE ($1 IN ('admin', 'dean', 'consultant') OR es.submitted_by = $2 OR t.assigned_to = $2)
     `;
-    const params: any[] = [];
-    let idx = 1;
+    const params: any[] = [role, userId];
+    let idx = 3;
 
     if (filters?.submissionId) {
       query += ` AND rd.submission_id = $${idx}`;
@@ -50,12 +50,11 @@ class ReviewsService extends BaseRepository<ReviewDecision> {
     return result.rows;
   }
 
-  async getReviewById(reviewId: string) {
+  async getReviewById(reviewId: string, userId: string, role: string) {
     const result = await db.query(`
       SELECT 
         rd.*,
         u.name as reviewer_name,
-        u.email as reviewer_email,
         es.id as submission_id,
         es.notes as submission_notes,
         t.title as task_title
@@ -63,8 +62,8 @@ class ReviewsService extends BaseRepository<ReviewDecision> {
       LEFT JOIN users u ON rd.reviewer_id = u.id
       LEFT JOIN evidence_submissions es ON rd.submission_id = es.id
       LEFT JOIN tasks t ON es.task_id = t.id
-      WHERE rd.id = $1
-    `, [reviewId]);
+      WHERE rd.id = $1 AND ($2 IN ('admin', 'dean', 'consultant') OR es.submitted_by = $3 OR t.assigned_to = $3)
+    `, [reviewId, role, userId]);
 
     if (result.rows.length === 0) {
       throw new NotFoundError('Review not found');

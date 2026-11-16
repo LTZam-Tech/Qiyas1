@@ -34,6 +34,8 @@ export async function notify(db: Db, input: NotifyInput): Promise<number> {
   }
   let created = 0;
   for (const [userId, mandatory] of merged) {
+    const active = await one(db, 'SELECT 1 FROM public.users WHERE id = $1 AND is_active = TRUE AND deleted_at IS NULL', [userId]);
+    if (!active) continue;
     const { rows } = await db.query('SELECT channel FROM qiyas.notification_mutes WHERE user_id = $1 AND event_code = $2', [userId, input.event]);
     const muted = new Set(rows.map((r) => r.channel));
     const inApp = mandatory || !muted.has('in_app');
@@ -55,13 +57,14 @@ export async function usersWithRole(db: Db, role: RoleCode): Promise<string[]> {
   const { rows } = await db.query(`SELECT DISTINCT COALESCE(g.user_id, gm.user_id) AS user_id
      FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id
      LEFT JOIN qiyas.group_members gm ON gm.group_id = g.group_id
-    WHERE r.code = $1 AND g.revoked_at IS NULL AND COALESCE(g.user_id, gm.user_id) IS NOT NULL`, [role]);
+    WHERE r.code = $1 AND g.revoked_at IS NULL AND COALESCE(g.user_id, gm.user_id) IS NOT NULL
+      AND EXISTS (SELECT 1 FROM public.users u WHERE u.id = COALESCE(g.user_id, gm.user_id) AND u.is_active = TRUE AND u.deleted_at IS NULL)`, [role]);
   return rows.map((r) => r.user_id);
 }
 
 export async function groupMembers(db: Db, groupCode: string | null | undefined): Promise<string[]> {
   if (!groupCode) return [];
-  const { rows } = await db.query(`SELECT gm.user_id FROM qiyas.group_members gm JOIN qiyas.groups g ON g.id = gm.group_id WHERE g.code = $1`, [groupCode]);
+  const { rows } = await db.query(`SELECT gm.user_id FROM qiyas.group_members gm JOIN qiyas.groups g ON g.id = gm.group_id JOIN public.users u ON u.id = gm.user_id WHERE g.code = $1 AND u.is_active = TRUE AND u.deleted_at IS NULL`, [groupCode]);
   return rows.map((r) => r.user_id);
 }
 

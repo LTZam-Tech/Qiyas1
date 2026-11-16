@@ -33,12 +33,12 @@ class SubmissionsController {
       status,
     };
 
-    const submissions = await submissionsService.getAllSubmissions(filters);
+    const submissions = await submissionsService.getAllSubmissions(filters, req.user!.id, req.user!.role);
     res.json({ success: true, data: { submissions } });
   });
 
-  getEvidenceFiles = asyncHandler(async (_req: any, res: any, _next: any) => {
-    const files = await submissionsService.getAllEvidenceFiles();
+  getEvidenceFiles = asyncHandler(async (req: AuthRequest, res: any, _next: any) => {
+    const files = await submissionsService.getAllEvidenceFiles(req.user!.id, req.user!.role);
     res.json({ success: true, data: { files } });
   });
 

@@ -140,15 +140,9 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
   get('/evidence-versions/:id/download', async (ctx, req) => {
     const v = await mustOne(ctx.db, 'evidence', `SELECT v.storage_key, v.original_filename, v.mime_type, v.external_url, v.scan_status, v.uploaded_by, a.department_id,
         EXISTS (SELECT 1 FROM qiyas.evidence_links l WHERE l.artifact_version_id = v.id AND l.review_status = 'accepted') AS accepted,
-        COALESCE((SELECT array_agg(DISTINCT o) FROM (
-            SELECT t.current_owner_id AS o FROM qiyas.evidence_links l JOIN qiyas.tasks t ON t.id = l.task_id WHERE l.artifact_version_id = v.id
-            UNION -- owners of tasks the file is suggested for may open it before linking it (BNK-5)
-            SELECT t.current_owner_id FROM qiyas.link_suggestions sg
-              JOIN qiyas.task_requirements tr ON tr.cycle_requirement_id = sg.cycle_requirement_id
-              JOIN qiyas.tasks t ON t.id = tr.task_id
-             WHERE sg.artifact_version_id = v.id AND sg.status = 'open') x), '{}') AS owners
+        '{}'::uuid[] AS owners
        FROM qiyas.artifact_versions v JOIN qiyas.artifacts a ON a.id = v.artifact_id WHERE v.id = $1`, [p(req, 'id')]);
-    if (!can(ctx.actor.effective, ctx.actor.userId, 'evidence.download', { departmentId: v.department_id, ownerIds: [v.uploaded_by, ...v.owners], isAccepted: v.accepted })) {
+    if (!can(ctx.actor.effective, ctx.actor.userId, 'evidence.download', { departmentId: v.department_id, ownerIds: [v.uploaded_by], isAccepted: v.accepted })) {
       throw new ComplianceError('forbidden', 'You cannot download this evidence');
     }
     if (v.scan_status !== 'clean') throw new ComplianceError('conflict', 'This file is not available (virus scan)');

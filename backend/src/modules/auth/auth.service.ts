@@ -191,8 +191,9 @@ class AuthService {
   // Handle failed login attempts
   private async handleFailedLogin(userId: string): Promise<void> {
     const result = await db.query(
-      `UPDATE users 
-       SET failed_login_attempts = failed_login_attempts + 1 
+      `UPDATE users
+       SET failed_login_attempts = CASE WHEN locked_until IS NOT NULL AND locked_until <= NOW() THEN 1 ELSE failed_login_attempts + 1 END,
+           locked_until = CASE WHEN locked_until IS NOT NULL AND locked_until <= NOW() THEN NULL ELSE locked_until END
        WHERE id = $1 AND deleted_at IS NULL
        RETURNING failed_login_attempts`,
       [userId]

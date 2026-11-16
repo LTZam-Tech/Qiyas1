@@ -18,13 +18,13 @@ class ReviewsController {
       decision: req.query.decision as string,
     };
 
-    const reviews = await reviewsService.getAllReviews(filters);
+    const reviews = await reviewsService.getAllReviews(filters, req.user!.id, req.user!.role);
     res.json({ success: true, data: { reviews } });
   });
 
   getReviewById = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
     const reviewId = req.params.id as string;
-    const review = await reviewsService.getReviewById(reviewId);
+    const review = await reviewsService.getReviewById(reviewId, req.user!.id, req.user!.role);
     res.json({ success: true, data: { review } });
   });
 
