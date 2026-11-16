@@ -35,6 +35,13 @@ updater can reach its mirror.
    docker compose exec -e QIYAS_ADMIN_PASSWORD='a long password' api node dist/compliance/cli/createAdmin.js --email admin@entity.gov.sa --name "System Administrator" --name-ar "مدير النظام"
    ```
    Without `QIYAS_ADMIN_PASSWORD` a temporary password is generated and shown once.
+   More accounts, one role each (until the administration screens can create users):
+   ```
+   docker compose exec -e QIYAS_USER_PASSWORD='a long password' api node dist/compliance/cli/createUser.js --email sara@entity.gov.sa --name "Sara" --role EMP --department IT --department-name-ar "إدارة تقنية المعلومات" --department-name-en "Information Technology"
+   ```
+   Roles: `QC` consultant, `DM` department manager, `EMP` employee (both need `--department`), `DSO` submission officer, `EXE` executive, `ADM` administrator.
+   On a **test** installation, one account per role (two consultants, managers and employees in IT and HR) with generated passwords shown once:
+   `docker compose exec api node dist/compliance/cli/createUser.js --test-users --domain test.example.com --confirm-test`
 8. Sign in as the administrator and, under **Administration**:
    - **Organization**: the entity's name in Arabic and English, default language and logo (shown on the sign-in page and in reports).
    - Departments, managers and members; role grants (consultants, submission officers, executives).
