@@ -53,11 +53,13 @@ class StorageService {
     }
   }
 
-  async getSignedUrl(objectName: string, bucket: 'evidence' | 'reports' | 'templates' = 'evidence', expirySeconds: number = 900): Promise<string> {
-    // For local storage, we can simply serve the file from an Express static route.
-    // The backend `server.ts` or routes must have `app.use('/api/v1/uploads', express.static('uploads'))`
-    // Returns a relative URL path to the file prefixed with /api/v1 so Caddy forwards it
-    return `/api/v1/uploads/${bucket}/${objectName}`;
+  getFilePath(objectName: string, bucket: 'evidence' | 'reports' | 'templates' = 'evidence'): string {
+    // Reject path components so a database value cannot escape its storage bucket.
+    const safeName = path.basename(objectName);
+    if (!safeName || safeName !== objectName || safeName === '.' || safeName === '..') {
+      throw new Error('Invalid stored object name');
+    }
+    return path.join(this.baseDir, bucket, safeName);
   }
 
   async deleteFile(objectName: string, bucket: 'evidence' | 'reports' | 'templates' = 'evidence'): Promise<void> {

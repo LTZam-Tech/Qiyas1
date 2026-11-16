@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import multer from 'multer';
+import { unlink } from 'fs/promises';
 import submissionsService from './submissions.service';
 import { AuthRequest, canSubmitEvidence, canViewTask } from '@/middleware/auth';
 import { asyncHandler } from '@/utils/errors';
@@ -56,32 +57,25 @@ class SubmissionsController {
 
   createSubmission = asyncHandler(async (req: any, res: any, _next: any) => {
     const authReq = req as AuthRequest;
-    const files = (req as any).files;
-
-    if (!files || files.length === 0) {
-      throw new ValidationError('At least one file is required');
-    }
-
-    const { taskId, standardId, submissionNotes } = req.body as any;
-
-    if (!taskId && !standardId) {
-      throw new ValidationError('Task ID or Standard ID is required');
-    }
-
-    if (taskId && taskId !== 'standalone-upload') {
-      const canSubmit = await canSubmitEvidence(authReq.user!.id, taskId as string);
-      if (!canSubmit) {
-        throw new ForbiddenError('You do not have permission to submit evidence for this task');
+    const files = (req as any).files || [];
+    try {
+      if (files.length === 0) throw new ValidationError('At least one file is required');
+      const { taskId, standardId, submissionNotes } = req.body as any;
+      if (!taskId && !standardId) throw new ValidationError('Task ID or Standard ID is required');
+      if (taskId && taskId !== 'standalone-upload') {
+        const canSubmit = await canSubmitEvidence(authReq.user!.id, taskId as string);
+        if (!canSubmit) throw new ForbiddenError('You do not have permission to submit evidence for this task');
       }
+      const submission = await submissionsService.createSubmission(
+        { taskId: taskId as string, standardId: standardId as string, submissionNotes }, files, authReq.user!.id
+      );
+      res.status(201).json({ success: true, data: { submission } });
+    } finally {
+      // Remove every unconsumed Multer temp file on validation, authorization, and DB failures.
+      await Promise.all(files.map((file: any) =>
+        file?.path ? unlink(file.path).catch(() => undefined) : Promise.resolve()
+      ));
     }
-
-    const submission = await submissionsService.createSubmission(
-      { taskId: taskId as string, standardId: standardId as string, submissionNotes },
-      files,
-      authReq.user!.id
-    );
-
-    res.status(201).json({ success: true, data: { submission } });
   });
 
   updateSubmissionStatus = asyncHandler(async (req: any, res: any, _next: any) => {
@@ -123,17 +117,17 @@ class SubmissionsController {
 
     const submission = await submissionsService.getSubmissionById(submissionId);
     
-    // If evidence is tied to a specific task, check if the user has permission to view that task
+    // Authorize before resolving the private path or sending any file bytes.
     if (submission.task_id) {
       const canView = await canViewTask(authReq.user!.id, submission.task_id);
-      if (!canView) {
-        throw new ForbiddenError('You do not have access to this file');
-      }
+      if (!canView) throw new ForbiddenError('You do not have access to this file');
+    } else if (submission.submitted_by !== authReq.user!.id && authReq.user!.role !== 'admin') {
+      throw new ForbiddenError('You do not have access to this file');
     }
-
-    const url = await submissionsService.getFileDownloadUrl(submissionId, fileId);
-
-    res.json({ success: true, data: { downloadUrl: url } });
+    const file = await submissionsService.getFilePath(submissionId, fileId);
+    res.download(file.path, file.filename, (error: any) => {
+      if (error && !res.headersSent) _next(error);
+    });
   });
 }
 

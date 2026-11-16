@@ -81,6 +81,8 @@ function shortHash(s: string): string {
  * Returns null when the entry names no numbered instrument.
  */
 export function parseCitation(ref: { ar?: string; en?: string }): Citation | null {
+  // Bound untrusted import strings before regex parsing to cap CPU per reference.
+  if ((ref.ar?.length ?? 0) > 2000 || (ref.en?.length ?? 0) > 2000) return null;
   const ar = westernDigits((ref.ar ?? '').replace(/\s+/g, ' ').trim());
   const m = ar.match(/^(.*?)\s*(?:الصادرة?\s+)?(?:رقم|برقم|رقـم)\s*\(([^)]+)\)\s*(?:و?بتاريخ|وتاريخ|وتاريـخ)\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\s*هـ?/);
   if (!m) return null;

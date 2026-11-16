@@ -197,15 +197,31 @@ if (config.env === 'production') {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 
-  // Prevent use of default secrets in production
-  if (config.jwt.accessSecret === 'change-this-secret-in-production') {
-    throw new Error('JWT_ACCESS_SECRET must be changed from default value in production');
+  // Reject shipped placeholders, low-entropy secrets, and key reuse in production.
+  const isPlaceholder = (value: string) =>
+    /^(change[-_ ]?me|change[-_ ]?this|your[-_ ]|replace[-_ ]|example|secret|password)/i.test(value.trim()) ||
+    value.trim().length === 0;
+  if (config.jwt.algorithm === 'HS256') {
+    for (const [name, value] of [
+      ['JWT_ACCESS_SECRET', config.jwt.accessSecret],
+      ['JWT_REFRESH_SECRET', config.jwt.refreshSecret],
+    ] as const) {
+      if (isPlaceholder(value) || Buffer.byteLength(value, 'utf8') < 32) {
+        throw new Error(`${name} must be a non-placeholder secret of at least 32 bytes in production`);
+      }
+    }
+    if (config.jwt.accessSecret === config.jwt.refreshSecret) {
+      throw new Error('JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be different in production');
+    }
   }
-  if (config.jwt.refreshSecret === 'change-this-refresh-secret') {
-    throw new Error('JWT_REFRESH_SECRET must be changed from default value in production');
+  if (isPlaceholder(config.database.password)) {
+    throw new Error('POSTGRES_PASSWORD must be changed from its placeholder in production');
   }
-  if (config.database.password === 'change_me') {
-    throw new Error('POSTGRES_PASSWORD must be changed from default value in production');
+  if (config.storage.secretKey === 'minioadmin' || isPlaceholder(config.storage.secretKey)) {
+    throw new Error('MINIO_ROOT_PASSWORD must be changed from its placeholder in production');
+  }
+  if (!config.cors.origin.length || config.cors.origin.some((origin) => !origin.startsWith('https://'))) {
+    throw new Error('CORS_ORIGIN must contain only explicit HTTPS origins in production');
   }
 
   // If RS256 algorithm is selected, require key files

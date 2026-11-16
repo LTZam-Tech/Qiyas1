@@ -283,21 +283,18 @@ class SubmissionsService extends BaseRepository<Submission> {
     return this.getSubmissionById(submissionId);
   }
 
-  async getFileDownloadUrl(submissionId: string, fileId: string): Promise<string> {
+  async getFilePath(submissionId: string, fileId: string): Promise<{ path: string; filename: string }> {
     const result = await db.query(
-      'SELECT * FROM evidence_files WHERE id = $1 AND submission_id = $2',
+      'SELECT storage_path, stored_filename, original_filename FROM evidence_files WHERE id = $1 AND submission_id = $2',
       [fileId, submissionId]
     );
-
-    if (result.rows.length === 0) {
-      throw new NotFoundError('File not found');
-    }
-
+    if (result.rows.length === 0) throw new NotFoundError('File not found');
     const file = result.rows[0];
-    const storagePath = file.storage_path || file.stored_filename;
-    const url = await storageService.getSignedUrl(storagePath, 'evidence', 900); // 15 min
-
-    return url;
+    const storageName = file.storage_path || file.stored_filename;
+    return {
+      path: storageService.getFilePath(storageName, 'evidence'),
+      filename: path.basename(file.original_filename || 'evidence'),
+    };
   }
 
   private async resolveEvidenceRequirementId(taskId: string): Promise<string> {

@@ -79,7 +79,7 @@ export async function uploadEvidence(ctx: ServiceContext, deps: EvidenceDeps, in
     // BR-EVD-09: the same content already in this cycle's bank
     const dup = await one(db, `SELECT a.id, a.title FROM qiyas.artifact_versions v JOIN qiyas.artifacts a ON a.id = v.artifact_id
        WHERE a.bank_id = $1 AND v.sha256 = $2 AND v.scan_status <> 'infected' LIMIT 1`, [bank.id, sha]);
-    if (dup) throw new ComplianceError('conflict', `This file is already in the evidence bank as "${dup.title}" (${dup.id}); link that artifact instead`);
+    if (dup) throw new ComplianceError('conflict', 'This file already exists in the evidence bank; contact your evidence reviewer if you need to reuse it');
     scan = await deps.scanner.scan(input.file.content, input.file.filename);
   }
 
