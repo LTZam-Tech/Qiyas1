@@ -12,3 +12,6 @@ deploy/certs
 *.exe
 *.ps1
 coverage
+.env.*
+!.env.example
+!.env.production.example
