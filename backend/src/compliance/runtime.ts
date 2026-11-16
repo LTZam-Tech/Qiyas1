@@ -135,7 +135,7 @@ export function createPublicRouter(pool: PoolLike, evidence: EvidenceDeps) {
     const scanner = evidence.scanner as VirusScanner & { ping?: () => Promise<boolean> };
     const components = {
       database: await check(() => withDb(async (db) => (await db.query('SELECT 1 AS ok')).rows[0].ok === 1)),
-      storage: { kind: storage instanceof MinioStorage ? 'minio' : 'disk', status: await check(() => (storage.ping ? storage.ping() : storage.exists('health-check'))) },
+      storage: { kind: storage instanceof MinioStorage ? 'minio' : 'disk', status: await check(() => (storage.ping ? storage.ping() : storage.exists('health-check').then(() => true))) },
       scanner: { kind: scanner instanceof ClamAvScanner ? 'clamav' : 'development', status: await check(() => (scanner.ping ? scanner.ping() : Promise.resolve(true))) },
     };
     const ok = components.database === 'up' && components.storage.status === 'up' && components.scanner.status === 'up';

@@ -5,6 +5,7 @@
  * DGA's own verdict is out of scope.
  */
 import { ComplianceError, ServiceContext, audit, fromTransition, mustOne, requirePermission } from '../core/context';
+import { ListOf, PageRequest, listQuery } from '../api/paging';
 import { submissionMachine } from '../domain/stateMachines';
 import { recomputeRequirement } from './readiness';
 
@@ -80,9 +81,11 @@ export interface BankSearch {
 }
 
 /** BR-BNK-02: search a cycle's bank (historical banks are read-only but searchable). */
-export async function searchBank(ctx: ServiceContext, q: BankSearch): Promise<Array<{ versionId: string; artifactId: string; title: string; versionNo: number; standardCode: string | null; reviewStatus: string | null }>> {
+export interface BankHit { versionId: string; artifactId: string; title: string; versionNo: number; standardCode: string | null; reviewStatus: string | null }
+
+export async function searchBank<P extends PageRequest | null = null>(ctx: ServiceContext, q: BankSearch, page: P = null as P): Promise<ListOf<BankHit, P>> {
   requirePermission(ctx, 'bank.search_history');
-  const { rows } = await ctx.db.query(
+  return listQuery<BankHit, P>(ctx.db,
     `SELECT DISTINCT ON (v.id, s.code) v.id AS "versionId", a.id AS "artifactId", a.title, v.version_no AS "versionNo",
             s.code AS "standardCode", l.review_status AS "reviewStatus"
        FROM qiyas.artifact_versions v
@@ -97,8 +100,7 @@ export async function searchBank(ctx: ServiceContext, q: BankSearch): Promise<Ar
         AND ($3::text IS NULL OR s.code = $3)
         AND (NOT $4 OR l.review_status = 'accepted')
       ORDER BY v.id, s.code`,
-    [q.cycleId, q.text ?? null, q.standardCode ?? null, q.acceptedOnly ?? false]);
-  return rows;
+    'title, "versionNo", "standardCode" NULLS LAST, "versionId"', [q.cycleId, q.text ?? null, q.standardCode ?? null, q.acceptedOnly ?? false], page);
 }
 
 /**

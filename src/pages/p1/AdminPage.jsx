@@ -6,7 +6,7 @@ import { makeT } from '../../i18n/index.js';
 import { api } from '../../services/qiyasApi.js';
 import useToast from '../../hooks/useToast.js';
 import { PHASE1_ROLE_LABELS } from '../../utils/user.js';
-import { Empty, ErrorNote, Loading, pageProps, pickText, useAction, useApi } from './shared.jsx';
+import { Empty, ErrorNote, Loading, Pager, pageProps, pickText, useAction, useApi, usePagedApi, usePager } from './shared.jsx';
 import s from './p1.module.css';
 
 const ROLES = ['QC', 'DM', 'EMP', 'DSO', 'EXE', 'ADM'];
@@ -47,14 +47,19 @@ const roleName = (t, code) => { const r = PHASE1_ROLE_LABELS[code]; return r ? t
 
 function People({ lang, notify }) {
   const t = makeT(lang);
+  // every user for the "grant a role" picker; the table below is paged and searchable
   const users = useApi(() => api.get('/admin/users'), []);
+  const [text, setText] = useState('');
+  const [search, setSearch] = useState('');
+  const table = usePagedApi((page, pageSize) => api.get('/admin/users', { text: search || undefined, page, pageSize }), [search]);
+  const reloadUsers = () => { users.reload(); table.reload(); };
   const depts = useApi(() => api.get('/departments'), []);
   const [form, setForm] = useState({ userId: '', role: 'EMP', departmentId: '' });
   const act = useAction();
   const deptName = (id) => { const d = (depts.data ?? []).find((x) => x.id === id); return d ? pickText(lang, { ar: d.name_ar, en: d.name_en }) : ''; };
   const scoped = form.role === 'DM' || form.role === 'EMP';
-  const grant = () => act.run(() => api.post('/admin/role-grants', { userId: form.userId, role: form.role, departmentId: scoped ? form.departmentId : null }), () => { notify(t('مُنح الدور', 'Role granted', 'کردار دے دیا گیا')); users.reload(); });
-  const revoke = (id) => act.run(() => api.del(`/admin/role-grants/${id}`), () => { notify(t('سُحب الدور', 'Role removed', 'کردار واپس لے لیا گیا')); users.reload(); });
+  const grant = () => act.run(() => api.post('/admin/role-grants', { userId: form.userId, role: form.role, departmentId: scoped ? form.departmentId : null }), () => { notify(t('مُنح الدور', 'Role granted', 'کردار دے دیا گیا')); reloadUsers(); });
+  const revoke = (id) => act.run(() => api.del(`/admin/role-grants/${id}`), () => { notify(t('سُحب الدور', 'Role removed', 'کردار واپس لے لیا گیا')); reloadUsers(); });
   return (
     <div className={s.stack}>
       <section className="q-card q-card-pad">
@@ -79,12 +84,16 @@ function People({ lang, notify }) {
         <ErrorNote error={act.error} lang={lang} />
       </section>
       <section className="q-card">
-        {users.loading && !users.data ? <Loading lang={lang} /> : (
+        <form className="q-card-head" onSubmit={(e) => { e.preventDefault(); setSearch(text); }}>
+          <input className="q-input" style={{ flex: 1, minWidth: 200 }} value={text} onChange={(e) => setText(e.target.value)} placeholder={t('ابحث بالاسم أو البريد', 'Search by name or email', 'نام یا ای میل سے تلاش کریں')} />
+          <button type="submit" className="q-btn q-btn-secondary q-btn-sm">{t('بحث', 'Search', 'تلاش')}</button>
+        </form>
+        {table.loading && !table.items ? <Loading lang={lang} /> : table.items.length === 0 ? <Empty lang={lang} /> : (
           <div className="q-table-wrap">
             <table className="q-table">
               <thead><tr><th>{t('الاسم', 'Name', 'نام')}</th><th>{t('البريد', 'Email', 'ای میل')}</th><th>{t('الأدوار', 'Roles', 'کردار')}</th></tr></thead>
               <tbody>
-                {(users.data ?? []).map((u) => (
+                {table.items.map((u) => (
                   <tr key={u.id}>
                     <td className="q-cell-strong">{u.name}</td>
                     <td className="q-cell-muted"><bdi>{u.email}</bdi></td>
@@ -104,6 +113,7 @@ function People({ lang, notify }) {
             </table>
           </div>
         )}
+        <Pager pager={table} lang={lang} />
       </section>
     </div>
   );
@@ -115,6 +125,7 @@ function Departments({ lang, notify }) {
   const depts = useApi(() => api.get('/departments'), []);
   const users = useApi(() => api.get('/admin/users'), []);
   const [open, setOpen] = useState(null);
+  const deptPager = usePager(depts.data);
   const [form, setForm] = useState({ code: '', nameAr: '', nameEn: '' });
   const act = useAction();
   const create = () => act.run(() => api.post('/admin/departments', form), () => { notify(t('أُنشئت الإدارة', 'Department created', 'شعبہ بن گیا')); setForm({ code: '', nameAr: '', nameEn: '' }); depts.reload(); });
@@ -133,7 +144,7 @@ function Departments({ lang, notify }) {
       <section className="q-card">
         {depts.loading && !depts.data ? <Loading lang={lang} /> : (depts.data ?? []).length === 0 ? <Empty lang={lang} /> : (
           <ul className={s.list}>
-            {depts.data.map((d) => (
+            {deptPager.items.map((d) => (
               <li key={d.id} className={s.listItem} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
                 <button type="button" className={s.between} onClick={() => setOpen(open === d.id ? null : d.id)} aria-expanded={open === d.id}>
                   <span className={s.title}><span className="q-code">{d.code}</span> {pickText(lang, { ar: d.name_ar, en: d.name_en })}</span>
@@ -144,6 +155,7 @@ function Departments({ lang, notify }) {
             ))}
           </ul>
         )}
+        <Pager pager={deptPager} lang={lang} />
       </section>
     </div>
   );

@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { useQiyas } from '../../context/QiyasSession.jsx';
 import { makeT } from '../../i18n/index.js';
 import { api } from '../../services/qiyasApi.js';
-import { ErrorNote, useAction, useApi } from './shared.jsx';
+import { ErrorNote, Pager, useAction, useApi, usePager } from './shared.jsx';
 import s from './p1.module.css';
 
 const IGNORED = /(^|\/)(\.[^/]*|~\$[^/]*|thumbs\.db|desktop\.ini)$|\.(lnk|tmp|ini|db|url)$/i;
@@ -124,6 +124,7 @@ function ImportResult({ lang, result }) {
   const t = makeT(lang);
   const [all, setAll] = useState(false);
   const shown = result.items.filter((i) => all || !['suggested', 'duplicate', 'skipped'].includes(i.outcome));
+  const pager = usePager(shown);
   return (
     <div style={{ marginTop: 12 }}>
       <div className={s.row}>
@@ -137,7 +138,7 @@ function ImportResult({ lang, result }) {
       </div>
       {shown.length > 0 && (
         <ul className={s.list} style={{ maxHeight: 320, overflow: 'auto', marginTop: 8 }}>
-          {shown.map((i) => (
+          {pager.items.map((i) => (
             <li key={i.id} className={s.listItem} style={{ padding: '8px 4px' }}>
               <div className={s.listMain}>
                 <span className={s.sub} dir="auto">{i.relative_path}</span>
@@ -151,6 +152,7 @@ function ImportResult({ lang, result }) {
           ))}
         </ul>
       )}
+      <Pager pager={pager} lang={lang} />
     </div>
   );
 }
@@ -166,6 +168,7 @@ export function CarryOver({ lang }) {
   const act = useAction();
   const [done, setDone] = useState(null);
   const pending = (data?.items ?? []).filter((i) => !i.alreadyCarried);
+  const pager = usePager(pending);
   return (
     <section className="q-card q-card-pad">
       <h2 className="q-section-title" style={{ marginBottom: 6 }}>{t('ترحيل أدلة دورة سابقة', 'Carry over evidence from an earlier cycle', 'پچھلے دور کے ثبوت منتقل کریں')}</h2>
@@ -202,7 +205,7 @@ export function CarryOver({ lang }) {
       )}
       {pending.length > 0 && (
         <ul className={s.list} style={{ maxHeight: 260, overflow: 'auto', marginTop: 8 }}>
-          {pending.map((i) => (
+          {pager.items.map((i) => (
             <li key={i.versionId} className={s.listItem} style={{ padding: '8px 4px' }}>
               <span className={s.title} dir="auto">{i.title}</span>
               <span className={s.sub}>
@@ -214,6 +217,7 @@ export function CarryOver({ lang }) {
           ))}
         </ul>
       )}
+      <Pager pager={pager} lang={lang} />
     </section>
   );
 }

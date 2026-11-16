@@ -23,6 +23,7 @@ import { approveExtension, askForMoreTime, declineAsk, forwardAsk, rejectExtensi
 import { assignTask, cancelAssignment, createAssignment, publishAssignment, startTask } from '../work/tasks';
 import { ApiOptions, AuthedRequest, FileResponse, parse, route } from './http';
 import * as q from './queries';
+import { pageFromQuery } from './paging';
 import { REPORT_CODES, ReportCode, availableReports, generateReport } from '../reports/reports';
 import { reportToXlsx } from '../reports/xlsx';
 
@@ -88,7 +89,8 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
     cycleId: req.query.cycleId ? parse(id, req.query.cycleId) : undefined,
     mine: req.query.mine === 'true',
     status: typeof req.query.status === 'string' ? req.query.status : undefined,
-  }));
+    open: req.query.open === 'true',
+  }, pageFromQuery(req.query)));
   get('/tasks/:id', (ctx, req) => q.taskDetail(ctx, p(req, 'id')));
   post('/tasks/:id/assign', (ctx, req) => {
     const b = parse(z.object({ assigneeId: id, note: z.string().optional() }), req.body);
@@ -156,7 +158,7 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
   });
 
   // ---- review
-  get('/review-queue', (ctx, req) => q.reviewQueue(ctx, req.query.cycleId ? parse(id, req.query.cycleId) : undefined));
+  get('/review-queue', (ctx, req) => q.reviewQueue(ctx, req.query.cycleId ? parse(id, req.query.cycleId) : undefined, pageFromQuery(req.query)));
   post('/evidence-links/:id/claim', (ctx, req) => claimEvidence(ctx, p(req, 'id')));
   post('/evidence-links/:id/release', (ctx, req) => releaseEvidence(ctx, p(req, 'id')));
   post('/evidence-links/:id/accept', (ctx, req) => { const b = parse(z.object({ comment: z.string().optional(), checklist: z.unknown().optional() }), req.body ?? {}); return acceptEvidence(ctx, p(req, 'id'), b.comment, b.checklist); });
@@ -164,14 +166,14 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
   post('/evidence-links/:id/revoke', (ctx, req) => revokeEvidence(ctx, p(req, 'id'), parse(reason, req.body).reason));
 
   // ---- DGA submission & banks
-  get('/cycles/:id/submission-queue', (ctx, req) => q.submissionQueue(ctx, p(req, 'id'), req.query.status === 'posted' || req.query.status === 'not_posted' ? req.query.status : undefined));
+  get('/cycles/:id/submission-queue', (ctx, req) => q.submissionQueue(ctx, p(req, 'id'), req.query.status === 'posted' || req.query.status === 'not_posted' ? req.query.status : undefined, pageFromQuery(req.query)));
   post('/submission/post', (ctx, req) => { const b = parse(z.object({ linkIds: z.array(id).min(1), dgaReference: z.string().optional() }), req.body); return markPosted(ctx, b.linkIds, { dgaReference: b.dgaReference }).then((posted) => ({ posted })); });
   post('/evidence-links/:id/unpost', (ctx, req) => markNotPosted(ctx, p(req, 'id'), parse(reason, req.body).reason));
   post('/submission/packages', (ctx, req) => { const b = parse(z.object({ cycleId: id, title: text(), linkIds: z.array(id).min(1) }), req.body); return createPackage(ctx, b.cycleId, b.title, b.linkIds).then((packageId) => ({ packageId })); }, 201);
   get('/cycles/:id/bank', (ctx, req) => searchBank(ctx, {
     cycleId: p(req, 'id'), text: typeof req.query.text === 'string' ? req.query.text : undefined,
     standardCode: typeof req.query.standardCode === 'string' ? req.query.standardCode : undefined, acceptedOnly: req.query.acceptedOnly === 'true',
-  }));
+  }, pageFromQuery(req.query)));
   post('/bank/reuse', (ctx, req) => { const b = parse(z.object({ sourceVersionId: id, targetCycleId: id, title: z.string().optional() }), req.body); return reuseEvidence(ctx, b.sourceVersionId, b.targetCycleId, b.title); }, 201);
 
   // ---- carry-over and suggestions (BNK-5)
@@ -199,7 +201,7 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
     kind: typeof req.query.kind === 'string' ? parse(z.enum(LIBRARY_KINDS), req.query.kind) : undefined,
     standardId: req.query.standardId ? parse(id, req.query.standardId) : undefined,
     frameworkVersionId: req.query.frameworkVersionId ? parse(id, req.query.frameworkVersionId) : undefined,
-  }));
+  }, pageFromQuery(req.query)));
   post('/library', (ctx, req) => addLibraryDocument(ctx, parse(z.object({
     kind: z.enum(LIBRARY_KINDS), titleAr: text(), titleEn: text(), issuer: z.string().optional(), version: z.string().optional(),
     issuedOn: z.string().optional(), externalUrl: z.string().optional(), standardCodes: z.array(z.string()).optional(), frameworkVersionId: id.optional(),
@@ -231,7 +233,7 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
   });
 
   // ---- notifications
-  get('/notifications', (ctx) => q.listNotifications(ctx));
+  get('/notifications', (ctx, req) => q.listNotifications(ctx, pageFromQuery(req.query)));
   post('/notifications/read', (ctx, req) => {
     const b = parse(z.object({ ids: z.union([z.array(id), z.literal('all')]) }), req.body);
     return admin.markNotificationsRead(ctx, b.ids).then((updated) => ({ updated }));
@@ -242,7 +244,7 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
   }));
 
   // ---- administration
-  get('/admin/users', (ctx) => admin.listUsers(ctx));
+  get('/admin/users', (ctx, req) => admin.listUsers(ctx, pageFromQuery(req.query), typeof req.query.text === 'string' ? req.query.text : undefined));
   post('/admin/departments', (ctx, req) => admin.createDepartment(ctx, parse(z.object({ code: text(), nameAr: text(), nameEn: text(), parentId: id.nullish() }), req.body)).then((departmentId) => ({ departmentId })), 201);
   r.patch('/admin/departments/:id', route(opts, (ctx, req) => admin.updateDepartment(ctx, p(req, 'id'), parse(z.object({
     nameAr: z.string().optional(), nameEn: z.string().optional(), isActive: z.boolean().optional(), parentId: id.nullish(),

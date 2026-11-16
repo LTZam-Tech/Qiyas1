@@ -7,7 +7,7 @@ import { useQiyas } from '../../context/QiyasSession.jsx';
 import { makeT } from '../../i18n/index.js';
 import { api } from '../../services/qiyasApi.js';
 import useToast from '../../hooks/useToast.js';
-import { Empty, ErrorNote, Loading, READINESS, StatusBadge, pageProps, pickText, useAction, useApi } from './shared.jsx';
+import { Empty, ErrorNote, Loading, Pager, READINESS, StatusBadge, pageProps, pickText, useAction, useApi, usePager } from './shared.jsx';
 import s from './p1.module.css';
 
 const pct = (v) => (v == null ? '—' : `${v}%`);
@@ -51,7 +51,15 @@ export default function CataloguePage({ lang, onNavigate }) {
     });
   };
 
-  if (!q.cycleId) return <div className="q-page"><Empty lang={lang} title={t('لا توجد دورة قياس', 'No measurement cycle', 'کوئی پیمائشی دور نہیں')} /></div>;
+  if (!q.cycleId) {
+    return (
+      <div className="q-page">
+        <Empty lang={lang} title={t('لا توجد دورة قياس', 'No measurement cycle', 'کوئی پیمائشی دور نہیں')}
+          message={q.can('cycle.manage') ? t('أنشئ دورة من «دورات القياس» ثم افتحها.', 'Create one under "Measurement cycles", then open it.', '«پیمائشی ادوار» میں دور بنائیں، پھر کھولیں۔') : undefined} />
+        {q.can('cycle.manage') && <div style={{ textAlign: 'center' }}><button type="button" className="q-btn q-btn-primary" onClick={() => onNavigate('cycles')}>{t('دورات القياس', 'Measurement cycles', 'پیمائشی ادوار')}</button></div>}
+      </div>
+    );
+  }
 
   return (
     <div className="q-page">
@@ -168,15 +176,16 @@ function StandardDocuments({ lang, standardId }) {
   const t = makeT(lang);
   const { data, error, loading } = useApi(() => api.get('/library', { standardId }), [standardId]);
   const act = useAction();
-  if (loading && !data) return <Loading lang={lang} />;
   const rel = (d) => d.standards.find((x) => x.standardId === standardId) ?? {};
   const docs = (data ?? []).map((d) => ({ ...d, link: rel(d) })).sort((a, b) => (a.link.relation === b.link.relation ? 0 : a.link.relation === 'cited' ? -1 : 1));
+  const pager = usePager(docs);
+  if (loading && !data) return <Loading lang={lang} />;
   return (
     <div style={{ padding: '0 14px 12px' }}>
       <ErrorNote error={error ?? act.error} lang={lang} />
       {docs.length === 0 ? <span className={s.sub}>{t('لا توجد وثائق مرتبطة', 'No linked documents', 'کوئی منسلک دستاویز نہیں')}</span> : (
         <ul className={s.list}>
-          {docs.map((d) => (
+          {pager.items.map((d) => (
             <li key={d.id} className={s.listItem} style={{ padding: '8px 0' }}>
               <div className={s.listMain}>
                 <span style={{ fontSize: '0.85rem' }} dir="auto">{lang === 'ar' ? d.title_ar : d.title_en}{d.version ? ` · v${d.version}` : ''}</span>
@@ -192,6 +201,7 @@ function StandardDocuments({ lang, standardId }) {
           ))}
         </ul>
       )}
+      <Pager pager={pager} lang={lang} />
     </div>
   );
 }

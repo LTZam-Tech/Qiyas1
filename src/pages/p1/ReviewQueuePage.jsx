@@ -4,14 +4,16 @@ import { useQiyas } from '../../context/QiyasSession.jsx';
 import { makeT } from '../../i18n/index.js';
 import { api } from '../../services/qiyasApi.js';
 import useToast from '../../hooks/useToast.js';
-import { Empty, ErrorNote, Loading, REVIEW_STATUS, StatusBadge, fmtDate, pageProps, pickText, useAction, useApi } from './shared.jsx';
+import { Empty, ErrorNote, Loading, Pager, REVIEW_STATUS, StatusBadge, fmtDate, pageProps, pickText, useAction, usePagedApi } from './shared.jsx';
 import s from './p1.module.css';
 
 export default function ReviewQueuePage({ lang, onNavigate }) {
   const t = makeT(lang);
   const q = useQiyas();
   const me = q.me.user.id;
-  const { data, error, loading, reload } = useApi(() => api.get('/review-queue', { cycleId: q.cycleId }), [q.cycleId]);
+  const list = usePagedApi((page, pageSize) => api.get('/review-queue', { cycleId: q.cycleId, page, pageSize }), [q.cycleId]);
+  const { error, loading, reload } = list;
+  const data = list.items;
   const act = useAction();
   const { toast, showToast } = useToast();
   const [comments, setComments] = useState({});
@@ -68,6 +70,7 @@ export default function ReviewQueuePage({ lang, onNavigate }) {
             })}
           </ul>
         )}
+        <Pager pager={list} lang={lang} />
       </section>
       {toast && <div className="q-toast" role="status">{toast}</div>}
     </div>

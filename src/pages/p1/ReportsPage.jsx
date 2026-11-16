@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import { useQiyas } from '../../context/QiyasSession.jsx';
 import { dirOf, makeT } from '../../i18n/index.js';
 import { api } from '../../services/qiyasApi.js';
-import { Empty, ErrorNote, Loading, fmtDate, pageProps, useAction, useApi } from './shared.jsx';
+import { Empty, ErrorNote, Loading, Pager, fmtDate, pageProps, useAction, useApi, usePager } from './shared.jsx';
 import s from './p1.module.css';
 
 const fmt = (v, type, lang) => {
@@ -103,35 +103,43 @@ function ReportView({ lang, report }) {
           </div>
         ))}
       </div>
-      {report.sections.map((sec) => (
-        <div key={sec.key} style={{ marginTop: 18 }}>
-          <h3 className="q-section-title" style={{ fontSize: '0.95rem' }}>{sec.title} <span className={s.sub}>({sec.rows.length})</span></h3>
-          {sec.note && <p className={s.sub}>{sec.note}</p>}
-          {sec.rows.length === 0 ? <p className={s.sub}>{t('لا توجد بيانات', 'No data', 'کوئی ڈیٹا نہیں')}</p> : (
-            <div className="q-table-wrap" style={{ maxHeight: 420, overflow: 'auto', marginTop: 6 }}>
-              <table className="q-table">
-                <thead><tr>{sec.columns.map((c) => <th key={c.key}>{c.label}</th>)}</tr></thead>
-                <tbody>
-                  {sec.rows.slice(0, 500).map((row, i) => (
-                    <tr key={i}>
-                      {sec.columns.map((c) => (
-                        <td key={c.key} dir={c.type === 'code' ? 'ltr' : 'auto'} style={c.type === 'number' || c.type === 'percent' ? { textAlign: 'end', whiteSpace: 'nowrap' } : c.type === 'text' ? { minWidth: 160 } : { whiteSpace: 'nowrap' }}>
-                          {c.type === 'code' ? <span className="q-code">{fmt(row[c.key], c.type, lang)}</span> : fmt(row[c.key], c.type, lang)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {sec.rows.length > 500 && <p className={s.sub}>{t('تُعرض أول 500 صف؛ نزّل ملف Excel للكل.', 'Showing the first 500 rows; download Excel for all.', 'پہلی 500 قطاریں؛ سب کے لیے Excel ڈاؤن لوڈ کریں۔')}</p>}
-        </div>
-      ))}
+      {report.sections.map((sec) => <ReportSection key={sec.key} lang={lang} sec={sec} />)}
     </section>
   );
 }
 ReportView.propTypes = { lang: PropTypes.string.isRequired, report: PropTypes.object.isRequired };
+
+/** One table of a report, paged on screen (the Excel file always has every row). */
+function ReportSection({ lang, sec }) {
+  const t = makeT(lang);
+  const pager = usePager(sec.rows);
+  return (
+    <div style={{ marginTop: 18 }}>
+      <h3 className="q-section-title" style={{ fontSize: '0.95rem' }}>{sec.title} <span className={s.sub}>({sec.rows.length})</span></h3>
+      {sec.note && <p className={s.sub}>{sec.note}</p>}
+      {sec.rows.length === 0 ? <p className={s.sub}>{t('لا توجد بيانات', 'No data', 'کوئی ڈیٹا نہیں')}</p> : (
+        <div className="q-table-wrap" style={{ marginTop: 6 }}>
+          <table className="q-table">
+            <thead><tr>{sec.columns.map((c) => <th key={c.key}>{c.label}</th>)}</tr></thead>
+            <tbody>
+              {pager.items.map((row, i) => (
+                <tr key={(pager.page - 1) * pager.pageSize + i}>
+                  {sec.columns.map((c) => (
+                    <td key={c.key} dir={c.type === 'code' ? 'ltr' : 'auto'} style={c.type === 'number' || c.type === 'percent' ? { textAlign: 'end', whiteSpace: 'nowrap' } : c.type === 'text' ? { minWidth: 160 } : { whiteSpace: 'nowrap' }}>
+                      {c.type === 'code' ? <span className="q-code">{fmt(row[c.key], c.type, lang)}</span> : fmt(row[c.key], c.type, lang)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <Pager pager={pager} lang={lang} />
+    </div>
+  );
+}
+ReportSection.propTypes = { lang: PropTypes.string.isRequired, sec: PropTypes.object.isRequired };
 
 export default function ReportsPage({ lang }) {
   const t = makeT(lang);

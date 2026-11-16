@@ -8,7 +8,7 @@ import { api } from '../../services/qiyasApi.js';
 import useToast from '../../hooks/useToast.js';
 import {
   Deadline, Empty, ErrorNote, Loading, READINESS, REVIEW_STATUS, StatusBadge, SUBMISSION_STATUS, TASK_STATUS,
-  fmtDate, pageProps, pickText, useAction, useApi,
+  Pager, fmtDate, pageProps, pickText, useAction, useApi, usePager,
 } from './shared.jsx';
 import s from './p1.module.css';
 
@@ -25,6 +25,8 @@ export default function TaskPage({ lang, id, onNavigate }) {
     reload();
     q.refresh();
   };
+  const evidencePager = usePager(task?.evidence);
+  const historyPager = usePager(task?.history);
 
   if (!id) return <div className="q-page"><Empty lang={lang} /></div>;
   if (loading && !task) return <div className="q-page"><Loading lang={lang} /></div>;
@@ -109,7 +111,7 @@ export default function TaskPage({ lang, id, onNavigate }) {
             </div>
             {task.evidence.length === 0 ? <Empty lang={lang} title={t('لم تُرفع أدلة بعد', 'No evidence yet', 'ابھی کوئی ثبوت نہیں')} /> : (
               <ul className={s.list}>
-                {task.evidence.map((e) => (
+                {evidencePager.items.map((e) => (
                   <li key={e.id} className={s.listItem}>
                     <div className={s.listMain}>
                       <span className={s.title}><span dir="auto">{e.title}</span> <span className={s.sub}>v{e.version_no}</span></span>
@@ -131,6 +133,7 @@ export default function TaskPage({ lang, id, onNavigate }) {
                 ))}
               </ul>
             )}
+            <Pager pager={evidencePager} lang={lang} />
             {task.can.workEvidence && <UploadForm lang={lang} task={task} onDone={done(t('رُفع الدليل وأُضيف كمسودة', 'Evidence uploaded as a draft', 'ثبوت مسودے کے طور پر اپ لوڈ ہو گیا'))} />}
           </section>
           {task.can.workEvidence && <SuggestedEvidence lang={lang} task={task} onDone={done} />}
@@ -143,7 +146,7 @@ export default function TaskPage({ lang, id, onNavigate }) {
           <section className="q-card q-card-pad">
             <h2 className="q-section-title" style={{ marginBottom: 10 }}>{t('السجل', 'History', 'تاریخچہ')}</h2>
             <ul className={s.timeline}>
-              {task.history.map((h, i) => (
+              {historyPager.items.map((h, i) => (
                 <li key={i}>
                   <div>{historyText(t, h)}</div>
                   <div className={s.sub}>{fmtDate(h.at, lang, true)}{h.note ? ` · ${h.note}` : ''}</div>
@@ -156,6 +159,7 @@ export default function TaskPage({ lang, id, onNavigate }) {
                 </li>
               ))}
             </ul>
+            <Pager pager={historyPager} lang={lang} />
           </section>
         </div>
       </div>
@@ -187,6 +191,7 @@ function SuggestedEvidence({ lang, task, onDone }) {
   const t = makeT(lang);
   const { data, reload } = useApi(() => api.get(`/tasks/${task.id}/suggestions`), [task.id, task.evidence.length]);
   const act = useAction();
+  const pager = usePager(data);
   if (!data?.length) return null;
   const source = (x) => (x.source === 'carry_over'
     ? t('من الدورة السابقة', 'From the previous cycle', 'پچھلے دور سے')
@@ -199,7 +204,7 @@ function SuggestedEvidence({ lang, task, onDone }) {
       </div>
       <ErrorNote error={act.error} lang={lang} />
       <ul className={s.list}>
-        {data.map((x) => (
+        {pager.items.map((x) => (
           <li key={x.id} className={s.listItem}>
             <div className={s.listMain}>
               <span className={s.title}><span dir="auto">{x.title}</span></span>
@@ -227,6 +232,7 @@ function SuggestedEvidence({ lang, task, onDone }) {
           </li>
         ))}
       </ul>
+      <Pager pager={pager} lang={lang} />
     </section>
   );
 }

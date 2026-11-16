@@ -8,6 +8,7 @@ import { Permission, actorsFor, can } from '../domain/permissions';
 import { taskMachine } from '../domain/stateMachines';
 import { EventCode, Language, render } from '../notifications/catalogue';
 import { TaskRow, taskDeadline } from '../work/tasks';
+import { ListOf, PageRequest, listQuery, mapList } from './paging';
 
 /** SQL condition limiting rows to what the caller may see for a permission. */
 function scope(ctx: ServiceContext, permission: Permission, cols: { dept: string; owners: string[] }, params: unknown[]): string {
@@ -107,14 +108,15 @@ async function withDeadline(ctx: ServiceContext, row: any) {
   return { ...row, deadline: { original: d.originalDueAt, current: d.currentDueAt, isPaused: d.isPaused, pauseReasons: d.openPauseReasons, isOverdue: d.isOverdue } };
 }
 
-export async function listTasks(ctx: ServiceContext, filter: { cycleId?: string; mine?: boolean; status?: string }) {
+export async function listTasks<P extends PageRequest | null = null>(ctx: ServiceContext, filter: { cycleId?: string; mine?: boolean; status?: string; open?: boolean }, page: P = null as P) {
   const params: unknown[] = [];
   const where = [scope(ctx, 'task.view', { dept: 't.department_id', owners: ['t.current_owner_id', 't.original_assignee_id'] }, params)];
   if (filter.cycleId) { params.push(filter.cycleId); where.push(`t.cycle_id = $${params.length}`); }
   if (filter.mine) { params.push(ctx.actor.userId); where.push(`t.current_owner_id = $${params.length}`); }
   if (filter.status) { params.push(filter.status); where.push(`t.execution_status = $${params.length}`); }
-  const { rows } = await ctx.db.query(`SELECT ${TASK_COLUMNS} ${TASK_FROM} WHERE ${where.join(' AND ')} ORDER BY t.original_due_at, t.title`, params);
-  return Promise.all(rows.map((r) => withDeadline(ctx, r)));
+  if (filter.open) where.push(`t.execution_status NOT IN ('completed', 'cancelled')`);
+  const list = await listQuery(ctx.db, `SELECT ${TASK_COLUMNS} ${TASK_FROM} WHERE ${where.join(' AND ')}`, 'original_due_at, title, id', params, page);
+  return mapList<any, any, P>(list, (r) => withDeadline(ctx, r));
 }
 
 export async function taskDetail(ctx: ServiceContext, taskId: string) {
@@ -172,9 +174,9 @@ export async function taskDetail(ctx: ServiceContext, taskId: string) {
 }
 
 // ------------------------------------------------------------------ queues
-export async function reviewQueue(ctx: ServiceContext, cycleId?: string) {
+export async function reviewQueue<P extends PageRequest | null = null>(ctx: ServiceContext, cycleId?: string, page: P = null as P): Promise<ListOf<any, P>> {
   requirePermission(ctx, 'review.decide');
-  const { rows } = await ctx.db.query(`SELECT l.id, l.review_status, l.review_due_at, l.submitted_at, l.claimed_by, cu.name AS claimed_by_name,
+  return listQuery(ctx.db, `SELECT l.id, l.review_status, l.review_due_at, l.submitted_at, l.claimed_by, cu.name AS claimed_by_name,
       a.title, v.id AS version_id, v.version_no, v.original_filename, v.external_url, v.uploaded_by, uu.name AS uploaded_by_name,
       r.code AS requirement_code, s.code AS standard_code, t.id AS task_id, t.title AS task_title, d.name_ar AS department_ar, d.name_en AS department_en,
       (v.uploaded_by <> $1) AS can_review
@@ -182,26 +184,23 @@ export async function reviewQueue(ctx: ServiceContext, cycleId?: string) {
      JOIN public.users uu ON uu.id = v.uploaded_by LEFT JOIN public.users cu ON cu.id = l.claimed_by
      JOIN qiyas.cycle_requirements cr ON cr.id = l.cycle_requirement_id JOIN qiyas.requirements r ON r.id = cr.requirement_id
      JOIN qiyas.standards s ON s.id = r.standard_id LEFT JOIN qiyas.tasks t ON t.id = l.task_id LEFT JOIN qiyas.departments d ON d.id = t.department_id
-     WHERE l.review_status IN ('submitted', 'under_review') AND ($2::uuid IS NULL OR cr.cycle_id = $2)
-     ORDER BY l.review_due_at NULLS LAST`, [ctx.actor.userId, cycleId ?? null]);
-  return rows;
+     WHERE l.review_status IN ('submitted', 'under_review') AND ($2::uuid IS NULL OR cr.cycle_id = $2)`,
+  'review_due_at NULLS LAST, id', [ctx.actor.userId, cycleId ?? null], page);
 }
 
-export async function submissionQueue(ctx: ServiceContext, cycleId: string, status?: 'not_posted' | 'posted') {
+export async function submissionQueue<P extends PageRequest | null = null>(ctx: ServiceContext, cycleId: string, status?: 'not_posted' | 'posted', page: P = null as P): Promise<ListOf<any, P>> {
   requirePermission(ctx, 'submission.view_queue');
-  const { rows } = await ctx.db.query(`SELECT l.id, l.submission_status, l.posted_at, l.dga_reference, pu.name AS posted_by_name,
+  return listQuery(ctx.db, `SELECT l.id, l.submission_status, l.posted_at, l.dga_reference, pu.name AS posted_by_name,
       a.title, v.id AS version_id, v.original_filename, v.external_url, r.code AS requirement_code, s.code AS standard_code,
       s.title_ar AS standard_ar, s.title_en AS standard_en,
       (SELECT max(d.at) FROM qiyas.review_decisions d WHERE d.evidence_link_id = l.id AND d.decision = 'accept') AS accepted_at
      FROM qiyas.evidence_links l JOIN qiyas.artifact_versions v ON v.id = l.artifact_version_id JOIN qiyas.artifacts a ON a.id = v.artifact_id
      JOIN qiyas.cycle_requirements cr ON cr.id = l.cycle_requirement_id JOIN qiyas.requirements r ON r.id = cr.requirement_id
      JOIN qiyas.standards s ON s.id = r.standard_id LEFT JOIN public.users pu ON pu.id = l.posted_by
-     WHERE cr.cycle_id = $1 AND l.review_status = 'accepted' AND ($2::text IS NULL OR l.submission_status = $2)
-     ORDER BY s.code, r.code`, [cycleId, status ?? null]);
-  return rows;
+     WHERE cr.cycle_id = $1 AND l.review_status = 'accepted' AND ($2::text IS NULL OR l.submission_status = $2)`,
+  'standard_code, requirement_code, id', [cycleId, status ?? null], page);
 }
 
-/** Open clarifications and pending extension decisions for consultants; employee asks for managers. */
 export async function inbox(ctx: ServiceContext) {
   const db = ctx.db;
   const isQc = ctx.actor.grants.some((g) => g.role === 'QC');
@@ -219,19 +218,21 @@ export async function inbox(ctx: ServiceContext) {
 }
 
 // ------------------------------------------------------------------ notifications
-export async function listNotifications(ctx: ServiceContext, limit = 50) {
+export async function listNotifications<P extends PageRequest | null = null>(ctx: ServiceContext, page: P = null as P, limit = 50) {
   const pref = await one(ctx.db, 'SELECT language FROM qiyas.user_preferences WHERE user_id = $1', [ctx.actor.userId]);
   const lang: Language = pref?.language ?? 'ar';
-  const { rows } = await ctx.db.query(`SELECT id, event_code, entity_type, entity_id, payload, created_at, read_at FROM qiyas.notifications
-     WHERE user_id = $1 AND show_in_app ORDER BY created_at DESC LIMIT $2`, [ctx.actor.userId, limit]);
-  return rows.map((n) => ({
+  const inner = `SELECT id, event_code, entity_type, entity_id, payload, created_at, read_at FROM qiyas.notifications
+     WHERE user_id = $1 AND show_in_app`;
+  const list = (page
+    ? await listQuery(ctx.db, inner, 'created_at DESC, id', [ctx.actor.userId], page)
+    : (await ctx.db.query(`${inner} ORDER BY created_at DESC LIMIT $2`, [ctx.actor.userId, limit])).rows) as ListOf<any, P>;
+  return mapList<any, any, P>(list, (n: any) => ({
     ...n,
     text: { ar: render(n.event_code as EventCode, 'ar', n.payload), en: render(n.event_code as EventCode, 'en', n.payload), ur: render(n.event_code as EventCode, 'ur', n.payload) },
     title: render(n.event_code as EventCode, lang, n.payload).title,
   }));
 }
 
-// ------------------------------------------------------------------ organization
 export async function listDepartments(ctx: ServiceContext) {
   const { rows } = await ctx.db.query(`SELECT d.id, d.code, d.name_ar, d.name_en, d.parent_id, d.is_active,
       (SELECT json_build_object('id', u.id, 'name', u.name) FROM qiyas.department_members m JOIN public.users u ON u.id = m.user_id

@@ -4,6 +4,7 @@
  * Every change is audited.
  */
 import { ComplianceError, ServiceContext, audit, mustOne, one, requirePermission } from '../core/context';
+import { ListOf, PageRequest, listQuery } from '../api/paging';
 import { RoleCode, RoleGrant, validateGrant, GrantError } from '../domain/permissions';
 
 export async function createDepartment(ctx: ServiceContext, input: { code: string; nameAr: string; nameEn: string; parentId?: string | null }): Promise<string> {
@@ -119,13 +120,13 @@ export async function saveOrgSettings(ctx: ServiceContext, input: { nameAr: stri
   await audit(ctx, { action: 'admin.settings_saved', entityType: 'org_settings', entityId: 'org', after: input });
 }
 
-export async function listUsers(ctx: ServiceContext) {
+export async function listUsers<P extends PageRequest | null = null>(ctx: ServiceContext, page: P = null as P, text?: string): Promise<ListOf<any, P>> {
   requirePermission(ctx, 'admin.users');
-  const { rows } = await ctx.db.query(`SELECT u.id, u.name, u.email,
+  return listQuery(ctx.db, `SELECT u.id, u.name, u.email,
       COALESCE((SELECT json_agg(json_build_object('id', g.id, 'role', r.code, 'departmentId', g.department_id))
         FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id WHERE g.user_id = u.id AND g.revoked_at IS NULL), '[]') AS grants
-     FROM public.users u ORDER BY u.name`);
-  return rows;
+     FROM public.users u
+     WHERE ($1::text IS NULL OR u.name ILIKE '%' || $1 || '%' OR u.email ILIKE '%' || $1 || '%')`, 'name, id', [text?.trim() || null], page);
 }
 
 // ------------------------------------------------------------------ personal

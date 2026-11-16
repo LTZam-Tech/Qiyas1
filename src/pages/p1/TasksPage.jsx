@@ -1,9 +1,9 @@
 // Tasks I own, and (by role) my department's or the whole cycle's tasks.
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQiyas } from '../../context/QiyasSession.jsx';
 import { makeT } from '../../i18n/index.js';
 import { api } from '../../services/qiyasApi.js';
-import { Deadline, Empty, ErrorNote, Loading, StatusBadge, TASK_STATUS, pageProps, pickText, useApi } from './shared.jsx';
+import { Deadline, Empty, ErrorNote, Loading, Pager, StatusBadge, TASK_STATUS, pageProps, pickText, usePagedApi } from './shared.jsx';
 import s from './p1.module.css';
 
 const FILTERS = ['open', 'awaiting_assignment', 'rework_required', 'submitted', 'completed', 'all'];
@@ -15,13 +15,13 @@ export default function TasksPage({ lang, isMobile, onNavigate }) {
   const wide = scope.includes('all') || scope.includes('dept');
   const [tab, setTab] = useState('mine');
   const [filter, setFilter] = useState('open');
-  const { data, error, loading } = useApi(() => api.get('/tasks', { cycleId: q.cycleId, mine: tab === 'mine' ? true : undefined }), [q.cycleId, tab]);
-
-  const rows = useMemo(() => (data ?? []).filter((x) => {
-    if (filter === 'all') return true;
-    if (filter === 'open') return !['completed', 'cancelled'].includes(x.execution_status);
-    return x.execution_status === filter;
-  }), [data, filter]);
+  // filters and paging run on the server, so every page is full and the total is exact
+  const list = usePagedApi((page, pageSize) => api.get('/tasks', {
+    cycleId: q.cycleId, mine: tab === 'mine' ? true : undefined, page, pageSize,
+    open: filter === 'open' ? true : undefined, status: filter !== 'open' && filter !== 'all' ? filter : undefined,
+  }), [q.cycleId, tab, filter]);
+  const { error, loading } = list;
+  const rows = list.items ?? [];
 
   const filterLabel = {
     open: t('المفتوحة', 'Open', 'جاری'), awaiting_assignment: t('بانتظار الإسناد', 'Awaiting assignment', 'تفویض کا منتظر'),
@@ -50,7 +50,7 @@ export default function TasksPage({ lang, isMobile, onNavigate }) {
       </div>
       <ErrorNote error={error} lang={lang} />
       <section className="q-card">
-        {loading && !data ? <Loading lang={lang} /> : rows.length === 0 ? <Empty lang={lang} title={t('لا توجد مهام هنا', 'No tasks here', 'یہاں کوئی کام نہیں')} /> : isMobile ? (
+        {loading && !list.items ? <Loading lang={lang} /> : rows.length === 0 ? <Empty lang={lang} title={t('لا توجد مهام هنا', 'No tasks here', 'یہاں کوئی کام نہیں')} /> : isMobile ? (
           <ul className={s.list}>
             {rows.map((task) => (
               <li key={task.id} className={s.listItem} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
@@ -91,6 +91,7 @@ export default function TasksPage({ lang, isMobile, onNavigate }) {
             </table>
           </div>
         )}
+        <Pager pager={list} lang={lang} />
       </section>
     </div>
   );

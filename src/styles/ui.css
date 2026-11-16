@@ -407,3 +407,11 @@
   .q-seg { flex-wrap: wrap; overflow: visible; width: 100%; }
   .q-seg button { flex: 1 1 auto; }
 }
+
+/* Pagination under long lists */
+.q-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--text-2); }
+.q-pager-size { display: inline-flex; align-items: center; gap: 8px; }
+.q-pager-size .q-input { width: auto; height: 32px; padding-block: 0; }
+.q-pager-nav { display: inline-flex; align-items: center; gap: 8px; }
+.q-pager-count { min-width: 56px; text-align: center; font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .q-pager { justify-content: center; } .q-pager-info { width: 100%; text-align: center; } }

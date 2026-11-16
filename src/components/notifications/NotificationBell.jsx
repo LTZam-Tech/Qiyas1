@@ -4,6 +4,7 @@ import { Icons } from '../../utils/icons.jsx';
 import { api } from '../../services/qiyasApi.js';
 import styles from './Notifications.module.css';
 import { makeT } from '../../i18n/index.js';
+import { Pager, usePager } from '../../pages/p1/shared.jsx';
 
 // Icon and colour by event family (event codes from the Phase 1 notification catalogue).
 const styleFor = (code = '') => {
@@ -31,6 +32,8 @@ export default function NotificationBell({ lang = 'ar', onNavigate }) {
   const [notifications, setNotifications] = useState([]);
   const dropdownRef = useRef(null);
   const unreadCount = notifications.filter((n) => !n.read_at).length;
+  // the latest 50 notifications, ten at a time
+  const pager = usePager(notifications);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -121,7 +124,7 @@ export default function NotificationBell({ lang = 'ar', onNavigate }) {
                 {t('لا توجد تنبيهات', 'No notifications yet')}
               </li>
             ) : (
-              notifications.map((note) => {
+              pager.items.map((note) => {
                 const ts = styleFor(note.event_code);
                 const text = note.text?.[lang] ?? { title: note.title };
                 return (
@@ -144,6 +147,7 @@ export default function NotificationBell({ lang = 'ar', onNavigate }) {
               })
             )}
           </ul>
+          <Pager pager={pager} lang={lang} />
         </div>
       )}
     </div>

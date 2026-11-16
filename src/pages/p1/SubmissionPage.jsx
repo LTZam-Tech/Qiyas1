@@ -4,7 +4,7 @@ import { useQiyas } from '../../context/QiyasSession.jsx';
 import { makeT } from '../../i18n/index.js';
 import { api } from '../../services/qiyasApi.js';
 import useToast from '../../hooks/useToast.js';
-import { Empty, ErrorNote, Loading, SUBMISSION_STATUS, StatusBadge, fmtDate, pageProps, pickText, useAction, useApi } from './shared.jsx';
+import { Empty, ErrorNote, Loading, Pager, SUBMISSION_STATUS, StatusBadge, fmtDate, pageProps, pickText, useAction, usePagedApi } from './shared.jsx';
 import s from './p1.module.css';
 
 export default function SubmissionPage({ lang }) {
@@ -14,7 +14,9 @@ export default function SubmissionPage({ lang }) {
   const [tab, setTab] = useState('not_posted');
   const [selected, setSelected] = useState(() => new Set());
   const [reference, setReference] = useState('');
-  const { data, error, loading, reload } = useApi(() => (q.cycleId ? api.get(`/cycles/${q.cycleId}/submission-queue`, { status: tab }) : Promise.resolve([])), [q.cycleId, tab]);
+  const list = usePagedApi((page, pageSize) => (q.cycleId ? api.get(`/cycles/${q.cycleId}/submission-queue`, { status: tab, page, pageSize }) : Promise.resolve({ items: [], total: 0 })), [q.cycleId, tab]);
+  const { error, loading, reload } = list;
+  const data = list.items;
   const act = useAction();
   const { toast, showToast } = useToast();
 
@@ -84,6 +86,7 @@ export default function SubmissionPage({ lang }) {
           </ul>
         </section>
       ))}
+      {(list.total > 10 || list.page > 1) && <div className="q-card" style={{ padding: 0 }}><Pager pager={list} lang={lang} /></div>}
       {toast && <div className="q-toast" role="status">{toast}</div>}
     </div>
   );

@@ -24,6 +24,79 @@ export function useApi(loader, deps) {
   return { ...state, reload };
 }
 
+export const PAGE_SIZES = [10, 25, 50];
+
+/**
+ * Loads one page of a server list: loader(page, pageSize) calls an endpoint with ?page&pageSize
+ * and gets { items, total, page, pageSize }. Going back to page 1 whenever `deps` change keeps
+ * filters and paging consistent.
+ */
+export function usePagedApi(loader, deps, initialSize = PAGE_SIZES[0]) {
+  const depsKey = JSON.stringify(deps);
+  // the page belongs to one set of filters: changing a filter starts again at page 1
+  const [pager, setPager] = useState({ page: 1, pageSize: initialSize, key: depsKey });
+  const page = pager.key === depsKey ? pager.page : 1;
+  const { pageSize } = pager;
+  const api = useApi(() => loader(page, pageSize), [depsKey, page, pageSize]);
+  const data = api.data;
+  return {
+    ...api,
+    items: data?.items ?? null,
+    total: data?.total ?? 0,
+    page,
+    pageSize,
+    setPage: (n) => setPager({ page: n, pageSize, key: depsKey }),
+    setPageSize: (n) => setPager({ page: 1, pageSize: n, key: depsKey }),
+  };
+}
+
+/** Pages an array already on screen (short lists inside a page). */
+export function usePager(rows, initialSize = PAGE_SIZES[0]) {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(initialSize);
+  const total = rows?.length ?? 0;
+  const last = Math.max(1, Math.ceil(total / pageSize));
+  const current = Math.min(page, last);
+  return {
+    items: (rows ?? []).slice((current - 1) * pageSize, current * pageSize),
+    total, page: current, pageSize,
+    setPage, setPageSize: (n) => { setPageSize(n); setPage(1); },
+  };
+}
+
+/** "Showing 11–20 of 312" with previous / next and the page size. Hidden while everything fits on one page. */
+export function Pager({ pager, lang }) {
+  const t = makeT(lang);
+  const { page, pageSize, total, setPage, setPageSize } = pager;
+  if (total <= PAGE_SIZES[0] && page === 1) return null;
+  const last = Math.max(1, Math.ceil(total / pageSize), page);
+  const from = total ? (page - 1) * pageSize + 1 : 0;
+  const to = Math.min(total, page * pageSize);
+  const nf = (n) => n.toLocaleString(lang === 'en' ? 'en-US' : 'ar-SA-u-nu-latn');
+  return (
+    <nav className="q-pager" aria-label={t('التنقل بين الصفحات', 'Pagination', 'صفحات')}>
+      <span className="q-pager-info">
+        {t(`عرض ${nf(from)}–${nf(to)} من ${nf(total)}`, `Showing ${nf(from)}–${nf(to)} of ${nf(total)}`, `${nf(total)} میں سے ${nf(from)}–${nf(to)}`)}
+      </span>
+      <label className="q-pager-size">
+        {t('لكل صفحة', 'Per page', 'فی صفحہ')}
+        <select className="q-input" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}>
+          {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+      </label>
+      <div className="q-pager-nav">
+        <button type="button" className="q-btn q-btn-secondary q-btn-sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>{t('السابق', 'Previous', 'پچھلا')}</button>
+        <span className="q-pager-count">{t(`${nf(page)} / ${nf(last)}`, `${nf(page)} / ${nf(last)}`, `${nf(page)} / ${nf(last)}`)}</span>
+        <button type="button" className="q-btn q-btn-secondary q-btn-sm" disabled={page >= last} onClick={() => setPage(page + 1)}>{t('التالي', 'Next', 'اگلا')}</button>
+      </div>
+    </nav>
+  );
+}
+Pager.propTypes = {
+  pager: PropTypes.shape({ page: PropTypes.number, pageSize: PropTypes.number, total: PropTypes.number, setPage: PropTypes.func, setPageSize: PropTypes.func }).isRequired,
+  lang: PropTypes.string.isRequired,
+};
+
 /** Runs an action, shows its error, and reports success through onDone. */
 export function useAction() {
   const [busy, setBusy] = useState(false);

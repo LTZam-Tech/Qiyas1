@@ -11,11 +11,12 @@ export const NAV = [
     item('review', 'مراجعة الأدلة', 'Evidence review', 'ثبوت کا جائزہ', 'shield', (s) => s.can('review.decide')),
   ]),
   group('group-compliance', 'الامتثال', 'Compliance', 'تعمیل', [
+    item('cycles', 'دورات القياس', 'Measurement cycles', 'پیمائشی ادوار', 'calendar', (s) => s.can('cycle.manage')),
     item('catalogue', 'المعايير والجاهزية', 'Standards & readiness', 'معیارات اور تیاری', 'catalog', (s) => s.can('framework.view')),
     item('submission', 'الرفع على منصة الهيئة', 'DGA submission', 'DGA پر جمع کرانا', 'upload', (s) => s.can('submission.view_queue')),
     item('bank', 'بنك الأدلة', 'Evidence bank', 'ثبوت کا بینک', 'archive', (s) => s.can('bank.search_history')),
     item('library', 'مكتبة الأنظمة والأدلة', 'Regulations library', 'قوانین کی لائبریری', 'bookmarkIcon', (s) => s.can('library.view')),
-    item('reports', 'التقارير', 'Reports', 'رپورٹس', 'chart', (s) => s.can('report.generate')),
+    item('reports', 'التقارير', 'Reports', 'رپورٹس', 'chart', (s) => s.can('report.generate') || s.hasRole('ADM')),
   ]),
   group('group-system', 'النظام', 'System', 'سسٹم', [
     item('admin', 'الإدارة', 'Administration', 'انتظامیہ', 'settings', (s) => s.can('admin.users')),

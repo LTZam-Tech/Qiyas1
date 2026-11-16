@@ -5,7 +5,7 @@ import { useQiyas } from '../../context/QiyasSession.jsx';
 import { makeT } from '../../i18n/index.js';
 import { api } from '../../services/qiyasApi.js';
 import useToast from '../../hooks/useToast.js';
-import { Empty, ErrorNote, Loading, pageProps, useAction, useApi } from './shared.jsx';
+import { Empty, ErrorNote, Loading, Pager, pageProps, useAction, usePagedApi } from './shared.jsx';
 import s from './p1.module.css';
 
 const LIBRARY_KINDS = {
@@ -71,7 +71,9 @@ export default function LibraryPage({ lang }) {
   const fileInput = useRef(null);
   const [uploadFor, setUploadFor] = useState(null);
   const frameworkVersionId = q.cycle?.framework_version_id;
-  const { data, error, loading } = useApi(() => api.get('/library', { text: search || undefined, kind: kind || undefined, frameworkVersionId }), [search, kind, reload, frameworkVersionId]);
+  const list = usePagedApi((page, pageSize) => api.get('/library', { text: search || undefined, kind: kind || undefined, frameworkVersionId, page, pageSize }), [search, kind, reload, frameworkVersionId]);
+  const { error, loading } = list;
+  const data = list.items;
   const act = useAction();
   const { toast, showToast } = useToast();
   const manage = q.can('library.manage');
@@ -156,6 +158,7 @@ export default function LibraryPage({ lang }) {
             })}
           </ul>
         )}
+        <Pager pager={list} lang={lang} />
       </section>
       {toast && <div className="q-toast" role="status">{toast}</div>}
     </div>

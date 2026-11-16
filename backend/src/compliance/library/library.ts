@@ -15,6 +15,7 @@ import { ComplianceError, Db, ServiceContext, audit, mustOne, requirePermission 
 import { EvidenceDeps, fileRules } from '../evidence/evidence';
 import { sha256Hex } from '../evidence/storage';
 import catalogueFile from './dga-library.json';
+import { ListOf, PageRequest, listQuery } from '../api/paging';
 
 export const LIBRARY_KINDS = ['law', 'regulation', 'royal_decree', 'royal_order', 'decision', 'circular', 'directive',
   'controls', 'policy', 'guide', 'framework', 'user_guide', 'report', 'presentation', 'other'] as const;
@@ -184,9 +185,9 @@ export interface LibraryQuery {
   frameworkVersionId?: string;
 }
 
-export async function listLibrary(ctx: ServiceContext, q: LibraryQuery = {}) {
+export async function listLibrary<P extends PageRequest | null = null>(ctx: ServiceContext, q: LibraryQuery = {}, page: P = null as P): Promise<ListOf<any, P>> {
   requirePermission(ctx, 'library.view');
-  const { rows } = await ctx.db.query(
+  return listQuery(ctx.db,
     `SELECT d.id, d.code, d.kind, d.origin, d.issuer, d.version, d.issued_on, d.title_ar, d.title_en, d.title_ur, d.description,
             d.storage_key IS NOT NULL AS has_file, d.original_filename, d.size_bytes, d.external_url,
             COALESCE(json_agg(json_build_object('standardId', s.id, 'code', s.code, 'relation', l.relation, 'detail', l.detail, 'version', fv.version)
@@ -200,12 +201,11 @@ export async function listLibrary(ctx: ServiceContext, q: LibraryQuery = {}) {
         AND ($1::text IS NULL OR d.title_ar ILIKE '%' || $1 || '%' OR d.title_en ILIKE '%' || $1 || '%' OR d.issued_on ILIKE '%' || $1 || '%')
         AND ($2::text IS NULL OR d.kind = $2)
         AND ($3::uuid IS NULL OR EXISTS (SELECT 1 FROM qiyas.library_document_standards x WHERE x.document_id = d.id AND x.standard_id = $3))
-      GROUP BY d.id
-      ORDER BY CASE d.origin WHEN 'client' THEN 0 WHEN 'catalogue' THEN 1 ELSE 2 END,
-               array_position(ARRAY['law','regulation','royal_decree','royal_order','decision','controls','policy','framework','guide','circular','directive','user_guide','report','presentation','other']::text[], d.kind),
-               d.title_ar`,
-    [q.text?.trim() || null, q.kind ?? null, q.standardId ?? null, q.frameworkVersionId ?? null]);
-  return rows;
+      GROUP BY d.id`,
+    `CASE origin WHEN 'client' THEN 0 WHEN 'catalogue' THEN 1 ELSE 2 END,
+     array_position(ARRAY['law','regulation','royal_decree','royal_order','decision','controls','policy','framework','guide','circular','directive','user_guide','report','presentation','other']::text[], kind),
+     title_ar, id`,
+    [q.text?.trim() || null, q.kind ?? null, q.standardId ?? null, q.frameworkVersionId ?? null], page);
 }
 
 // ------------------------------------------------------------------ write

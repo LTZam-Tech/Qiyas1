@@ -4,7 +4,7 @@ import { useQiyas } from '../../context/QiyasSession.jsx';
 import { makeT } from '../../i18n/index.js';
 import { api } from '../../services/qiyasApi.js';
 import useToast from '../../hooks/useToast.js';
-import { Empty, ErrorNote, Loading, REVIEW_STATUS, StatusBadge, pageProps, useAction, useApi } from './shared.jsx';
+import { Empty, ErrorNote, Loading, Pager, REVIEW_STATUS, StatusBadge, pageProps, useAction, usePagedApi } from './shared.jsx';
 import { CarryOver, FolderImport } from './BankTools.jsx';
 import s from './p1.module.css';
 
@@ -15,7 +15,9 @@ export default function BankPage({ lang }) {
   const [text, setText] = useState('');
   const [search, setSearch] = useState('');
   const [acceptedOnly, setAcceptedOnly] = useState(true);
-  const { data, error, loading } = useApi(() => (bankCycle ? api.get(`/cycles/${bankCycle}/bank`, { text: search || undefined, acceptedOnly }) : Promise.resolve([])), [bankCycle, search, acceptedOnly]);
+  const list = usePagedApi((page, pageSize) => (bankCycle ? api.get(`/cycles/${bankCycle}/bank`, { text: search || undefined, acceptedOnly, page, pageSize }) : Promise.resolve({ items: [], total: 0 })), [bankCycle, search, acceptedOnly]);
+  const { error, loading } = list;
+  const data = list.items;
   const act = useAction();
   const { toast, showToast } = useToast();
   const canReuse = q.can('bank.reuse') && q.cycleId && bankCycle !== q.cycleId;
@@ -63,6 +65,7 @@ export default function BankPage({ lang }) {
             ))}
           </ul>
         )}
+        <Pager pager={list} lang={lang} />
       </section>
       {toast && <div className="q-toast" role="status">{toast}</div>}
     </div>

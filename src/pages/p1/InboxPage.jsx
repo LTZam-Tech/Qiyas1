@@ -3,7 +3,7 @@ import { useQiyas } from '../../context/QiyasSession.jsx';
 import { makeT } from '../../i18n/index.js';
 import { api } from '../../services/qiyasApi.js';
 import useToast from '../../hooks/useToast.js';
-import { Empty, ErrorNote, Loading, fmtDate, pageProps, useAction, useApi } from './shared.jsx';
+import { Empty, ErrorNote, Loading, Pager, fmtDate, pageProps, useAction, useApi, usePager } from './shared.jsx';
 import s from './p1.module.css';
 
 export default function InboxPage({ lang, onNavigate }) {
@@ -17,6 +17,9 @@ export default function InboxPage({ lang, onNavigate }) {
 
   const formal = (data?.extensions ?? []).filter((e) => e.level === 'formal');
   const asks = (data?.extensions ?? []).filter((e) => e.level === 'employee_ask');
+  const clarPager = usePager(data?.clarifications);
+  const formalPager = usePager(formal);
+  const asksPager = usePager(asks);
 
   return (
     <div className="q-page">
@@ -33,7 +36,7 @@ export default function InboxPage({ lang, onNavigate }) {
             <div className="q-card-head"><h2 className="q-section-title">{t('طلبات التوضيح', 'Clarifications', 'وضاحتیں')} ({data.clarifications.length})</h2></div>
             {data.clarifications.length === 0 ? <Empty lang={lang} title={t('لا توجد أسئلة مفتوحة', 'No open questions', 'کوئی کھلا سوال نہیں')} /> : (
               <ul className={s.list}>
-                {data.clarifications.map((c) => (
+                {clarPager.items.map((c) => (
                   <li key={c.id} className={s.listItem}>
                     <div className={s.listMain}>
                       <button type="button" className={s.linkBtn} onClick={() => onNavigate('task', c.task_id)}>{c.task_title}</button>
@@ -45,6 +48,7 @@ export default function InboxPage({ lang, onNavigate }) {
                 ))}
               </ul>
             )}
+            <Pager pager={clarPager} lang={lang} />
           </section>
 
           <div className={s.stack}>
@@ -53,7 +57,7 @@ export default function InboxPage({ lang, onNavigate }) {
                 <div className="q-card-head"><h2 className="q-section-title">{t('طلبات التمديد', 'Extension requests', 'توسیع کی درخواستیں')} ({formal.length})</h2></div>
                 {formal.length === 0 ? <Empty lang={lang} title={t('لا توجد طلبات', 'No requests', 'کوئی درخواست نہیں')} /> : (
                   <ul className={s.list}>
-                    {formal.map((e) => (
+                    {formalPager.items.map((e) => (
                       <li key={e.id} className={s.listItem}>
                         <div className={s.listMain}>
                           <button type="button" className={s.linkBtn} onClick={() => onNavigate('task', e.task_id)}>{e.task_title}</button>
@@ -71,6 +75,7 @@ export default function InboxPage({ lang, onNavigate }) {
                     ))}
                   </ul>
                 )}
+                <Pager pager={formalPager} lang={lang} />
               </section>
             )}
             {q.hasRole('DM') && (
@@ -78,7 +83,7 @@ export default function InboxPage({ lang, onNavigate }) {
                 <div className="q-card-head"><h2 className="q-section-title">{t('طلبات الموظفين لوقت إضافي', 'Employees asking for more time', 'مزید وقت مانگنے والے ملازمین')} ({asks.length})</h2></div>
                 {asks.length === 0 ? <Empty lang={lang} title={t('لا توجد طلبات', 'No requests', 'کوئی درخواست نہیں')} /> : (
                   <ul className={s.list}>
-                    {asks.map((e) => (
+                    {asksPager.items.map((e) => (
                       <li key={e.id} className={s.listItem}>
                         <div className={s.listMain}>
                           <button type="button" className={s.linkBtn} onClick={() => onNavigate('task', e.task_id)}>{e.task_title}</button>
@@ -96,6 +101,7 @@ export default function InboxPage({ lang, onNavigate }) {
                     ))}
                   </ul>
                 )}
+                <Pager pager={asksPager} lang={lang} />
               </section>
             )}
           </div>
