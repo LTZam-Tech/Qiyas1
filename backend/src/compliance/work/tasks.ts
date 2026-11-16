@@ -185,9 +185,15 @@ export async function closeOpenPauses(db: Db, taskId: string, at: Date, reason?:
 export async function taskDeadline(ctx: Pick<ServiceContext, 'db' | 'now' | 'calendar'>, task: TaskRow): Promise<DeadlineState> {
   const { rows } = await ctx.db.query('SELECT reason, paused_at, resumed_at FROM qiyas.deadline_pauses WHERE task_id = $1', [task.id]);
   const pauses: DeadlinePause[] = rows.map((r) => ({ reason: r.reason, from: new Date(r.paused_at), to: r.resumed_at ? new Date(r.resumed_at) : null }));
+  const extensionApproval = task.approved_extension_due_at
+    ? await ctx.db.query(`SELECT decided_at FROM qiyas.extension_requests
+         WHERE task_id = $1 AND status = 'approved' AND approved_due_at = $2
+         ORDER BY decided_at DESC LIMIT 1`, [task.id, task.approved_extension_due_at])
+    : { rows: [] };
   return computeDeadline({
     originalDueAt: new Date(task.original_due_at),
     approvedExtensionDueAt: task.approved_extension_due_at ? new Date(task.approved_extension_due_at) : null,
+    approvedExtensionAt: extensionApproval.rows[0]?.decided_at ? new Date(extensionApproval.rows[0].decided_at) : null,
     pauses,
     now: ctx.now,
     calendar: ctx.calendar,

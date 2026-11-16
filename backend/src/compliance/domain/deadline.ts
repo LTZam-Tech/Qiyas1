@@ -23,6 +23,8 @@ export interface DeadlineInput {
   originalDueAt: Date;
   /** Date set by the latest approved extension, if any. */
   approvedExtensionDueAt?: Date | null;
+  /** Approval instant for the active extension; only pauses after this instant count. */
+  approvedExtensionAt?: Date | null;
   pauses: DeadlinePause[];
   now: Date;
   calendar: WorkCalendar;
@@ -61,9 +63,14 @@ function mergedIntervals(pauses: DeadlinePause[], now: Date): Array<[number, num
 }
 
 export function computeDeadline(input: DeadlineInput): DeadlineState {
-  const { originalDueAt, approvedExtensionDueAt, pauses, now, calendar } = input;
+  const { originalDueAt, approvedExtensionDueAt, approvedExtensionAt, pauses, now, calendar } = input;
   const baseDueAt = approvedExtensionDueAt ?? originalDueAt;
-  const pausedBusinessMs = mergedIntervals(pauses, now).reduce(
+  // Time paused before an extension is approved has already elapsed against the
+  // old deadline. Do not add it again to the newly approved deadline.
+  const eligiblePauses = approvedExtensionDueAt && approvedExtensionAt
+    ? pauses.map((p) => ({ ...p, from: new Date(Math.max(p.from.getTime(), approvedExtensionAt.getTime())) }))
+    : pauses;
+  const pausedBusinessMs = mergedIntervals(eligiblePauses, now).reduce(
     (sum, [s, e]) => sum + businessMsBetween(new Date(s), new Date(e), calendar),
     0,
   );

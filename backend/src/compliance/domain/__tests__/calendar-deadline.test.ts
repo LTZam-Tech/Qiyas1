@@ -134,6 +134,23 @@ describe('deadline engine', () => {
     expect(s.originalDueAt.getTime()).toBe(original.getTime());
   });
 
+  it('does not carry pause time from before extension approval into the approved deadline', () => {
+    const approvedAt = local(2026, 11, 18, 12);
+    const extended = endOfLocalDay('2026-11-26', cal);
+    const s = computeDeadline({
+      originalDueAt: original,
+      approvedExtensionDueAt: extended,
+      approvedExtensionAt: approvedAt,
+      pauses: [{ reason: 'clarification', from: local(2026, 11, 16, 9), to: local(2026, 11, 19, 9) }],
+      now: local(2026, 11, 20),
+      calendar: cal,
+    });
+    // Only Thursday 12:00 onward counts; prior pause time is not double-counted.
+    expect(s.pausedBusinessMs).toBe(4 * HOUR);
+    expect(s.pausedBusinessDays).toBe(0);
+    expect(s.currentDueAt.getTime()).toBe(extended.getTime());
+  });
+
   it('is overdue after the current deadline when not paused', () => {
     const s = computeDeadline({ originalDueAt: original, pauses: [], now: local(2026, 11, 22, 8), calendar: cal });
     expect(s.isOverdue).toBe(true);
