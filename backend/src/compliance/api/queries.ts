@@ -141,24 +141,46 @@ export async function taskDetail(ctx: ServiceContext, taskId: string) {
     q(`SELECT m.clarification_id, m.author_role, m.body, m.created_at, u.name AS author_name FROM qiyas.clarification_messages m
        JOIN qiyas.clarifications c ON c.id = m.clarification_id JOIN public.users u ON u.id = m.author_id WHERE c.task_id = $1 ORDER BY m.created_at`),
     q(`SELECT e.*, u.name AS requested_by_name FROM qiyas.extension_requests e JOIN public.users u ON u.id = e.requested_by WHERE e.task_id = $1 ORDER BY e.created_at`),
-    q(`SELECT e.kind, e.reason, e.self_escalation, e.at, f.name AS from_name, t2.name AS to_name FROM qiyas.escalations e
+    q(`SELECT e.kind, e.reason, e.self_escalation, e.at, e.from_owner_id, e.to_owner_id, f.name AS from_name, t2.name AS to_name FROM qiyas.escalations e
        JOIN public.users f ON f.id = e.from_owner_id JOIN public.users t2 ON t2.id = e.to_owner_id WHERE e.task_id = $1 ORDER BY e.at`),
     q(`SELECT l.id, l.cycle_requirement_id, l.proof_item_id, l.review_status, l.submission_status, l.review_due_at, l.submitted_at,
-         v.id AS version_id, v.version_no, v.original_filename, v.external_url, v.scan_status, v.uploaded_at, a.id AS artifact_id, a.title, u.name AS uploaded_by_name,
+         v.id AS version_id, v.version_no, v.original_filename, v.external_url, v.scan_status, v.uploaded_at, v.uploaded_by AS uploaded_by_id,
+         a.id AS artifact_id, a.title, a.department_id AS evidence_department_id, u.name AS uploaded_by_name,
          (SELECT json_build_object('decision', d.decision, 'comment', d.comment, 'at', d.at) FROM qiyas.review_decisions d WHERE d.evidence_link_id = l.id ORDER BY d.at DESC LIMIT 1) AS last_decision
        FROM qiyas.evidence_links l JOIN qiyas.artifact_versions v ON v.id = l.artifact_version_id JOIN qiyas.artifacts a ON a.id = v.artifact_id
        JOIN public.users u ON u.id = v.uploaded_by WHERE l.task_id = $1 AND l.review_status <> 'withdrawn' ORDER BY l.created_at`),
   ]);
   const actors = actorsFor(ctx.actor.grants, task.department_id);
   const isOwner = task.current_owner_id === ctx.actor.userId;
+  // Task visibility is not blanket permission to read every associated object.
+  // Apply each object's own permission scope before serializing private content.
+  const visibleClarifications = clarifications.filter((c: any) =>
+    can(ctx.actor.effective, ctx.actor.userId, 'clarification.view', {
+      departmentId: task.department_id, ownerIds: [c.requested_by],
+    }));
+  const visibleClarificationIds = new Set(visibleClarifications.map((c: any) => c.id));
+  const visibleExtensions = extensions.filter((e: any) =>
+    can(ctx.actor.effective, ctx.actor.userId, 'extension.decide', { departmentId: task.department_id, ownerIds: [e.requested_by, task.current_owner_id] }) ||
+    can(ctx.actor.effective, ctx.actor.userId, 'extension.request', { departmentId: task.department_id, ownerIds: [e.requested_by, task.current_owner_id] }) ||
+    can(ctx.actor.effective, ctx.actor.userId, 'extension.suggest', { departmentId: task.department_id, ownerIds: [e.requested_by, task.current_owner_id] }));
+  const visibleEscalations = escalations.filter((e: any) =>
+    can(ctx.actor.effective, ctx.actor.userId, 'escalation.view', {
+      departmentId: task.department_id, ownerIds: [e.from_owner_id, e.to_owner_id],
+    }));
+  const visibleEvidence = evidence.filter((e: any) =>
+    can(ctx.actor.effective, ctx.actor.userId, 'evidence.view', {
+      departmentId: e.evidence_department_id,
+      ownerIds: [e.uploaded_by_id],
+      isAccepted: e.review_status === 'accepted',
+    }));
   return {
     ...(await withDeadline(ctx, task)),
     requirements,
     history,
-    clarifications: clarifications.map((c) => ({ ...c, messages: messages.filter((m) => m.clarification_id === c.id) })),
-    extensions,
-    escalations,
-    evidence,
+    clarifications: visibleClarifications.map((c: any) => ({ ...c, messages: messages.filter((m: any) => visibleClarificationIds.has(m.clarification_id) && m.clarification_id === c.id) })),
+    extensions: visibleExtensions,
+    escalations: visibleEscalations,
+    evidence: visibleEvidence,
     /** What the caller can do now, for the UI's buttons. */
     can: {
       assign: actors.includes('DM') && !['completed', 'cancelled', 'submitted'].includes(task.execution_status),
@@ -234,6 +256,7 @@ export async function listNotifications<P extends PageRequest | null = null>(ctx
 }
 
 export async function listDepartments(ctx: ServiceContext) {
+  requirePermission(ctx, 'framework.view');
   const { rows } = await ctx.db.query(`SELECT d.id, d.code, d.name_ar, d.name_en, d.parent_id, d.is_active,
       (SELECT json_build_object('id', u.id, 'name', u.name) FROM qiyas.department_members m JOIN public.users u ON u.id = m.user_id
         WHERE m.department_id = d.id AND m.membership = 'manager' AND m.valid_to IS NULL) AS manager
