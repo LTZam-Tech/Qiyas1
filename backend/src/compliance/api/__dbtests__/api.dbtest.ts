@@ -9,7 +9,7 @@ import { connectTestDb, resetSchema } from '../../db/__dbtests__/testDb';
 import { DevScanner, InMemoryStorage } from '../../evidence/storage';
 import { runComplianceTick } from '../../runtime';
 import { World, at, buildWorld } from '../../work/__dbtests__/world';
-import { createComplianceRouter } from '../router';
+import { createComplianceRouter, mountFrameworkUploadParser } from '../router';
 
 let pool: Pool;
 let w: World;
@@ -27,6 +27,9 @@ beforeAll(async () => {
 
   pool = new Pool({ connectionString: process.env.QIYAS_TEST_DATABASE_URL, max: 4 });
   app = express();
+  // the router has no JSON parser of its own; mount the same parsers as app.ts
+  mountFrameworkUploadParser(app);
+  app.use(express.json());
   app.use('/api/v2', createComplianceRouter({
     pool: { connect: () => pool.connect() },
     authenticate: (req, _res, next) => {

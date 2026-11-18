@@ -25,7 +25,7 @@ import { importCrosswalk } from '../framework/crosswalk';
 import { syncLibrary } from '../library/library';
 import { migrate } from '../db/migrate';
 import { seedRbac } from '../db/seedRbac';
-import { createComplianceRouter } from '../api/router';
+import { createComplianceRouter, mountFrameworkUploadParser } from '../api/router';
 import { createPublicRouter, runComplianceTick } from '../runtime';
 import { assignTask, createAssignment, publishAssignment } from '../work/tasks';
 import { existsSync as fileExists, readFileSync } from 'fs';
@@ -210,6 +210,7 @@ async function main() {
   const pool = new Pool({ connectionString: url, max: 10 });
   const poolLike = { connect: () => pool.connect() };
   const app = express();
+  mountFrameworkUploadParser(app);
   app.use(express.json());
 
   // Demo sign-in: same shape as the real /api/v1/auth endpoints the login screen uses.

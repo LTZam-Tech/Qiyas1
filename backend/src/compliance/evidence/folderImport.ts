@@ -108,6 +108,9 @@ export interface ImportItemResult {
   message: string | null;
 }
 
+/** Longest relative path accepted for one imported file (C13). */
+export const MAX_RELATIVE_PATH = 1024;
+
 export async function importFile(ctx: ServiceContext, deps: EvidenceDeps, batchId: string, file: ImportedFile): Promise<ImportItemResult> {
   requirePermission(ctx, 'bank.import');
   const { db } = ctx;
@@ -116,6 +119,7 @@ export async function importFile(ctx: ServiceContext, deps: EvidenceDeps, batchI
   if (batch.created_by !== ctx.actor.userId) throw new ComplianceError('forbidden', 'Only the person who started this import can add files to it');
   if (batch.status !== 'open') throw new ComplianceError('conflict', 'This import is finished; start a new one');
   if (batch.bank_status !== 'open') throw new ComplianceError('conflict', 'The evidence bank of this cycle is read-only');
+  if (file.relativePath.length > MAX_RELATIVE_PATH) throw new ComplianceError('validation', `File paths must be at most ${MAX_RELATIVE_PATH} characters`);
   const relativePath = file.relativePath.replace(/\\/g, '/').replace(/^\/+/, '').trim();
   if (!relativePath || relativePath.split('/').includes('..')) throw new ComplianceError('validation', 'Invalid file path');
 

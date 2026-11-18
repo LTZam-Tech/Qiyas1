@@ -2,7 +2,7 @@
  * Phase 1 API, mounted at /api/v2. Thin layer over the tested services:
  * parse the request, call one service inside a transaction, return JSON.
  */
-import express, { RequestHandler, Router } from 'express';
+import express, { IRouter, RequestHandler, Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
 import * as admin from '../admin/admin';
@@ -15,8 +15,8 @@ import { createPackage, markNotPosted, markPosted, reuseEvidence, searchBank } f
 import { activateFramework, createCycle, importFramework, setApplicability, transitionCycle } from '../framework/frameworkService';
 import { importCrosswalk } from '../framework/crosswalk';
 import { carryOver, carryOverPreview, dismissSuggestion, taskSuggestions, useSuggestion } from '../evidence/suggestions';
-import { finishImport, importDetail, importFile, listImports, startImport } from '../evidence/folderImport';
-import { LIBRARY_KINDS, addLibraryDocument, libraryFile, listLibrary, syncLibrary, uploadLibraryFile } from '../library/library';
+import { MAX_RELATIVE_PATH, finishImport, importDetail, importFile, listImports, startImport } from '../evidence/folderImport';
+import { LIBRARY_KINDS, MAX_LINKED_STANDARD_CODES, addLibraryDocument, libraryFile, listLibrary, syncLibrary, uploadLibraryFile } from '../library/library';
 import { answerClarification, cancelClarification, closeClarification, followUpClarification, requestClarification } from '../work/clarifications';
 import { escalateManually } from '../work/escalations';
 import { approveExtension, askForMoreTime, declineAsk, forwardAsk, rejectExtension, requestExtension, withdrawExtension } from '../work/extensions';
@@ -31,6 +31,23 @@ const id = z.string().uuid();
 const date = z.coerce.date();
 const text = (min = 1) => z.string().trim().min(min);
 const reason = z.object({ reason: text(3) });
+/** Id lists in one request (C13): bounded by rows that exist, now also by size. */
+const MAX_IDS = 1000;
+const ids = () => z.array(id).max(MAX_IDS, `At most ${MAX_IDS} items at once`);
+
+/** Body limit of framework and crosswalk uploads (C13, D-C13-2); the official files are about 730 KB. */
+export const FRAMEWORK_BODY_LIMIT = '2mb';
+export const FRAMEWORK_UPLOAD_PATHS = ['/frameworks', '/frameworks/crosswalk'] as const;
+
+/**
+ * Gives POST /frameworks and /frameworks/crosswalk their own JSON parser with FRAMEWORK_BODY_LIMIT.
+ * Mount it on the host app BEFORE its global express.json(): body-parser skips a body that is
+ * already parsed, so the first JSON parser a request meets decides its limit. The router itself
+ * has no JSON parser; the host provides one.
+ */
+export function mountFrameworkUploadParser(app: IRouter, prefix = '/api/v2'): void {
+  app.post(FRAMEWORK_UPLOAD_PATHS.map((path) => `${prefix}${path}`), express.json({ limit: FRAMEWORK_BODY_LIMIT }));
+}
 
 export interface ComplianceApiOptions extends ApiOptions {
   authenticate: RequestHandler;
@@ -40,7 +57,6 @@ export interface ComplianceApiOptions extends ApiOptions {
 
 export function createComplianceRouter(opts: ComplianceApiOptions): Router {
   const r = Router();
-  r.use(express.json({ limit: '10mb' }));
   r.use(opts.authenticate);
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: (opts.maxUploadMb ?? 50) * 1024 * 1024, files: 1 } });
   const get = (path: string, h: Parameters<typeof route>[1]) => r.get(path, route(opts, h));
@@ -80,7 +96,7 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
 
   // ---- assignments & tasks
   post('/assignments', (ctx, req) => createAssignment(ctx, parse(z.object({
-    cycleId: id, departmentId: id, cycleRequirementIds: z.array(id).min(1), title: text(), instructions: z.string().optional(),
+    cycleId: id, departmentId: id, cycleRequirementIds: ids().min(1), title: text(), instructions: z.string().optional(),
     priority: z.enum(['critical', 'high', 'medium', 'low']).optional(), implementationDueAt: date, managerDueAt: date,
   }), req.body)).then((assignmentId) => ({ assignmentId })), 201);
   post('/assignments/:id/publish', (ctx, req) => publishAssignment(ctx, p(req, 'id')).then((taskId) => ({ taskId })));
@@ -167,9 +183,9 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
 
   // ---- DGA submission & banks
   get('/cycles/:id/submission-queue', (ctx, req) => q.submissionQueue(ctx, p(req, 'id'), req.query.status === 'posted' || req.query.status === 'not_posted' ? req.query.status : undefined, pageFromQuery(req.query)));
-  post('/submission/post', (ctx, req) => { const b = parse(z.object({ linkIds: z.array(id).min(1), dgaReference: z.string().optional() }), req.body); return markPosted(ctx, b.linkIds, { dgaReference: b.dgaReference }).then((posted) => ({ posted })); });
+  post('/submission/post', (ctx, req) => { const b = parse(z.object({ linkIds: ids().min(1), dgaReference: z.string().optional() }), req.body); return markPosted(ctx, b.linkIds, { dgaReference: b.dgaReference }).then((posted) => ({ posted })); });
   post('/evidence-links/:id/unpost', (ctx, req) => markNotPosted(ctx, p(req, 'id'), parse(reason, req.body).reason));
-  post('/submission/packages', (ctx, req) => { const b = parse(z.object({ cycleId: id, title: text(), linkIds: z.array(id).min(1) }), req.body); return createPackage(ctx, b.cycleId, b.title, b.linkIds).then((packageId) => ({ packageId })); }, 201);
+  post('/submission/packages', (ctx, req) => { const b = parse(z.object({ cycleId: id, title: text(), linkIds: ids().min(1) }), req.body); return createPackage(ctx, b.cycleId, b.title, b.linkIds).then((packageId) => ({ packageId })); }, 201);
   get('/cycles/:id/bank', (ctx, req) => searchBank(ctx, {
     cycleId: p(req, 'id'), text: typeof req.query.text === 'string' ? req.query.text : undefined,
     standardCode: typeof req.query.standardCode === 'string' ? req.query.standardCode : undefined, acceptedOnly: req.query.acceptedOnly === 'true',
@@ -189,7 +205,7 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
   r.post('/imports/:id/files', upload.single('file'), route(opts, (ctx, req) => {
     const f = uploaded(req);
     if (!f) throw new ComplianceError('validation', 'Attach a file');
-    const b = parse(z.object({ relativePath: text() }), req.body ?? {});
+    const b = parse(z.object({ relativePath: text().max(MAX_RELATIVE_PATH) }), req.body ?? {});
     return importFile(ctx, opts.evidence, p(req, 'id'), { relativePath: b.relativePath, content: f.buffer, mimeType: f.mimetype });
   }, 201));
   post('/imports/:id/finish', (ctx, req) => finishImport(ctx, p(req, 'id')));
@@ -204,7 +220,7 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
   }, pageFromQuery(req.query)));
   post('/library', (ctx, req) => addLibraryDocument(ctx, parse(z.object({
     kind: z.enum(LIBRARY_KINDS), titleAr: text(), titleEn: text(), issuer: z.string().optional(), version: z.string().optional(),
-    issuedOn: z.string().optional(), externalUrl: z.string().optional(), standardCodes: z.array(z.string()).optional(), frameworkVersionId: id.optional(),
+    issuedOn: z.string().optional(), externalUrl: z.string().optional(), standardCodes: z.array(z.string().max(40)).max(MAX_LINKED_STANDARD_CODES).optional(), frameworkVersionId: id.optional(),
   }), req.body)).then((documentId) => ({ documentId })), 201);
   r.post('/library/:id/file', upload.single('file'), route(opts, (ctx, req) => {
     const f = uploaded(req);
@@ -235,7 +251,7 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
   // ---- notifications
   get('/notifications', (ctx, req) => q.listNotifications(ctx, pageFromQuery(req.query)));
   post('/notifications/read', (ctx, req) => {
-    const b = parse(z.object({ ids: z.union([z.array(id), z.literal('all')]) }), req.body);
+    const b = parse(z.object({ ids: z.union([ids(), z.literal('all')]) }), req.body);
     return admin.markNotificationsRead(ctx, b.ids).then((updated) => ({ updated }));
   });
   r.put('/notifications/mutes', route(opts, (ctx, req) => {
@@ -257,7 +273,7 @@ export function createComplianceRouter(opts: ComplianceApiOptions): Router {
     return admin.grantRole(ctx, b.userId, b.role, b.departmentId ?? null).then((grantId) => ({ grantId }));
   }, 201);
   r.delete('/admin/role-grants/:id', route(opts, (ctx, req) => admin.revokeGrant(ctx, p(req, 'id'), typeof req.body?.reason === 'string' ? req.body.reason : undefined)));
-  r.put('/admin/groups/:code/members', route(opts, (ctx, req) => admin.setGroupMembers(ctx, parse(text(), req.params.code), parse(z.object({ userIds: z.array(id) }), req.body).userIds)));
+  r.put('/admin/groups/:code/members', route(opts, (ctx, req) => admin.setGroupMembers(ctx, parse(text(), req.params.code), parse(z.object({ userIds: ids() }), req.body).userIds)));
   get('/admin/sla-policies', async (ctx) => { if (!can(ctx.actor.effective, ctx.actor.userId, 'admin.sla_policies')) throw new ComplianceError('forbidden', 'Missing permission admin.sla_policies'); return (await ctx.db.query('SELECT * FROM qiyas.sla_policies ORDER BY timer_kind')).rows; });
   r.patch('/admin/sla-policies/:kind', route(opts, (ctx, req) => admin.updateSlaPolicy(ctx, parse(text(), req.params.kind), parse(z.object({
     durationBusinessDays: z.number().int().min(0).nullish(), reminderDays: z.array(z.number().int().min(0)).optional(),

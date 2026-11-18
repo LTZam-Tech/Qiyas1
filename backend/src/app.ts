@@ -26,6 +26,7 @@ import notificationRoutes from '@/modules/notifications/notifications.routes';
 import db from '@/db';
 import { authenticate } from '@/middleware/auth';
 import { evidenceDepsFromEnv, mountComplianceApi } from '@/compliance/runtime';
+import { mountFrameworkUploadParser } from '@/compliance/api/router';
 
 const app: Application = express();
 // Behind the installation's reverse proxy (deploy/nginx.conf): trust its X-Forwarded-* headers so
@@ -46,7 +47,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
 }));
 
-// Body parsing
+// Body parsing. Framework and crosswalk uploads (about 730 KB) get their own 2 MB parser first;
+// the global parser then skips their already-parsed body, so BODY_LIMIT does not apply to them.
+mountFrameworkUploadParser(app);
 app.use(express.json({ limit: config.security.bodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: config.security.bodyLimit }));
 

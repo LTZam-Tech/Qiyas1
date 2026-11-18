@@ -54,6 +54,9 @@ export class FileResponse {
 
 export type Handler = (ctx: ServiceContext, req: AuthedRequest) => Promise<unknown>;
 
+/** Longest any one statement of a /api/v2 request may run (D-C13-3); SET LOCAL ends with the transaction. */
+export const REQUEST_STATEMENT_TIMEOUT = '60s';
+
 /** Wraps a handler in a transaction with the caller's ServiceContext. */
 export function route(opts: ApiOptions, handler: Handler, successStatus = 200): RequestHandler {
   return async (req: AuthedRequest, res: Response, next: NextFunction) => {
@@ -65,6 +68,8 @@ export function route(opts: ApiOptions, handler: Handler, successStatus = 200): 
     try {
       client = await opts.pool.connect();
       await client.query('BEGIN');
+      // C13 defense in depth: no single request statement holds a pooled connection for minutes
+      await client.query(`SET LOCAL statement_timeout = '${REQUEST_STATEMENT_TIMEOUT}'`);
       const ctx = await buildContext(client, req.user.id, opts.clock?.() ?? new Date());
       const data = await handler(ctx, req);
       await client.query('COMMIT');
