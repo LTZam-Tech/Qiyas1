@@ -12,6 +12,9 @@ updates:
       interval: weekly
     open-pull-requests-limit: 10
     groups:
+      # ESLint and its config packages must move together; a major arrives as one pull request.
+      eslint:
+        patterns: ["eslint", "@eslint/*"]
       frontend-minor-and-patch:
         update-types: ["minor", "patch"]
 
@@ -21,11 +24,16 @@ updates:
       interval: weekly
     open-pull-requests-limit: 10
     groups:
+      eslint:
+        patterns: ["eslint", "@eslint/*", "@typescript-eslint/*"]
       backend-minor-and-patch:
         update-types: ["minor", "patch"]
     ignore:
       # TypeScript 7 is the native (Go) rewrite; it does not build this backend yet. Revisit by hand.
       - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # The test database should follow the production PostgreSQL major (16), not the newest beta.
+      - dependency-name: "embedded-postgres"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions

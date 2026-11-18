@@ -6,6 +6,9 @@ import { api } from '../services/qiyasApi.js';
 const QiyasSessionContext = createContext(null);
 const CYCLE_KEY = 'qiyas_cycle';
 
+/** The signed-in user and the measurement cycles (an empty list if cycles cannot be read). */
+const loadSession = () => Promise.all([api.get('/me'), api.get('/cycles').catch(() => [])]);
+
 export function QiyasSessionProvider({ children, enabled }) {
   const [me, setMe] = useState(null);
   const [cycles, setCycles] = useState([]);
@@ -19,28 +22,39 @@ export function QiyasSessionProvider({ children, enabled }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(Boolean(enabled));
 
-  const refresh = useCallback(async () => {
-    try {
-      const [m, c] = await Promise.all([api.get('/me'), api.get('/cycles').catch(() => [])]);
-      setMe(m);
-      setCycles(c);
-      setCycleIdState((prev) => {
-        if (prev && c.some((x) => x.id === prev)) return prev;
-        return (c.find((x) => x.status === 'active') ?? c[0])?.id ?? null;
-      });
-      setError(null);
-    } catch (e) {
-      setError(e);
-    } finally {
-      setLoading(false);
-    }
+  // Applies a loaded session. Only ever called from a promise callback, after the network call.
+  const applySession = useCallback(([m, c]) => {
+    setMe(m);
+    setCycles(c);
+    setCycleIdState((prev) => {
+      if (prev && c.some((x) => x.id === prev)) return prev;
+      return (c.find((x) => x.status === 'active') ?? c[0])?.id ?? null;
+    });
+    setError(null);
+    setLoading(false);
+  }, []);
+  const applyError = useCallback((e) => {
+    setError(e);
+    setLoading(false);
   }, []);
 
+  const refresh = useCallback(
+    () => loadSession().then(applySession, applyError),
+    [applySession, applyError],
+  );
+
   useEffect(() => {
-    if (!enabled) return;
-    // Loading the session is a network call; state is set when it resolves.
-    void refresh();
-  }, [enabled, refresh]);
+    if (!enabled) return undefined;
+    // Loading the session is a network call; state is set only when it resolves.
+    let alive = true;
+    loadSession().then(
+      (s) => alive && applySession(s),
+      (e) => alive && applyError(e),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [enabled, applySession, applyError]);
 
   const setCycleId = useCallback((id) => {
     setCycleIdState(id);
