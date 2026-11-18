@@ -28,7 +28,7 @@ import { pageFromQuery } from './paging';
 import { REPORT_CODES, ReportCode, availableReports, generateReport } from '../reports/reports';
 import { reportToXlsx } from '../reports/xlsx';
 
-const id = z.string().uuid();
+const id = z.guid();
 const date = z.coerce.date();
 const text = (min = 1) => z.string().trim().min(min);
 const reason = z.object({ reason: text(3) });

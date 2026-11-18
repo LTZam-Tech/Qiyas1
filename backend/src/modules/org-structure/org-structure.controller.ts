@@ -5,7 +5,7 @@ import { AuthRequest } from '@/middleware/auth';
 import { asyncHandler, ValidationError } from '@/utils/errors';
 
 const unitsQuerySchema = z.object({
-  departmentId: z.string().uuid('Invalid department ID').optional(),
+  departmentId: z.guid('Invalid department ID').optional(),
 });
 
 class OrgStructureController {

@@ -5,7 +5,7 @@ import { AuthRequest } from '@/middleware/auth';
 import { asyncHandler, ValidationError } from '@/utils/errors';
 
 const createAxisSchema = z.object({
-  perspectiveId: z.string().uuid('Invalid perspective ID'),
+  perspectiveId: z.guid('Invalid perspective ID'),
   name: z.string().min(1, 'Name is required'),
   code: z.string().min(1, 'Code is required'),
   description: z.string().optional(),
