@@ -1,5 +1,9 @@
 # CI-2: dependency update proposals. CI-1: the github-actions entry proposes updates for the
 # actions in .github/workflows; replace each tag with its full commit SHA when reviewing.
+#
+# Minor and patch updates are grouped into one pull request per area each week, so they can be
+# reviewed and tested together. Major updates still arrive one per pull request, because each can
+# break the build or change behaviour and needs its own review.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -7,17 +11,30 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    groups:
+      frontend-minor-and-patch:
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: npm
     directory: "/backend"
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    groups:
+      backend-minor-and-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # TypeScript 7 is the native (Go) rewrite; it does not build this backend yet. Revisit by hand.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
 
   - package-ecosystem: docker
     directory: "/backend"
