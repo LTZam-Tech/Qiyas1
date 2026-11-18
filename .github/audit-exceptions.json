@@ -1,0 +1,4 @@
+{
+  "_comment": "CI-5 exceptions for npm audit (high/critical, production dependencies). Each entry needs id (GHSA id), package, scope (root, backend or *), reason, owner and expires (YYYY-MM-DD). Add an entry only after review, in a reviewed PR; expired entries stop applying.",
+  "exceptions": []
+}
