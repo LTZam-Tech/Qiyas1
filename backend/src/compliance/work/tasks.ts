@@ -24,6 +24,8 @@ export interface TaskRow {
   manager_due_at: Date;
   original_due_at: Date;
   approved_extension_due_at: Date | null;
+  /** When the current extension was approved (C12, migration 010); NULL for approvals before it. */
+  approved_extension_at?: Date | null;
   is_escalated: boolean;
 }
 
@@ -192,6 +194,7 @@ export async function taskDeadline(ctx: Pick<ServiceContext, 'db' | 'now' | 'cal
   return computeDeadline({
     originalDueAt: new Date(task.original_due_at),
     approvedExtensionDueAt: task.approved_extension_due_at ? new Date(task.approved_extension_due_at) : null,
+    approvedAt: task.approved_extension_at ? new Date(task.approved_extension_at) : null, // C12
     pauses,
     now: ctx.now,
     calendar: ctx.calendar,

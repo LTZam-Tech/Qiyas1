@@ -128,7 +128,8 @@ export async function approveExtension(ctx: ServiceContext, requestId: string, a
   await ctx.db.query('UPDATE qiyas.extension_requests SET status = $2, decided_by = $3, decided_at = $4, approved_due_at = $5 WHERE id = $1',
     [requestId, next, ctx.actor.userId, ctx.now, due]);
   const task = await getTask(ctx.db, r.task_id, true);
-  await ctx.db.query('UPDATE qiyas.tasks SET approved_extension_due_at = $2 WHERE id = $1', [r.task_id, due]);
+  // C12: the approval time is recorded so only later pauses move the approved date (BR-EXT-03)
+  await ctx.db.query('UPDATE qiyas.tasks SET approved_extension_due_at = $2, approved_extension_at = $3 WHERE id = $1', [r.task_id, due, ctx.now]);
   await audit(ctx, { action: 'extension.approved', entityType: 'task', entityId: r.task_id,
     before: { extensionDueAt: task.approved_extension_due_at }, after: { extensionDueAt: due, requestId } });
   return due;

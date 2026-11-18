@@ -1,9 +1,16 @@
 /**
  * Task deadline engine (BR-EXT-04, BR-CLR-06, D1, D5).
  *
- * current due = (latest approved extension date, else the original date)
+ * Without an approved extension:
+ *   current due = original date
  *               + working days spent paused (open clarification, evidence awaiting review),
  *                 rounded to the nearest whole working day so deadlines stay end-of-day dates
+ * With an approved extension (BR-EXT-03, C12):
+ *   current due = approved date + working days spent paused after the approval
+ *   The approved date was chosen against a deadline that already included the earlier pauses,
+ *   so a pause is clipped to start no earlier than the approval time. An approval recorded
+ *   before approved_extension_at existed (approvedAt unknown) keeps the old rule: approved
+ *   date + every pause (D-C12-2).
  * The original deadline is never modified.
  */
 import { WorkCalendar, addBusinessDays, businessMsBetween } from './calendar';
@@ -23,6 +30,8 @@ export interface DeadlineInput {
   originalDueAt: Date;
   /** Date set by the latest approved extension, if any. */
   approvedExtensionDueAt?: Date | null;
+  /** When that extension was approved; only pause time after it moves the approved date (C12). */
+  approvedAt?: Date | null;
   pauses: DeadlinePause[];
   now: Date;
   calendar: WorkCalendar;
@@ -61,9 +70,15 @@ function mergedIntervals(pauses: DeadlinePause[], now: Date): Array<[number, num
 }
 
 export function computeDeadline(input: DeadlineInput): DeadlineState {
-  const { originalDueAt, approvedExtensionDueAt, pauses, now, calendar } = input;
+  const { originalDueAt, approvedExtensionDueAt, approvedAt, pauses, now, calendar } = input;
   const baseDueAt = approvedExtensionDueAt ?? originalDueAt;
-  const pausedBusinessMs = mergedIntervals(pauses, now).reduce(
+  // C12: with an approved extension, only pause time after the approval counts (pauses entirely
+  // before it count zero; one spanning it counts from the approval). isPaused and the open
+  // reasons below still come from the unclipped pauses.
+  const counted = approvedExtensionDueAt && approvedAt
+    ? pauses.map((p) => (p.from.getTime() < approvedAt.getTime() ? { ...p, from: approvedAt } : p))
+    : pauses;
+  const pausedBusinessMs = mergedIntervals(counted, now).reduce(
     (sum, [s, e]) => sum + businessMsBetween(new Date(s), new Date(e), calendar),
     0,
   );

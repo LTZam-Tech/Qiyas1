@@ -448,7 +448,7 @@ erDiagram
 | Task assignee is a member of the task's department or its manager | Service layer + trigger |
 | One pending formal extension and one open employee ask per task | Partial unique indexes on `(task_id, level) WHERE status IN ('pending','asked')` |
 | Nobody holds both `QC` and `DSO` (D3) | Check on role grant (service layer + trigger on `ROLE_GRANTS`) |
-| `current_due_at` = `original_due_at` + approved extensions + paused business time | Recomputed by the deadline service; every change audited |
+| `current_due_at` = `original_due_at` + paused business time; with an approved extension, the approved date + paused business time after the approval (`approved_extension_at`, BR-EXT-03) | Recomputed by the deadline service; every change audited |
 | One manager per department | Partial unique index on `(department_id) WHERE membership = 'manager' AND valid_to IS NULL` |
 | `submission_status` only set when `review_status = 'accepted'` (or kept for history after revoke/supersede) | Check constraint + service |
 | Reviewer ≠ uploader (D9) | Service layer on claim and decision + check in `REVIEW_DECISIONS` insert |
