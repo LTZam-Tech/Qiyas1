@@ -5,7 +5,8 @@ import { DevScanner, EICAR_TEST_STRING, InMemoryStorage } from '../../evidence/s
 import { loadShippedData } from '../../framework/shipped';
 import { World, buildWorld } from '../../work/__dbtests__/world';
 import { logoFile, publicBranding, removeLogo, setLogo } from '../branding';
-import { saveOrgSettings } from '../admin';
+import { grantRole, saveOrgSettings } from '../admin';
+import { createUser, roleId } from '../../db/__dbtests__/testDb';
 
 let db: Client;
 let w: World;
@@ -60,5 +61,33 @@ describe('client branding (docs 09 §7)', () => {
     expect(await logoFile(db, d)).toEqual({ content: png, mimeType: 'image/png' });
     await removeLogo(tariq);
     expect(await logoFile(db, d)).toBeNull();
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B5 (C9)
+describe('role grants and SoD-5 (C9)', () => {
+  it('sequential QC then DSO is refused (control)', async () => {
+    w = await buildWorld(db);
+    const tariq = await w.ctx('tariq');
+    const u = await createUser(db, 'Rami');
+    await grantRole(tariq, u, 'QC');
+    await fails('validation', () => grantRole(tariq, u, 'DSO'));
+    // positive control: another person becomes a submission officer
+    await grantRole(tariq, await createUser(db, 'Lina'), 'DSO');
+  });
+
+  it('a QC role held through a pre-existing group grant also blocks DSO in the service', async () => {
+    w = await buildWorld(db);
+    const tariq = await w.ctx('tariq');
+    const u = await createUser(db, 'Badr');
+    const g = (await db.query(`INSERT INTO qiyas.groups (code, name_ar, name_en) VALUES ('legacy_qc', 'q', 'q') RETURNING id`)).rows[0].id;
+    await db.query('INSERT INTO qiyas.group_members (group_id, user_id) VALUES ($1, $2)', [g, u]);
+    // as it could exist before migration 008 (trigger off inside this test transaction only)
+    await db.query('ALTER TABLE qiyas.role_grants DISABLE TRIGGER trg_role_grant_check');
+    await db.query('INSERT INTO qiyas.role_grants (role_id, group_id) VALUES ($1, $2)', [await roleId(db, 'QC'), g]);
+    await db.query('ALTER TABLE qiyas.role_grants ENABLE TRIGGER trg_role_grant_check');
+    await fails('validation', () => grantRole(tariq, u, 'DSO'));
+    // positive control: a role that does not conflict is still granted
+    await grantRole(tariq, u, 'EXE');
   });
 });

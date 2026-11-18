@@ -3,11 +3,13 @@ import { ComplianceError } from '../../core/context';
 import { localDateKey } from '../../domain/calendar';
 import sample from '../../framework/samples/dga-v5.0-sample.json';
 import { importFramework, setApplicability, transitionCycle } from '../../framework/frameworkService';
-import { connectTestDb, resetSchema } from '../../db/__dbtests__/testDb';
+import { backendPid, connectTestDb, pause, resetSchema, track, waitUntilBlocked } from '../../db/__dbtests__/testDb';
+import { buildContext } from '../../core/context';
+import { removeDepartmentMember } from '../../admin/admin';
 import { runScheduler } from '../../notifications/scheduler';
-import { answerClarification, cancelClarification, followUpClarification, requestClarification } from '../clarifications';
+import { answerClarification, cancelClarification, closeClarification, followUpClarification, requestClarification } from '../clarifications';
 import { escalateManually, runAutomaticEscalations } from '../escalations';
-import { approveExtension, askForMoreTime, declineAsk, forwardAsk, rejectExtension, requestExtension } from '../extensions';
+import { approveExtension, askForMoreTime, declineAsk, forwardAsk, rejectExtension, requestExtension, withdrawExtension } from '../extensions';
 import { assignTask, cancelAssignment, createAssignment, getTask, publishAssignment, startTask, taskDeadline } from '../tasks';
 import { T0, World, at, buildWorld } from './world';
 
@@ -182,6 +184,38 @@ describe('clarification (D1, D4)', () => {
     expect((await taskDeadline(await w.ctx('ali'), await getTask(db, taskId))).isPaused).toBe(false);
     await fails('conflict', async () => cancelClarification(await w.ctx('ali'), id));
   });
+
+  // ---- security remediation B5 (C11, D-C11-1)
+  const openPauses = async (taskId: string) =>
+    (await db.query(`SELECT count(*)::int AS n FROM qiyas.deadline_pauses WHERE task_id = $1 AND resumed_at IS NULL`, [taskId])).rows[0].n;
+
+  it('a former owner moved off the task cannot follow up, and no new pause is opened on the new owner\'s deadline', async () => {
+    const taskId = await workingTask();
+    const id = await requestClarification(await w.ctx('ali'), taskId, { question: 'Which edition?' });
+    await answerClarification(await w.ctx('alaa'), id, 'The 2025 edition.');
+    await assignTask(await w.ctx('mona'), taskId, w.users.sara, 'Ali moved to another project');
+    expect(await fails('forbidden', async () => followUpClarification(await w.ctx('ali'), id, 'And the annex?'))).toContain('current owner');
+    expect(await openPauses(taskId)).toBe(0);
+    expect((await db.query('SELECT status FROM qiyas.clarifications WHERE id = $1', [id])).rows[0].status).toBe('answered');
+    // positive control (D-C11-1): Ali is still an IT employee, so he may close his own question
+    await closeClarification(await w.ctx('ali'), id);
+  });
+
+  it('a requester whose roles were all revoked cannot follow up, close or cancel', async () => {
+    const taskId = await workingTask();
+    const answered = await requestClarification(await w.ctx('ali'), taskId, { question: 'First question' });
+    await answerClarification(await w.ctx('alaa'), answered, 'Answer one');
+    const open = await requestClarification(await w.ctx('ali'), taskId, { question: 'Second question' });
+    await db.query('UPDATE qiyas.role_grants SET revoked_at = NOW() WHERE user_id = $1', [w.users.ali]);
+    const ali = await w.ctx('ali');
+    const pausesBefore = await openPauses(taskId);
+    await fails('forbidden', () => followUpClarification(ali, answered, 'And the annex?'));
+    await fails('forbidden', () => closeClarification(ali, answered));
+    await fails('forbidden', () => cancelClarification(ali, open));
+    expect(await openPauses(taskId)).toBe(pausesBefore); // the open question still pauses; nothing was resumed or added
+    const { rows } = await db.query('SELECT id, status FROM qiyas.clarifications WHERE task_id = $1 ORDER BY created_at, id', [taskId]);
+    expect(Object.fromEntries(rows.map((r) => [r.id, r.status]))).toEqual({ [answered]: 'answered', [open]: 'open' });
+  });
 });
 
 describe('extensions (D7)', () => {
@@ -220,6 +254,23 @@ describe('extensions (D7)', () => {
     await fails('validation', async () => rejectExtension(await w.ctx('alaa'), id, ''));
     await rejectExtension(await w.ctx('alaa'), id, 'The board date is not a valid reason');
     expect((await getTask(db, taskId)).approved_extension_due_at).toBeNull();
+  });
+
+  // ---- security remediation B5 (C11, D-C11-2)
+  it('a manager whose DM grant was revoked cannot withdraw the pending request', async () => {
+    const taskId = await aliTask();
+    const id = await requestExtension(await w.ctx('mona'), taskId, at(2026, 11, 26), 'Board meets on the 25th');
+    await db.query(`UPDATE qiyas.role_grants SET revoked_at = NOW() WHERE user_id = $1 AND role_id = (SELECT id FROM qiyas.roles WHERE code = 'DM')`, [w.users.mona]);
+    await fails('forbidden', async () => withdrawExtension(await w.ctx('mona'), id));
+    expect((await db.query('SELECT status FROM qiyas.extension_requests WHERE id = $1', [id])).rows[0].status).toBe('pending');
+  });
+
+  it('the current manager who asked can withdraw', async () => {
+    const taskId = await aliTask();
+    const id = await requestExtension(await w.ctx('mona'), taskId, at(2026, 11, 26), 'Board meets on the 25th');
+    await fails('forbidden', async () => withdrawExtension(await w.ctx('khalid'), id)); // another department's manager
+    await withdrawExtension(await w.ctx('mona'), id);
+    expect((await db.query('SELECT status FROM qiyas.extension_requests WHERE id = $1', [id])).rows[0].status).toBe('withdrawn');
   });
 });
 
@@ -378,5 +429,75 @@ describe('a closed cycle is read-only for work items (C5)', () => {
     await startTask(await w.ctx('ali'), taskId);
     await assignTask(await w.ctx('mona'), waiting, w.users.sara);
     expect((await getTask(db, taskId)).execution_status).toBe('in_progress');
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B5 (C9, SoD-3)
+// Two connections and a committed world; the other tests run inside one BEGIN/ROLLBACK, where a
+// race cannot happen. Runs last; the schema is reset afterwards. Keep it a single test: the
+// file's beforeEach builds the world again, which the committed world would collide with.
+describe('SoD-3 under concurrency', () => {
+  let c1: Client;
+  let c2: Client;
+  let cw: World;
+
+  beforeAll(async () => {
+    c1 = await connectTestDb();
+    c2 = await connectTestDb();
+  });
+  beforeEach(async () => {
+    await db.query('ROLLBACK'); // drop the uncommitted world of the file's beforeEach
+    await c1.query('BEGIN');
+    cw = await buildWorld(c1);
+    await c1.query('COMMIT'); // visible to both connections
+  });
+  afterEach(async () => {
+    await c1.query('ROLLBACK');
+    await c2.query('ROLLBACK');
+    await db.query('BEGIN'); // balances the file's afterEach ROLLBACK
+  });
+  afterAll(async () => {
+    await c1?.end();
+    await c2?.end();
+    await resetSchema(db); // cleanup of the committed fixtures (audit_log is append-only)
+  });
+
+  it('SoD-3 race: removing a member while the manager assigns to them, one of the two fails', async () => {
+    const mona = await cw.ctx('mona'); // on c1
+    const tariq = await buildContext(c2, cw.users.tariq, T0);
+    const member = async (u: string) => Boolean((await c1.query(`SELECT 1 FROM qiyas.department_members
+       WHERE department_id = $1 AND user_id = $2 AND valid_to IS NULL`, [cw.depts.it, u])).rows[0]);
+
+    // 1. the assignment goes first: the removal waits, then sees Ali owns an open task
+    const task1 = await cw.publishedTask();
+    await c1.query('BEGIN');
+    await assignTask(mona, task1, cw.users.ali); // not committed
+    await c2.query('BEGIN');
+    const removal = track(removeDepartmentMember(tariq, cw.depts.it, cw.users.ali));
+    await waitUntilBlocked(db, await backendPid(c2)); // fails on baseline 80ae855: the membership read takes no lock
+    await pause(200);
+    expect(removal.state).toBe('pending');
+    await c1.query('COMMIT');
+    await removal.done;
+    expect(removal.state).toBe('rejected');
+    expect(removal.error).toMatchObject({ code: 'conflict' });
+    await c2.query('ROLLBACK');
+    expect([await member(cw.users.ali), (await getTask(c1, task1)).current_owner_id]).toEqual([true, cw.users.ali]);
+
+    // 2. the removal goes first: the assignment waits, then finds Sara is no longer a member
+    const task2 = await cw.publishedTask();
+    await c2.query('BEGIN');
+    await removeDepartmentMember(tariq, cw.depts.it, cw.users.sara); // not committed
+    await c1.query('BEGIN');
+    const assignment = track(assignTask(mona, task2, cw.users.sara));
+    await waitUntilBlocked(db, await backendPid(c1));
+    await pause(200);
+    expect(assignment.state).toBe('pending');
+    await c2.query('COMMIT');
+    await assignment.done;
+    expect(assignment.state).toBe('rejected');
+    expect(assignment.error).toMatchObject({ code: 'validation' });
+    await c1.query('ROLLBACK');
+    expect([await member(cw.users.sara), (await getTask(c1, task2)).current_owner_id]).toEqual([false, cw.users.mona]);
   });
 });

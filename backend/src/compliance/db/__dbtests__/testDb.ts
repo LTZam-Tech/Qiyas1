@@ -48,3 +48,29 @@ export async function expectDbError(client: Client, text: string, params?: unkno
   await client.query('RELEASE SAVEPOINT expect_error');
   throw new Error(`Expected the statement to fail: ${text}`);
 }
+
+// ------------------------------------------------------------------ two-connection race tests (B5)
+
+/** Backend process id of a connection, for pg_blocking_pids. */
+export async function backendPid(client: Client): Promise<number> {
+  return (await client.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+}
+
+/** Polls (up to ~5 s) until the backend `pid` waits on a lock held by another session; throws otherwise. */
+export async function waitUntilBlocked(observer: Client, pid: number): Promise<void> {
+  for (let i = 0; i < 50; i++) {
+    const { rows } = await observer.query('SELECT cardinality(pg_blocking_pids($1)) AS n', [pid]);
+    if (rows[0].n > 0) return;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw new Error(`backend ${pid} never blocked: the operation is not serialized`);
+}
+
+/** Watches a promise without awaiting it, so its state can be asserted while it is still running. */
+export function track(p: Promise<unknown>) {
+  const t: { state: 'pending' | 'resolved' | 'rejected'; error: unknown; done: Promise<void> } = { state: 'pending', error: undefined, done: Promise.resolve() };
+  t.done = p.then(() => { t.state = 'resolved'; }, (e) => { t.state = 'rejected'; t.error = e; });
+  return t;
+}
+
+export const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));

@@ -11,6 +11,8 @@ import { acceptEvidence, claimEvidence, rejectEvidence, releaseEvidence, revokeE
 import { DevScanner, EICAR_TEST_STRING, InMemoryStorage } from '../storage';
 import { createPackage, markNotPosted, markPosted, reuseEvidence, searchBank } from '../submission';
 import { addSuggestions, carryOver, useSuggestion } from '../suggestions';
+import { grantRole, revokeGrant } from '../../admin/admin';
+import { submissionQueue } from '../../api/queries';
 
 let db: Client;
 let w: World;
@@ -216,6 +218,35 @@ describe('review (D9, BR-REV)', () => {
     await revokeEvidence(ahmad, linkId, 'Plan expired');
     expect((await readiness()).readiness).toBe('in_progress');
   });
+
+  // ---- security remediation B5 (C11, D-C11-3)
+  const qcGrantOf = async (user: keyof World['users']) =>
+    (await db.query(`SELECT g.id FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id WHERE g.user_id = $1 AND r.code = 'QC' AND g.revoked_at IS NULL`, [w.users[user]])).rows[0].id as string;
+
+  it('a consultant whose QC role was revoked cannot release a claim', async () => {
+    const taskId = await aliTask();
+    const { linkId } = await aliSubmits(taskId);
+    await claimEvidence(await w.ctx('ahmad'), linkId);
+    // the grant ends outside revokeGrant (no automatic release), so the stale claim remains
+    await db.query('UPDATE qiyas.role_grants SET revoked_at = NOW() WHERE id = $1', [await qcGrantOf('ahmad')]);
+    expect(await fails('forbidden', async () => releaseEvidence(await w.ctx('ahmad'), linkId))).toContain('review.decide');
+    expect([(await link(linkId)).review_status, (await link(linkId)).claimed_by]).toEqual(['under_review', w.users.ahmad]);
+  });
+
+  it('revoking QC returns that consultant\'s claims to the shared queue and another consultant can claim them', async () => {
+    const mine = (await aliSubmits(await aliTask(), 'plan A')).linkId;
+    const other = (await aliSubmits(await aliTask(), 'plan B')).linkId;
+    await claimEvidence(await w.ctx('ahmad'), mine);
+    await claimEvidence(await w.ctx('alaa'), other);
+    await revokeGrant(await w.ctx('tariq'), await qcGrantOf('ahmad'), 'Left the programme');
+    expect([(await link(mine)).review_status, (await link(mine)).claimed_by]).toEqual(['submitted', null]);
+    const { rows } = await db.query(`SELECT actor_id, reason FROM qiyas.audit_log WHERE action = 'review.released' AND entity_id = $1`, [mine]);
+    expect(rows).toEqual([{ actor_id: w.users.tariq, reason: 'role revoked' }]);
+    // positive controls: another consultant's claim is untouched, and the released item can be claimed
+    expect([(await link(other)).review_status, (await link(other)).claimed_by]).toEqual(['under_review', w.users.alaa]);
+    await claimEvidence(await w.ctx('alaa'), mine);
+    expect((await link(mine)).claimed_by).toBe(w.users.alaa);
+  });
 });
 
 describe('DGA submission (two statuses)', () => {
@@ -253,6 +284,56 @@ describe('DGA submission (two statuses)', () => {
     const id = await createPackage(await w.ctx('yousef'), w.cycleId, 'Standard 5.1.1', [linkId]);
     const { rows } = await db.query('SELECT sort_order FROM qiyas.submission_package_items WHERE package_id = $1', [id]);
     expect(rows).toEqual([{ sort_order: 1 }]);
+  });
+
+  // ---- security remediation B5 (C10, D-C10-1)
+  /** Ahmad accepted the link as a consultant, then moved to submission officer (legal: foundation.dbtest.ts). */
+  async function ahmadBecomesOfficer() {
+    const tariq = await w.ctx('tariq');
+    const grant = (await db.query(`SELECT g.id FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id WHERE g.user_id = $1 AND r.code = 'QC'`, [w.users.ahmad])).rows[0].id;
+    await revokeGrant(tariq, grant, 'Moved to the submission office');
+    await grantRole(tariq, w.users.ahmad, 'DSO');
+    return w.ctx('ahmad');
+  }
+
+  it('a consultant moved to submission officer cannot post evidence he accepted', async () => {
+    const linkId = await accepted();
+    const ahmad = await ahmadBecomesOfficer();
+    expect(await fails('forbidden', () => markPosted(ahmad, [linkId], { dgaReference: 'X-1' }))).toContain('another submission officer must post it');
+    expect((await link(linkId)).submission_status).toBe('not_posted');
+    // the queue tells him why
+    const queue = await submissionQueue(ahmad, w.cycleId);
+    expect(queue.map((l: any) => [l.id, l.reviewed_by_me])).toEqual([[linkId, true]]);
+    // positive control: another officer posts the same link
+    const yousef = await w.ctx('yousef');
+    expect((await submissionQueue(yousef, w.cycleId)).map((l: any) => l.reviewed_by_me)).toEqual([false]);
+    await markPosted(yousef, [linkId], { dgaReference: 'X-1' });
+    expect([(await link(linkId)).submission_status, (await link(linkId)).posted_by]).toEqual(['posted', w.users.yousef]);
+  });
+
+  it('the database refuses posted_by = accepting reviewer when the service is bypassed', async () => {
+    const linkId = await accepted();
+    const post = `UPDATE qiyas.evidence_links SET submission_status = 'posted', posted_at = NOW(), posted_by = $2 WHERE id = $1`;
+    await db.query('SAVEPOINT s');
+    await expect(db.query(post, [linkId, w.users.ahmad])).rejects.toThrow('cannot post it or revert its posting');
+    await db.query('ROLLBACK TO SAVEPOINT s');
+    await expect(db.query(`INSERT INTO qiyas.submission_events (evidence_link_id, from_status, to_status, actor_id) VALUES ($1, 'posted', 'not_posted', $2)`, [linkId, w.users.ahmad]))
+      .rejects.toThrow('cannot post it or revert its posting');
+    await db.query('ROLLBACK TO SAVEPOINT s');
+    // positive control: the same direct update by another officer is accepted
+    await db.query(post, [linkId, w.users.yousef]);
+    expect((await link(linkId)).posted_by).toBe(w.users.yousef);
+  });
+
+  it('a former reviewer cannot revert a posting he did not make', async () => {
+    const linkId = await accepted();
+    await markPosted(await w.ctx('yousef'), [linkId], { dgaReference: 'X-2' });
+    const ahmad = await ahmadBecomesOfficer();
+    expect(await fails('forbidden', () => markNotPosted(ahmad, linkId, 'Posted under the wrong standard'))).toContain('SoD-5');
+    expect((await link(linkId)).submission_status).toBe('posted');
+    // positive control: the officer who did not review it reverts it
+    await markNotPosted(await w.ctx('yousef'), linkId, 'Posted under the wrong standard');
+    expect((await link(linkId)).submission_status).toBe('not_posted');
   });
 });
 

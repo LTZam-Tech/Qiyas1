@@ -295,6 +295,26 @@ describe('/api/v2 evidence binding and task detail scopes (C3, C15)', () => {
   });
 });
 
+// ------------------------------------------------------------------ security remediation B5
+describe('/api/v2 clarification requester uses current grants (C11)', () => {
+  const dueDates = { implementationDueAt: at(2026, 11, 22, 20).toISOString(), managerDueAt: at(2026, 11, 17, 20).toISOString() };
+
+  it('POST /clarifications/:id/follow-up by the reassigned former owner returns 403', async () => {
+    const created = await as('alaa').post('/assignments', { cycleId: w.cycleId, departmentId: w.depts.it, cycleRequirementIds: [w.requirementId], title: 'IT plan C11', ...dueDates });
+    const task = (await as('alaa').post(`/assignments/${created.body.data.assignmentId}/publish`)).body.data.taskId;
+    expect((await as('mona').post(`/tasks/${task}/assign`, { assigneeId: w.users.ali })).status).toBe(200);
+    const asked = await as('ali').post(`/tasks/${task}/clarifications`, { question: 'Which plan edition applies?' });
+    expect(asked.status).toBe(201);
+    const id = asked.body.data.clarificationId;
+    expect((await as('alaa').post(`/clarifications/${id}/answer`, { body: 'The 2025 edition.' })).status).toBe(200);
+    expect((await as('mona').post(`/tasks/${task}/assign`, { assigneeId: w.users.sara })).status).toBe(200);
+    const res = await as('ali').post(`/clarifications/${id}/follow-up`, { body: 'And the annex?' });
+    expect([res.status, res.body.error.code]).toEqual([403, 'forbidden']);
+    // positive control (D-C11-1): still an IT employee, Ali may close his own question
+    expect((await as('ali').post(`/clarifications/${id}/close`)).status).toBe(200);
+  });
+});
+
 // ------------------------------------------------------------------ security remediation B4
 // Runs last: it closes the shared cycle and reopens it at the end.
 describe('/api/v2 closed cycle is read-only (C5)', () => {
