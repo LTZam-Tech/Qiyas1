@@ -67,7 +67,6 @@ const ErrorLogPage = ({ lang = 'ar' }) => {
   };
   const [errors, setErrors] = useState(() => errorLogger.getAllErrors());
   const [selectedError, setSelectedError] = useState(null);
-  const [isInitializing, setIsInitializing] = useState(true);
   const [filters, setFilters] = useState({
     source: 'all',
     severity: 'all',
@@ -75,22 +74,11 @@ const ErrorLogPage = ({ lang = 'ar' }) => {
   });
   const [stats, setStats] = useState(() => errorLogger.getStats());
 
-  useEffect(() => {
-    setIsInitializing(true);
-
+  // errors and stats are read once by the useState initializers; this only subscribes to new ones
+  useEffect(() => errorLogger.subscribe(() => {
     setErrors(errorLogger.getAllErrors());
     setStats(errorLogger.getStats());
-
-    // Subscribe to new errors from the external system
-    const unsubscribe = errorLogger.subscribe(() => {
-      setErrors(errorLogger.getAllErrors());
-      setStats(errorLogger.getStats());
-    });
-
-    setIsInitializing(false);
-
-    return unsubscribe;
-  }, []);
+  }), []);
 
   const filteredErrors = useMemo(() => {
     let filtered = [...errors];
@@ -182,7 +170,6 @@ const ErrorLogPage = ({ lang = 'ar' }) => {
         </div>
       </div>
 
-      {isInitializing ? <div className="q-state">{t('جاري تحميل سجل الأخطاء...', 'Loading error logs...')}</div> : null}
 
       {stats && (
         <div className={styles.stats}>
