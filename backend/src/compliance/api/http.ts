@@ -37,6 +37,8 @@ export function toHttpError(err: unknown): { status: number; body: ErrorBody } {
   }
   const pg = err as { code?: string; message?: string };
   if (pg?.code === '23505') return { status: 409, body: { success: false, error: { code: 'conflict', message: 'This already exists' } } };
+  // C5: migration 007 guard_cycle_writable (closed or archived measurement cycle)
+  if (pg?.code === '55000') return { status: 409, body: { success: false, error: { code: 'conflict', message: 'The cycle is closed; ask the administrator to reopen it' } } };
   if (pg?.code === '23514' || pg?.code === '23503' || pg?.code === '22P02') {
     return { status: 422, body: { success: false, error: { code: 'validation', message: 'The request breaks a data rule' } } };
   }

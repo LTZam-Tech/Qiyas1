@@ -3,6 +3,7 @@
  * permission scope (own / department / all), never by the client.
  */
 import { ComplianceError, ServiceContext, mustOne, one, requirePermission } from '../core/context';
+import { isCycleWritable } from '../core/cycleGuard';
 import { evaluateCompleteness } from '../domain/completeness';
 import { Permission, actorsFor, can } from '../domain/permissions';
 import { taskMachine } from '../domain/stateMachines';
@@ -153,6 +154,8 @@ export async function taskDetail(ctx: ServiceContext, taskId: string) {
   ]);
   const actors = actorsFor(ctx.actor.grants, task.department_id);
   const isOwner = task.current_owner_id === ctx.actor.userId;
+  // C5: a closed or archived cycle is read-only, so no action button is offered
+  const cycleOpen = isCycleWritable((await one(db, 'SELECT status FROM qiyas.measurement_cycles WHERE id = $1', [task.cycle_id]))?.status);
 
   // C15: every embedded record is filtered with the same permission matrix as its own endpoints
   const allowed = (permission: Permission, ownerIds: unknown[]) =>
@@ -191,14 +194,15 @@ export async function taskDetail(ctx: ServiceContext, taskId: string) {
     },
     /** What the caller can do now, for the UI's buttons. */
     can: {
-      assign: actors.includes('DM') && !['completed', 'cancelled', 'submitted'].includes(task.execution_status),
-      start: isOwner && task.execution_status === 'assigned',
-      workEvidence: (isOwner || actors.includes('QC')) && ['assigned', 'in_progress', 'rework_required', 'submitted'].includes(task.execution_status),
-      askClarification: isOwner && ['awaiting_assignment', 'assigned', 'in_progress', 'rework_required'].includes(task.execution_status),
-      askForMoreTime: isOwner && actors.includes('EMP'),
-      requestExtension: actors.includes('DM'),
-      escalate: can(ctx.actor.effective, ctx.actor.userId, 'escalation.manual') && !['draft', 'completed', 'cancelled'].includes(task.execution_status),
-      cancel: taskMachine.available(task.execution_status, actors).some((t) => t.event === 'cancel'),
+      cycleOpen,
+      assign: cycleOpen && actors.includes('DM') && !['completed', 'cancelled', 'submitted'].includes(task.execution_status),
+      start: cycleOpen && isOwner && task.execution_status === 'assigned',
+      workEvidence: cycleOpen && (isOwner || actors.includes('QC')) && ['assigned', 'in_progress', 'rework_required', 'submitted'].includes(task.execution_status),
+      askClarification: cycleOpen && isOwner && ['awaiting_assignment', 'assigned', 'in_progress', 'rework_required'].includes(task.execution_status),
+      askForMoreTime: cycleOpen && isOwner && actors.includes('EMP'),
+      requestExtension: cycleOpen && actors.includes('DM'),
+      escalate: cycleOpen && can(ctx.actor.effective, ctx.actor.userId, 'escalation.manual') && !['draft', 'completed', 'cancelled'].includes(task.execution_status),
+      cancel: cycleOpen && taskMachine.available(task.execution_status, actors).some((t) => t.event === 'cancel'),
     },
   };
 }
@@ -209,11 +213,12 @@ export async function reviewQueue<P extends PageRequest | null = null>(ctx: Serv
   return listQuery(ctx.db, `SELECT l.id, l.review_status, l.review_due_at, l.submitted_at, l.claimed_by, cu.name AS claimed_by_name,
       a.title, v.id AS version_id, v.version_no, v.original_filename, v.external_url, v.uploaded_by, uu.name AS uploaded_by_name,
       r.code AS requirement_code, s.code AS standard_code, t.id AS task_id, t.title AS task_title, d.name_ar AS department_ar, d.name_en AS department_en,
-      (v.uploaded_by <> $1) AS can_review
+      (v.uploaded_by <> $1) AS can_review, (mc.status IN ('planning', 'active')) AS "cycleOpen"
      FROM qiyas.evidence_links l JOIN qiyas.artifact_versions v ON v.id = l.artifact_version_id JOIN qiyas.artifacts a ON a.id = v.artifact_id
      JOIN public.users uu ON uu.id = v.uploaded_by LEFT JOIN public.users cu ON cu.id = l.claimed_by
      JOIN qiyas.cycle_requirements cr ON cr.id = l.cycle_requirement_id JOIN qiyas.requirements r ON r.id = cr.requirement_id
      JOIN qiyas.standards s ON s.id = r.standard_id LEFT JOIN qiyas.tasks t ON t.id = l.task_id LEFT JOIN qiyas.departments d ON d.id = t.department_id
+     JOIN qiyas.measurement_cycles mc ON mc.id = cr.cycle_id
      WHERE l.review_status IN ('submitted', 'under_review') AND ($2::uuid IS NULL OR cr.cycle_id = $2)`,
   'review_due_at NULLS LAST, id', [ctx.actor.userId, cycleId ?? null], page);
 }
@@ -223,10 +228,12 @@ export async function submissionQueue<P extends PageRequest | null = null>(ctx: 
   return listQuery(ctx.db, `SELECT l.id, l.submission_status, l.posted_at, l.dga_reference, pu.name AS posted_by_name,
       a.title, v.id AS version_id, v.original_filename, v.external_url, r.code AS requirement_code, s.code AS standard_code,
       s.title_ar AS standard_ar, s.title_en AS standard_en,
-      (SELECT max(d.at) FROM qiyas.review_decisions d WHERE d.evidence_link_id = l.id AND d.decision = 'accept') AS accepted_at
+      (SELECT max(d.at) FROM qiyas.review_decisions d WHERE d.evidence_link_id = l.id AND d.decision = 'accept') AS accepted_at,
+      (mc.status IN ('planning', 'active')) AS "cycleOpen"
      FROM qiyas.evidence_links l JOIN qiyas.artifact_versions v ON v.id = l.artifact_version_id JOIN qiyas.artifacts a ON a.id = v.artifact_id
      JOIN qiyas.cycle_requirements cr ON cr.id = l.cycle_requirement_id JOIN qiyas.requirements r ON r.id = cr.requirement_id
      JOIN qiyas.standards s ON s.id = r.standard_id LEFT JOIN public.users pu ON pu.id = l.posted_by
+     JOIN qiyas.measurement_cycles mc ON mc.id = cr.cycle_id
      WHERE cr.cycle_id = $1 AND l.review_status = 'accepted' AND ($2::text IS NULL OR l.submission_status = $2)`,
   'standard_code, requirement_code, id', [cycleId, status ?? null], page);
 }

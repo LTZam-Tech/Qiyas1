@@ -7,6 +7,7 @@
  */
 import path from 'path';
 import { ComplianceError, Db, ServiceContext, audit, fromTransition, mustOne, one, requirePermission } from '../core/context';
+import { assertCycleWritable } from '../core/cycleGuard';
 import { addBusinessDays } from '../domain/calendar';
 import { ReviewStatus, reviewMachine } from '../domain/stateMachines';
 import { TaskRow, closeOpenPauses, getTask, moveTask, taskActors } from '../work/tasks';
@@ -65,8 +66,8 @@ export async function uploadEvidence(ctx: ServiceContext, deps: EvidenceDeps, in
   if (!input.file && !input.externalUrl) throw new ComplianceError('validation', 'Attach a file or give a link');
   if (input.externalUrl && !/^https?:\/\//i.test(input.externalUrl)) throw new ComplianceError('validation', 'Links must start with http:// or https://');
 
-  const bank = await mustOne(db, 'bank', 'SELECT id, status FROM qiyas.evidence_banks WHERE cycle_id = $1', [task.cycle_id]);
-  if (bank.status !== 'open') throw new ComplianceError('conflict', 'The evidence bank of this cycle is read-only');
+  await assertCycleWritable(db, { taskId: task.id }); // C5: a closed cycle's bank is read-only
+  const bank = await mustOne(db, 'bank', 'SELECT id FROM qiyas.evidence_banks WHERE cycle_id = $1', [task.cycle_id]);
 
   let sha: string | null = null;
   let scan: UploadResult['scanStatus'] = 'clean';
@@ -149,6 +150,7 @@ export async function linkEvidence(ctx: ServiceContext, versionId: string, input
   }
   if (v.scan_status === 'infected') throw new ComplianceError('conflict', 'This file was quarantined by the virus scan and cannot be used');
   if (v.cycle_id !== task.cycle_id) throw new ComplianceError('validation', 'The evidence belongs to another cycle');
+  await assertCycleWritable(db, { taskId: task.id }); // C5
   await mustOne(db, 'requirement of this task', 'SELECT 1 FROM qiyas.task_requirements WHERE task_id = $1 AND cycle_requirement_id = $2', [task.id, input.cycleRequirementId]);
   if (input.proofItemId) {
     await mustOne(db, 'proof item of this requirement', `SELECT 1 FROM qiyas.requirement_proof_items rp
@@ -184,6 +186,7 @@ export async function submitEvidence(ctx: ServiceContext, taskId: string, linkId
   const task = await getTask(db, taskId, true);
   const role = evidenceRole(ctx, task);
   requirePermission(ctx, 'evidence.submit', { departmentId: task.department_id, ownerIds: [task.current_owner_id] });
+  await assertCycleWritable(db, { taskId }); // C5
   const { rows } = await db.query(`SELECT l.id, l.cycle_requirement_id, v.scan_status FROM qiyas.evidence_links l JOIN qiyas.artifact_versions v ON v.id = l.artifact_version_id
      WHERE l.task_id = $1 AND l.review_status = 'draft' ${linkIds ? 'AND l.id = ANY($2::uuid[])' : ''} FOR UPDATE OF l`, linkIds ? [taskId, linkIds] : [taskId]);
   if (rows.length === 0) throw new ComplianceError('validation', 'There is no draft evidence to submit');
@@ -216,6 +219,7 @@ export async function withdrawEvidence(ctx: ServiceContext, linkId: string): Pro
   const task = await getTask(db, link.task_id, true);
   const role = evidenceRole(ctx, task);
   requirePermission(ctx, 'evidence.withdraw', { departmentId: task.department_id, ownerIds: [task.current_owner_id] });
+  await assertCycleWritable(db, { linkIds: [linkId] }); // C5, D-C5-2: in-flight links stay frozen until reopen
   const actors = role === 'QC' ? ['QC' as const] : taskActors(ctx, task);
   await setReview(ctx, linkId, link.review_status, link.review_status === 'draft' ? 'remove' : 'withdraw', actors);
   await recomputeRequirement(db, link.cycle_requirement_id);

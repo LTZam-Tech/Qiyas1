@@ -7,6 +7,7 @@
  * - The answer goes back to the requester; a follow-up reopens it and pauses again.
  */
 import { ComplianceError, ServiceContext, audit, fromTransition, mustOne, requirePermission } from '../core/context';
+import { assertCycleWritable } from '../core/cycleGuard';
 import { addBusinessDays } from '../domain/calendar';
 import { ClarificationEvent, ClarificationStatus, clarificationMachine } from '../domain/stateMachines';
 import { getTask, taskActors } from './tasks';
@@ -27,6 +28,7 @@ export async function requestClarification(ctx: ServiceContext, taskId: string, 
   const { db } = ctx;
   const task = await getTask(db, taskId, true);
   if (task.current_owner_id !== ctx.actor.userId) throw new ComplianceError('forbidden', 'Only the current owner can ask for clarification');
+  await assertCycleWritable(db, { cycleId: task.cycle_id }); // C5, D-C5-3
   requirePermission(ctx, 'clarification.request', { departmentId: task.department_id, ownerIds: [task.current_owner_id] });
   if (!ASKABLE.includes(task.execution_status)) throw new ComplianceError('conflict', `Cannot ask about a ${task.execution_status} task`);
   if (!input.question?.trim()) throw new ComplianceError('validation', 'The question is empty');
@@ -46,9 +48,12 @@ export async function requestClarification(ctx: ServiceContext, taskId: string, 
   return c.id;
 }
 
+/** Loads a clarification for an action; every caller writes, so a closed cycle refuses here (C5, D-C5-3). */
 async function loadClarification(ctx: ServiceContext, id: string) {
-  return mustOne(ctx.db, 'clarification', `SELECT c.*, t.department_id FROM qiyas.clarifications c
+  const c = await mustOne(ctx.db, 'clarification', `SELECT c.*, t.department_id, t.cycle_id FROM qiyas.clarifications c
      JOIN qiyas.tasks t ON t.id = c.task_id WHERE c.id = $1 FOR UPDATE OF c`, [id]);
+  await assertCycleWritable(ctx.db, { cycleId: c.cycle_id });
+  return c;
 }
 
 async function move(ctx: ServiceContext, c: { id: string; status: ClarificationStatus }, event: ClarificationEvent, actors: Parameters<typeof clarificationMachine.next>[2]) {

@@ -5,6 +5,7 @@
  * nested requirements are the sub-conditions shown inside them.
  */
 import { ComplianceError, ServiceContext, audit, fromTransition, mustOne, requirePermission } from '../core/context';
+import { assertCycleWritable } from '../core/cycleGuard';
 import { actorsFor } from '../domain/permissions';
 import { CycleStatus, cycleMachine } from '../domain/stateMachines';
 import { ValidationIssue, validateFrameworkFile } from './frameworkFile';
@@ -128,9 +129,8 @@ export async function transitionCycle(ctx: ServiceContext, cycleId: string, even
 
 export async function setApplicability(ctx: ServiceContext, cycleRequirementId: string, applicable: boolean, reason?: string): Promise<void> {
   requirePermission(ctx, 'applicability.manage');
-  const cr = await mustOne(ctx.db, 'requirement', `SELECT cr.is_applicable, c.status FROM qiyas.cycle_requirements cr
-     JOIN qiyas.measurement_cycles c ON c.id = cr.cycle_id WHERE cr.id = $1 FOR UPDATE OF cr`, [cycleRequirementId]);
-  if (cr.status === 'closed' || cr.status === 'archived') throw new ComplianceError('conflict', 'The cycle is closed');
+  const cr = await mustOne(ctx.db, 'requirement', 'SELECT is_applicable FROM qiyas.cycle_requirements WHERE id = $1 FOR UPDATE', [cycleRequirementId]);
+  await assertCycleWritable(ctx.db, { cycleRequirementId }); // C5
   if (!applicable && (reason ?? '').trim().length < 3) throw new ComplianceError('validation', 'A reason is required to mark a requirement not applicable');
   await ctx.db.query(`UPDATE qiyas.cycle_requirements SET is_applicable = $2, not_applicable_reason = $3,
       applicability_set_by = $4, applicability_set_at = $5 WHERE id = $1`,

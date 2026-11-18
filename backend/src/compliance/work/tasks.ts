@@ -7,6 +7,7 @@
 import {
   ComplianceError, Db, ServiceContext, audit, departmentManager, fromTransition, isDepartmentMember, mustOne, requirePermission,
 } from '../core/context';
+import { assertCycleWritable } from '../core/cycleGuard';
 import { DeadlinePause, DeadlineState, computeDeadline } from '../domain/deadline';
 import { actorsFor } from '../domain/permissions';
 import { TaskEvent, TaskStatus, assignmentMachine, taskMachine } from '../domain/stateMachines';
@@ -71,8 +72,7 @@ export async function createAssignment(ctx: ServiceContext, input: NewAssignment
   if (input.cycleRequirementIds.length === 0) throw new ComplianceError('validation', 'Choose at least one requirement');
   if (input.implementationDueAt <= ctx.now) throw new ComplianceError('validation', 'The deadline must be in the future');
   if (input.managerDueAt > input.implementationDueAt) throw new ComplianceError('validation', 'The manager action deadline must come before the implementation deadline');
-  const cycle = await mustOne(db, 'cycle', 'SELECT status FROM qiyas.measurement_cycles WHERE id = $1', [input.cycleId]);
-  if (cycle.status !== 'planning' && cycle.status !== 'active') throw new ComplianceError('conflict', `The cycle is ${cycle.status}`);
+  await assertCycleWritable(db, { cycleId: input.cycleId }); // C5
   await mustOne(db, 'department', 'SELECT id FROM qiyas.departments WHERE id = $1 AND is_active', [input.departmentId]);
   const { rows } = await db.query(`SELECT id, is_applicable FROM qiyas.cycle_requirements WHERE cycle_id = $1 AND id = ANY($2::uuid[])`,
     [input.cycleId, input.cycleRequirementIds]);
@@ -94,6 +94,7 @@ export async function createAssignment(ctx: ServiceContext, input: NewAssignment
 export async function publishAssignment(ctx: ServiceContext, assignmentId: string): Promise<string> {
   const { db } = ctx;
   const a = await mustOne(db, 'assignment', 'SELECT * FROM qiyas.assignments WHERE id = $1 FOR UPDATE', [assignmentId]);
+  await assertCycleWritable(db, { cycleId: a.cycle_id }); // C5: no new task in a closed cycle
   let next;
   try {
     next = assignmentMachine.next(a.status, 'publish', actorsFor(ctx.actor.grants, null));
@@ -120,6 +121,7 @@ export async function publishAssignment(ctx: ServiceContext, assignmentId: strin
 export async function cancelAssignment(ctx: ServiceContext, assignmentId: string, reason: string): Promise<void> {
   const { db } = ctx;
   const a = await mustOne(db, 'assignment', 'SELECT status FROM qiyas.assignments WHERE id = $1 FOR UPDATE', [assignmentId]);
+  await assertCycleWritable(db, { assignmentId }); // C5, D-C5-3
   let next;
   try {
     next = assignmentMachine.next(a.status, 'cancel', actorsFor(ctx.actor.grants, null), reason);
@@ -144,6 +146,7 @@ export async function cancelAssignment(ctx: ServiceContext, assignmentId: string
 export async function assignTask(ctx: ServiceContext, taskId: string, assigneeId: string, note?: string): Promise<TaskRow> {
   const { db } = ctx;
   const task = await getTask(db, taskId, true);
+  await assertCycleWritable(db, { cycleId: task.cycle_id }); // C5, D-C5-3
   const actors = taskActors(ctx, task);
   if (!actors.includes('DM')) throw new ComplianceError('forbidden', 'Only the department manager can assign this task');
   const self = assigneeId === ctx.actor.userId;
@@ -173,6 +176,7 @@ export async function assignTask(ctx: ServiceContext, taskId: string, assigneeId
 export async function startTask(ctx: ServiceContext, taskId: string): Promise<void> {
   const task = await getTask(ctx.db, taskId, true);
   if (task.current_owner_id !== ctx.actor.userId) throw new ComplianceError('forbidden', 'Only the current owner can start the task');
+  await assertCycleWritable(ctx.db, { cycleId: task.cycle_id }); // C5, D-C5-3
   await moveTask(ctx, task, 'start');
 }
 

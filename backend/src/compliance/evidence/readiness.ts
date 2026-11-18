@@ -3,9 +3,12 @@
  * change (BR-CMP-06), using the pure rules in domain/completeness.ts.
  */
 import { Db, mustOne } from '../core/context';
+import { assertCycleWritable } from '../core/cycleGuard';
 import { RequirementResult, evaluateRequirement } from '../domain/completeness';
 
 export async function recomputeRequirement(db: Db, cycleRequirementId: string): Promise<RequirementResult> {
+  // C5: a closed cycle's readiness stays as it was at closing (migration 007 enforces it too)
+  await assertCycleWritable(db, { cycleRequirementId });
   const cr = await mustOne(db, 'requirement', `SELECT cr.id, cr.requirement_id, cr.is_applicable, r.standard_id
      FROM qiyas.cycle_requirements cr JOIN qiyas.requirements r ON r.id = cr.requirement_id WHERE cr.id = $1`, [cycleRequirementId]);
   const proof = await db.query('SELECT proof_item_id FROM qiyas.requirement_proof_items WHERE requirement_id = $1', [cr.requirement_id]);

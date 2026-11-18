@@ -8,14 +8,18 @@
  *   nothing left to review → completed when all its requirements are ready, else back to work
  */
 import { ComplianceError, ServiceContext, audit, departmentManager, fromTransition, mustOne, requirePermission } from '../core/context';
+import { assertCycleWritable } from '../core/cycleGuard';
 import { ReviewStatus, reviewMachine } from '../domain/stateMachines';
 import { closeOpenPauses, getTask, moveTask } from '../work/tasks';
 import { hasPendingReview } from './evidence';
 import { recomputeRequirement, taskRequirementsReady } from './readiness';
 
+/** Loads a link for a review action; every caller writes, so a closed cycle refuses here (C5, D-C5-1). */
 async function loadLink(ctx: ServiceContext, linkId: string) {
-  return mustOne(ctx.db, 'evidence', `SELECT l.*, v.uploaded_by, v.scan_status, v.artifact_id, v.version_no
+  const link = await mustOne(ctx.db, 'evidence', `SELECT l.*, v.uploaded_by, v.scan_status, v.artifact_id, v.version_no
      FROM qiyas.evidence_links l JOIN qiyas.artifact_versions v ON v.id = l.artifact_version_id WHERE l.id = $1 FOR UPDATE OF l`, [linkId]);
+  await assertCycleWritable(ctx.db, { linkIds: [linkId] });
+  return link;
 }
 
 function consultantOnly(ctx: ServiceContext) {

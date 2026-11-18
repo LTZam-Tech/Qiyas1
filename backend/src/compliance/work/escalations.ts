@@ -8,6 +8,7 @@
  * the escalation is recorded and sent to the manager himself (D2).
  */
 import { ComplianceError, Db, ServiceContext, audit, departmentManager, requirePermission } from '../core/context';
+import { WRITABLE_CYCLE_STATUSES, assertCycleWritable } from '../core/cycleGuard';
 import { WorkCalendar } from '../domain/calendar';
 import { isAutoEscalationDue } from '../domain/deadline';
 import { TaskRow, getTask, taskDeadline } from './tasks';
@@ -57,6 +58,7 @@ export async function escalateManually(ctx: ServiceContext, taskId: string, reas
   requirePermission(ctx, 'escalation.manual');
   if ((reason ?? '').trim().length < 3) throw new ComplianceError('validation', 'A reason is required to escalate');
   const task = await getTask(ctx.db, taskId, true);
+  await assertCycleWritable(ctx.db, { cycleId: task.cycle_id }); // C5, D-C5-3
   if (!ESCALATABLE.includes(task.execution_status)) throw new ComplianceError('conflict', `A ${task.execution_status} task cannot be escalated`);
   const outcome = await escalate(ctx.db, ctx.now, ctx.actor.userId, task, 'manual', reason.trim(), null);
   return outcome as EscalationOutcome;
@@ -74,7 +76,9 @@ export interface AutoEscalationContext {
  */
 export async function runAutomaticEscalations(ctx: AutoEscalationContext, thresholdBusinessDays = 0): Promise<EscalationOutcome[]> {
   const { rows } = await ctx.db.query(
-    `SELECT * FROM qiyas.tasks WHERE execution_status = ANY($1::text[]) FOR UPDATE SKIP LOCKED`, [AUTO_ESCALATABLE]);
+    `SELECT t.* FROM qiyas.tasks t WHERE t.execution_status = ANY($1::text[])
+        AND EXISTS (SELECT 1 FROM qiyas.measurement_cycles c WHERE c.id = t.cycle_id AND c.status = ANY($2::text[])) -- C5, D-C5-3
+      FOR UPDATE OF t SKIP LOCKED`, [AUTO_ESCALATABLE, WRITABLE_CYCLE_STATUSES]);
   const out: EscalationOutcome[] = [];
   for (const task of rows as TaskRow[]) {
     const deadline = await taskDeadline(ctx, task);

@@ -7,6 +7,7 @@
  * then submitted and reviewed like any other evidence.
  */
 import { ComplianceError, Db, ServiceContext, audit, mustOne, one, requirePermission } from '../core/context';
+import { assertCycleWritable } from '../core/cycleGuard';
 import { targetsInCycle } from '../framework/crosswalk';
 import { getTask, moveTask, taskActors } from '../work/tasks';
 import { linkEvidence } from './evidence';
@@ -68,6 +69,7 @@ export async function taskSuggestions(ctx: ServiceContext, taskId: string) {
 export async function useSuggestion(ctx: ServiceContext, suggestionId: string, taskId: string): Promise<string> {
   const sg = await mustOne(ctx.db, 'suggestion', 'SELECT * FROM qiyas.link_suggestions WHERE id = $1 FOR UPDATE', [suggestionId]);
   if (sg.status !== 'open') throw new ComplianceError('conflict', `This suggestion was already ${sg.status}`);
+  await assertCycleWritable(ctx.db, { cycleRequirementId: sg.cycle_requirement_id }); // C5
   const linkId = await linkEvidence(ctx, sg.artifact_version_id, { taskId, cycleRequirementId: sg.cycle_requirement_id, proofItemId: sg.proof_item_id });
   // like an upload, the owner's first piece of evidence starts the task
   const task = await getTask(ctx.db, taskId, true);
@@ -79,6 +81,7 @@ export async function useSuggestion(ctx: ServiceContext, suggestionId: string, t
 
 export async function dismissSuggestion(ctx: ServiceContext, suggestionId: string, taskId: string): Promise<void> {
   const task = await taskForWork(ctx, taskId);
+  await assertCycleWritable(ctx.db, { taskId: task.id }); // C5
   const sg = await mustOne(ctx.db, 'suggestion', `SELECT sg.status FROM qiyas.link_suggestions sg
      JOIN qiyas.task_requirements tr ON tr.cycle_requirement_id = sg.cycle_requirement_id AND tr.task_id = $2
     WHERE sg.id = $1 FOR UPDATE OF sg`, [suggestionId, task.id]);
