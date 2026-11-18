@@ -221,3 +221,45 @@ describe('regulations library', () => {
     expect((await listLibrary(alaa, { kind: 'policy' }))[0].standards).toHaveLength(1);
   });
 });
+
+describe('import and parse limits (C13, C14)', () => {
+  const CIRCULAR = 'تعميم الديوان الملكي رقم (6262) وتاريخ 26/1/1445هـ، البند (19).';
+
+  it('syncLibrary finishes in under 1 s when a stored standard holds a 64 KB pathological reference', async () => {
+    // written straight to the table, bypassing the framework file validation, like a row stored before the caps
+    await db.query(`UPDATE qiyas.standards SET "references" = $1`, [JSON.stringify([
+      { ar: 'رقم ('.repeat(13_200), en: 'No. ('.repeat(13_200) },
+      { ar: `${CIRCULAR}${'.'.repeat(50_000)}x` },
+      { ar: CIRCULAR, en: 'Royal Court Circular No. (6262) dated 26/1/1445H, Clause (19).' },
+    ])]);
+    const started = Date.now();
+    const out = await syncLibrary(db, { format: 'qiyas-library/1', documents: [] });
+    expect(Date.now() - started).toBeLessThan(1000);
+    // positive control: the normal reference still becomes a cited document
+    expect(out).toEqual({ documents: 1, links: 1 });
+  });
+
+  it('syncLibrary reads at most 50 references per standard', async () => {
+    await db.query(`UPDATE qiyas.standards SET "references" = $1`, [JSON.stringify(
+      Array.from({ length: 60 }, (_, i) => ({ ar: `تعميم الديوان الملكي رقم (${1000 + i}) وتاريخ 26/1/1445هـ.` })),
+    )]);
+    expect(await syncLibrary(db, { format: 'qiyas-library/1', documents: [] })).toEqual({ documents: 50, links: 50 });
+  });
+
+  it('a folder import rejects a relative path longer than 1024 characters', async () => {
+    const alaa = await w.ctx('alaa');
+    const batchId = await startImport(alaa, w.cycleId, { label: 'long paths' });
+    const long = `${'ملف/'.repeat(256)}5.1.1.pdf`;
+    expect(long.length).toBeGreaterThan(1024);
+    expect(await fails('validation', () => importFile(alaa, deps, batchId, file(long)))).toContain('1024');
+    // positive control
+    expect((await importFile(alaa, deps, batchId, file('5.1 التخطيط/5.1.1/5.1.1.1/خطة.pdf'))).outcome).toBe('suggested');
+  });
+
+  it('a library document links at most 500 standard codes at once', async () => {
+    const alaa = await w.ctx('alaa');
+    const codes = Array.from({ length: 501 }, (_, i) => `9.9.${i}`);
+    expect(await fails('validation', () => addLibraryDocument(alaa, { kind: 'policy', titleAr: 'سياسة', titleEn: 'Policy', standardCodes: codes, frameworkVersionId: w.frameworkVersionId })))
+      .toContain('at most 500');
+  });
+});
