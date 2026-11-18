@@ -117,8 +117,13 @@ export async function departmentManager(db: Db, departmentId: string): Promise<s
   return row?.user_id;
 }
 
-export async function isDepartmentMember(db: Db, departmentId: string, userId: string): Promise<boolean> {
+/**
+ * With `lock`, the current membership row is read FOR SHARE (SoD-3): a concurrent
+ * removeDepartmentMember (FOR UPDATE on the same row) waits for this transaction, then sees its
+ * result; or this read waits for the removal and then finds no current membership.
+ */
+export async function isDepartmentMember(db: Db, departmentId: string, userId: string, opts: { lock?: boolean } = {}): Promise<boolean> {
   const row = await one(db, `SELECT 1 FROM qiyas.department_members
-     WHERE department_id = $1 AND user_id = $2 AND valid_to IS NULL`, [departmentId, userId]);
+     WHERE department_id = $1 AND user_id = $2 AND valid_to IS NULL${opts.lock ? ' FOR SHARE' : ''}`, [departmentId, userId]);
   return Boolean(row);
 }

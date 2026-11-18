@@ -151,7 +151,7 @@ export async function assignTask(ctx: ServiceContext, taskId: string, assigneeId
   if (!actors.includes('DM')) throw new ComplianceError('forbidden', 'Only the department manager can assign this task');
   const self = assigneeId === ctx.actor.userId;
   requirePermission(ctx, self ? 'task.self_assign' : 'task.assign', { departmentId: task.department_id });
-  if (!self && !(await isDepartmentMember(db, task.department_id, assigneeId))) {
+  if (!self && !(await isDepartmentMember(db, task.department_id, assigneeId, { lock: true }))) {
     throw new ComplianceError('validation', 'The assignee is not a member of this department'); // SoD-3
   }
   if (task.execution_status === 'completed' || task.execution_status === 'cancelled' || task.execution_status === 'submitted') {

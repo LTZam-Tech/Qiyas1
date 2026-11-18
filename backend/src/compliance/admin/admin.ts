@@ -63,14 +63,30 @@ export async function removeDepartmentMember(ctx: ServiceContext, departmentId: 
   await audit(ctx, { action: 'admin.member_removed', entityType: 'department', entityId: departmentId, before: { userId } });
 }
 
+/** Roles whose grants are serialized per user for SoD-5 (C9). */
+const SOD_LOCKED_ROLES: readonly RoleCode[] = ['QC', 'DSO'];
+
+/** Same key as qiyas.check_role_grant() and qiyas.check_group_member_sod() (migration 008); held until commit. */
+async function lockUserGrants(db: ServiceContext['db'], userId: string): Promise<void> {
+  await db.query('SELECT pg_advisory_xact_lock(7301, hashtext($1::text))', [userId]);
+}
+
 /** Grants a role, enforcing separation of duties (D3) before the database does. */
 export async function grantRole(ctx: ServiceContext, userId: string, role: RoleCode, departmentId: string | null = null, internal = false): Promise<string | null> {
   if (!internal) requirePermission(ctx, 'admin.roles');
-  const { rows } = await ctx.db.query(`SELECT r.code AS role, g.department_id FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id
-     WHERE g.user_id = $1 AND g.revoked_at IS NULL`, [userId]);
-  const existing: RoleGrant[] = rows.map((r) => ({ role: r.role, departmentId: r.department_id }));
+  // C9: the same per-user lock as the check_role_grant trigger (migration 008), taken before the read,
+  // so a concurrent QC/DSO grant for this person waits and then sees the committed row.
+  if (SOD_LOCKED_ROLES.includes(role)) await lockUserGrants(ctx.db, userId);
+  const { rows } = await ctx.db.query(`SELECT r.code AS role, g.department_id, g.user_id IS NULL AS via_group
+       FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id
+     WHERE g.revoked_at IS NULL
+       AND (g.user_id = $1 OR g.group_id IN (SELECT group_id FROM qiyas.group_members WHERE user_id = $1))`, [userId]);
+  // duplicates are judged on personal grants only (unchanged); SoD-5 also counts group-derived grants
+  const existing: RoleGrant[] = rows.filter((r) => !r.via_group).map((r) => ({ role: r.role, departmentId: r.department_id }));
+  const viaGroups: RoleGrant[] = rows.filter((r) => r.via_group).map((r) => ({ role: r.role, departmentId: r.department_id }));
   try {
     validateGrant(existing, { role, departmentId });
+    validateGrant(viaGroups.filter((g) => g.role !== role), { role, departmentId });
   } catch (e) {
     if (e instanceof GrantError && e.code === 'duplicate' && internal) return null;
     if (e instanceof GrantError) throw new ComplianceError(e.code === 'duplicate' ? 'conflict' : 'validation', e.message);
