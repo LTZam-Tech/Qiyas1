@@ -12,7 +12,7 @@ ENV VITE_API_BASE_URL=/api/v1
 RUN npm run build
 
 # TODO(CI-15): pin nginx:1.27-alpine by digest (nginx:1.27-alpine@sha256:...).
-FROM nginx:1.27-alpine
+FROM nginx:1.29-alpine
 # Pull the latest Alpine security fixes for OS packages; CI-7 trivy gate
 RUN apk upgrade --no-cache && apk add --no-cache openssl
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
