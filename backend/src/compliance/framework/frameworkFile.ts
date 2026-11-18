@@ -21,34 +21,66 @@ import { z } from 'zod';
 
 export const FRAMEWORK_FORMAT = 'qiyas-framework/1';
 
+/**
+ * Size limits of a framework file, set at 10-100x the official DGA files (v4.0, v5.0)
+ * so a legitimate file never comes close. They keep a single upload from holding the
+ * request transaction, the event loop or the database for minutes (C13, C14).
+ */
+export const FRAMEWORK_LIMITS = {
+  /** Characters of one text field (title, requirement text, description...). */
+  text: 10_000,
+  /** Characters of one reference (also MAX_CITATION_CHARS in the library). */
+  reference: 2_000,
+  referencesPerStandard: 50,
+  perspectives: 50,
+  axesPerPerspective: 100,
+  standardsPerFile: 2_000,
+  /** All levels of one standard together. */
+  requirementsPerStandard: 500,
+  childrenPerNode: 100,
+  requirementsPerFile: 20_000,
+  proofItemsPerStandard: 200,
+  codesPerProofItem: 200,
+  linksPerFile: 50_000,
+  /** Characters of the file header fields (issuer, document code, version). */
+  header: 200,
+} as const;
+
+const L = FRAMEWORK_LIMITS;
+const str = (max: number) => z.string().trim().max(max, `At most ${max} characters`);
+
 const text = z.object({
-  ar: z.string().trim().min(1, 'Arabic text is required'),
-  en: z.string().trim().min(1, 'English text is required'),
-  ur: z.string().trim().min(1).optional(),
+  ar: str(L.text).min(1, 'Arabic text is required'),
+  en: str(L.text).min(1, 'English text is required'),
+  ur: str(L.text).min(1).optional(),
 });
-const optionalText = z.object({ ar: z.string().trim(), en: z.string().trim(), ur: z.string().trim().optional() }).partial();
+const optionalText = z.object({ ar: str(L.text), en: str(L.text), ur: str(L.text).optional() }).partial();
+const reference = z.object({ ar: str(L.reference), en: str(L.reference), ur: str(L.reference).optional() }).partial();
 
 const code = z.string().trim().min(1).max(40).regex(/^[A-Za-z0-9._-]+$/, 'Codes may use letters, digits, dot, dash and underscore');
 
 export const REQUIREMENT_KINDS = ['sequential', 'alternative', 'step', 'single'] as const;
 export const PROOF_KINDS = ['document', 'report', 'plan', 'template', 'certificate', 'screenshot', 'link', 'data', 'other'] as const;
 
-type RequirementNode = { code: string; text: z.infer<typeof text>; kind: (typeof REQUIREMENT_KINDS)[number]; children?: RequirementNode[] };
-const requirement: z.ZodType<RequirementNode> = z.lazy(() =>
-  z.object({
-    code,
-    text,
-    kind: z.enum(REQUIREMENT_KINDS).default('single'),
-    children: z.array(requirement).optional(),
-  }),
-) as z.ZodType<RequirementNode>;
+type RequirementNode = { code: string; text: z.infer<typeof text>; kind: (typeof REQUIREMENT_KINDS)[number]; children?: unknown[] };
+
+/*
+ * Requirements nest at most 3 levels. The three levels are spelled out (no recursive
+ * z.lazy), so a deeply nested file is rejected at level 4 without zod ever walking it.
+ */
+const NESTING_MESSAGE = 'Requirements may be nested at most 3 levels';
+const requirementFields = { code, text, kind: z.enum(REQUIREMENT_KINDS).default('single') };
+const children = <T extends z.ZodTypeAny>(item: T) => z.array(item).max(L.childrenPerNode, `At most ${L.childrenPerNode} sub-requirements`).optional();
+const requirementLevel3 = z.object({ ...requirementFields, children: z.array(z.unknown()).max(0, NESTING_MESSAGE).optional() });
+const requirementLevel2 = z.object({ ...requirementFields, children: children(requirementLevel3) });
+const requirement = z.object({ ...requirementFields, children: children(requirementLevel2) });
 
 const proofItem = z.object({
   code,
   description: text,
   expectedKind: z.enum(PROOF_KINDS).default('document'),
   /** Omitted = applies to every top-level requirement of the standard. */
-  requirementCodes: z.array(code).optional(),
+  requirementCodes: z.array(code).max(L.codesPerProofItem, `At most ${L.codesPerProofItem} requirement codes`).optional(),
 });
 
 const standard = z.object({
@@ -56,22 +88,23 @@ const standard = z.object({
   title: text,
   goal: optionalText.optional(),
   scope: optionalText.optional(),
-  references: z.array(optionalText).optional(),
-  requirements: z.array(requirement).min(1, 'A standard needs at least one requirement'),
-  proofItems: z.array(proofItem).default([]),
+  references: z.array(reference).max(L.referencesPerStandard, `At most ${L.referencesPerStandard} references`).optional(),
+  requirements: z.array(requirement).min(1, 'A standard needs at least one requirement')
+    .max(L.requirementsPerStandard, `At most ${L.requirementsPerStandard} requirements per standard`),
+  proofItems: z.array(proofItem).max(L.proofItemsPerStandard, `At most ${L.proofItemsPerStandard} proof items per standard`).default([]),
 });
 
-const axis = z.object({ code, name: text, standards: z.array(standard).min(1) });
-const perspective = z.object({ code, name: text, axes: z.array(axis).min(1) });
+const axis = z.object({ code, name: text, standards: z.array(standard).min(1).max(L.standardsPerFile, `At most ${L.standardsPerFile} standards`) });
+const perspective = z.object({ code, name: text, axes: z.array(axis).min(1).max(L.axesPerPerspective, `At most ${L.axesPerPerspective} axes`) });
 
 export const frameworkFileSchema = z.object({
   format: z.literal(FRAMEWORK_FORMAT),
-  issuer: z.string().trim().min(1),
-  documentCode: z.string().trim().min(1),
-  version: z.string().trim().min(1),
+  issuer: str(L.header).min(1),
+  documentCode: str(L.header).min(1),
+  version: str(L.header).min(1),
   publishedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   title: text,
-  perspectives: z.array(perspective).min(1),
+  perspectives: z.array(perspective).min(1).max(L.perspectives, `At most ${L.perspectives} perspectives`),
 });
 
 export type FrameworkFile = z.infer<typeof frameworkFileSchema>;
@@ -132,6 +165,9 @@ export function validateFrameworkFile(input: unknown): ValidationReport {
     perspectives: [], axes: [], standards: [], requirements: [], proofItems: [], requirementProofItems: [],
   };
 
+  let links = 0;
+  let tooManyLinks = false;
+
   file.perspectives.forEach((p, pi) => {
     unique('perspective', p.code, `perspectives.${pi}.code`);
     flat.perspectives.push({ code: p.code, sortOrder: pi + 1, name: p.name });
@@ -145,25 +181,41 @@ export function validateFrameworkFile(input: unknown): ValidationReport {
         flat.standards.push({ code: sCode, axisCode: a.code, sortOrder: si + 1, ...rest });
 
         const topLevel: string[] = [];
+        // this standard's requirements, collected while walking (no per-standard filter over the whole file)
+        const standardReqs = new Set<string>();
         const walk = (nodes: RequirementNode[], parent: string | null, path: string, depth: number) => {
           if (depth > 3) issues.push({ level: 'error', path, message: 'Requirements may be nested at most 3 levels' });
           nodes.forEach((r, ri) => {
             unique('requirement', r.code, `${path}.${ri}.code`);
             if (parent === null) topLevel.push(r.code);
+            standardReqs.add(r.code);
             flat.requirements.push({ code: r.code, standardCode: sCode, parentCode: parent, kind: r.kind, sortOrder: ri + 1, text: r.text });
-            if (r.children?.length) walk(r.children, r.code, `${path}.${ri}.children`, depth + 1);
+            if (r.children?.length) walk(r.children as RequirementNode[], r.code, `${path}.${ri}.children`, depth + 1);
           });
         };
+        const before = flat.requirements.length;
         walk(requirements, null, `${sPath}.requirements`, 1);
+        if (flat.requirements.length - before > FRAMEWORK_LIMITS.requirementsPerStandard) {
+          issues.push({ level: 'error', path: `${sPath}.requirements`, message: `Standard ${sCode} has more than ${FRAMEWORK_LIMITS.requirementsPerStandard} requirements` });
+        }
 
-        const standardReqs = new Set(flat.requirements.filter((r) => r.standardCode === sCode).map((r) => r.code));
         proofItems.forEach((e, ei) => {
           const ePath = `${sPath}.proofItems.${ei}`;
           unique('proof', e.code, `${ePath}.code`);
           flat.proofItems.push({ code: e.code, standardCode: sCode, sortOrder: ei + 1, description: e.description, expectedKind: e.expectedKind });
-          const targets = e.requirementCodes ?? topLevel;
+          // a code listed twice would insert the same link twice (primary-key violation)
+          const targets = [...new Set(e.requirementCodes ?? topLevel)];
           if (!e.requirementCodes) {
             issues.push({ level: 'warning', path: ePath, message: `Proof item "${e.code}" has no requirementCodes; linked to all ${topLevel.length} requirement(s) of ${sCode}` });
+          } else if (targets.length < e.requirementCodes.length) {
+            issues.push({ level: 'warning', path: `${ePath}.requirementCodes`, message: `Proof item "${e.code}" lists a requirement code more than once; duplicates are ignored` });
+          }
+          // count the links before creating them: a file over the limit never materialises them
+          links += targets.length;
+          if (links > FRAMEWORK_LIMITS.linksPerFile) {
+            if (!tooManyLinks) issues.push({ level: 'error', path: ePath, message: `The file links proof items to requirements more than ${FRAMEWORK_LIMITS.linksPerFile} times; list requirementCodes on each proof item` });
+            tooManyLinks = true;
+            return;
           }
           for (const rc of targets) {
             if (!standardReqs.has(rc)) issues.push({ level: 'error', path: `${ePath}.requirementCodes`, message: `Requirement "${rc}" is not part of standard ${sCode}` });
@@ -177,6 +229,13 @@ export function validateFrameworkFile(input: unknown): ValidationReport {
     });
   });
 
+  if (flat.standards.length > FRAMEWORK_LIMITS.standardsPerFile) {
+    issues.push({ level: 'error', path: 'perspectives', message: `The file has more than ${FRAMEWORK_LIMITS.standardsPerFile} standards` });
+  }
+  if (flat.requirements.length > FRAMEWORK_LIMITS.requirementsPerFile) {
+    issues.push({ level: 'error', path: 'perspectives', message: `The file has more than ${FRAMEWORK_LIMITS.requirementsPerFile} requirements` });
+  }
+
   const ok = !issues.some((i) => i.level === 'error');
   return {
     ok,
@@ -187,7 +246,7 @@ export function validateFrameworkFile(input: unknown): ValidationReport {
       standards: flat.standards.length,
       requirements: flat.requirements.length,
       proofItems: flat.proofItems.length,
-      links: flat.requirementProofItems.length,
+      links: tooManyLinks ? links : flat.requirementProofItems.length,
     },
     framework: ok ? flat : null,
   };

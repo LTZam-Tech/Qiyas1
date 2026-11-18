@@ -30,7 +30,7 @@ import { importCrosswalk } from '../framework/crosswalk';
 import { syncLibrary } from '../library/library';
 import { migrate } from '../db/migrate';
 import { seedRbac } from '../db/seedRbac';
-import { createComplianceRouter } from '../api/router';
+import { createComplianceRouter, mountFrameworkUploadParser } from '../api/router';
 import { createPublicRouter, runComplianceTick } from '../runtime';
 import { assignTask, createAssignment, publishAssignment } from '../work/tasks';
 import { existsSync as fileExists, readFileSync } from 'fs';
@@ -225,6 +225,7 @@ async function main() {
     if (rejected) res.status(403).json({ success: false, message: `Dev server: ${rejected}` });
     else next();
   });
+  mountFrameworkUploadParser(app);
   app.use(express.json());
 
   // Demo sign-in: same shape as the real /api/v1/auth endpoints the login screen uses.

@@ -11,6 +11,9 @@ import { CycleStatus, cycleMachine } from '../domain/stateMachines';
 import { ValidationIssue, validateFrameworkFile } from './frameworkFile';
 import { recomputeRequirement } from '../evidence/readiness';
 
+/** Rows per batched INSERT ... SELECT FROM unnest(...) statement. */
+export const INSERT_CHUNK_ROWS = 5000;
+
 export interface ImportResult {
   frameworkVersionId: string;
   issues: ValidationIssue[];
@@ -64,9 +67,12 @@ export async function importFramework(ctx: ServiceContext, file: unknown): Promi
       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
     [ids.standard.get(e.standardCode), e.code, e.sortOrder, e.expectedKind, e.description.ar, e.description.en, e.description.ur ?? null]));
   }
-  for (const l of f.requirementProofItems) {
-    await db.query('INSERT INTO qiyas.requirement_proof_items (requirement_id, proof_item_id) VALUES ($1, $2)',
-      [ids.requirement.get(l.requirementCode), ids.proof.get(l.proofItemCode)]);
+  // one statement per INSERT_CHUNK_ROWS links, not one per link (C13)
+  for (let i = 0; i < f.requirementProofItems.length; i += INSERT_CHUNK_ROWS) {
+    const chunk = f.requirementProofItems.slice(i, i + INSERT_CHUNK_ROWS);
+    await db.query(`INSERT INTO qiyas.requirement_proof_items (requirement_id, proof_item_id)
+       SELECT * FROM unnest($1::uuid[], $2::uuid[])`,
+    [chunk.map((l) => ids.requirement.get(l.requirementCode)), chunk.map((l) => ids.proof.get(l.proofItemCode))]);
   }
 
   await audit(ctx, { action: 'framework.imported', entityType: 'framework_version', entityId: fv.id, after: { ...f.meta, stats: report.stats } });

@@ -7,26 +7,49 @@
  */
 import { z } from 'zod';
 import { ComplianceError, Db, ServiceContext, audit, mustOne, one, requirePermission } from '../core/context';
+import { FRAMEWORK_LIMITS } from './frameworkFile';
+import { INSERT_CHUNK_ROWS } from './frameworkService';
 
 export const CROSSWALK_FORMAT = 'qiyas-crosswalk/1';
+/** 'removed' is never stored; the others match the crosswalk_relation_check of migration 005. */
 export const CROSSWALK_RELATIONS = ['same', 'changed', 'split', 'merged', 'moved', 'removed'] as const;
 
-const version = z.object({ issuer: z.string().min(1), documentCode: z.string().min(1), version: z.string().min(1) });
-const note = z.object({ ar: z.string(), en: z.string() }).partial().optional();
-const entry = z.object({ from: z.string().min(1), to: z.array(z.string().min(1)), relation: z.enum(CROSSWALK_RELATIONS), note });
+/** Caps of a crosswalk file (C13); the requirement and text caps are shared with the framework file. */
+export const CROSSWALK_LIMITS = {
+  targetsPerEntry: 50,
+  entries: FRAMEWORK_LIMITS.requirementsPerFile,
+  standards: FRAMEWORK_LIMITS.standardsPerFile,
+  links: FRAMEWORK_LIMITS.linksPerFile,
+} as const;
+
+const cwCode = z.string().min(1).max(40);
+const header = z.string().min(1).max(FRAMEWORK_LIMITS.header);
+const version = z.object({ issuer: header, documentCode: header, version: header });
+const note = z.object({ ar: z.string().max(FRAMEWORK_LIMITS.text), en: z.string().max(FRAMEWORK_LIMITS.text) }).partial().optional();
+const entry = z.object({
+  from: cwCode,
+  to: z.array(cwCode).max(CROSSWALK_LIMITS.targetsPerEntry, `At most ${CROSSWALK_LIMITS.targetsPerEntry} targets per entry`),
+  relation: z.enum(CROSSWALK_RELATIONS),
+  note,
+});
 
 export const crosswalkFileSchema = z.object({
   format: z.literal(CROSSWALK_FORMAT),
   from: version,
   to: version,
   /** Standard-level summary, for people; requirements carry the mapping that is used. */
-  standards: z.array(entry),
-  requirements: z.array(entry),
+  standards: z.array(entry).max(CROSSWALK_LIMITS.standards, `At most ${CROSSWALK_LIMITS.standards} standard entries`),
+  requirements: z.array(entry).max(CROSSWALK_LIMITS.entries, `At most ${CROSSWALK_LIMITS.entries} requirement entries`),
 }).superRefine((f, c) => {
+  let links = 0;
   f.requirements.forEach((r, i) => {
     if (r.relation === 'removed' && r.to.length) c.addIssue({ code: 'custom', path: ['requirements', i, 'to'], message: 'A removed requirement maps to nothing' });
     if (r.relation !== 'removed' && !r.to.length) c.addIssue({ code: 'custom', path: ['requirements', i, 'to'], message: 'Give at least one target or mark it removed' });
+    // the same target twice would insert the same crosswalk row twice (primary-key violation)
+    if (new Set(r.to).size < r.to.length) c.addIssue({ code: 'custom', path: ['requirements', i, 'to'], message: `Requirement ${r.from} lists the same target more than once` });
+    links += r.to.length;
   });
+  if (links > CROSSWALK_LIMITS.links) c.addIssue({ code: 'custom', path: ['requirements'], message: `At most ${CROSSWALK_LIMITS.links} links per crosswalk` });
 });
 export type CrosswalkFile = z.infer<typeof crosswalkFileSchema>;
 
@@ -74,15 +97,19 @@ export async function importCrosswalk(ctx: ServiceContext, input: unknown): Prom
 
   await db.query(`DELETE FROM qiyas.crosswalk WHERE from_requirement_id = ANY($1::uuid[]) AND to_requirement_id = ANY($2::uuid[])`,
     [[...fromReq.values()], [...toReq.values()]]);
-  let links = 0;
+  const rows: Array<[string | undefined, string | undefined, string]> = [];
   for (const r of f.requirements) {
     if (r.relation === 'removed') continue;
-    for (const t of r.to) {
-      await db.query('INSERT INTO qiyas.crosswalk (from_requirement_id, to_requirement_id, relation, created_by, created_at) VALUES ($1, $2, $3, $4, $5)',
-        [fromReq.get(r.from), toReq.get(t), r.relation, ctx.actor.userId, ctx.now]);
-      links += 1;
-    }
+    for (const t of r.to) rows.push([fromReq.get(r.from), toReq.get(t), r.relation]);
   }
+  // one statement per INSERT_CHUNK_ROWS links, not one per link (C13)
+  for (let i = 0; i < rows.length; i += INSERT_CHUNK_ROWS) {
+    const chunk = rows.slice(i, i + INSERT_CHUNK_ROWS);
+    await db.query(`INSERT INTO qiyas.crosswalk (from_requirement_id, to_requirement_id, relation, created_by, created_at)
+       SELECT x.f, x.t, x.rel, $4::uuid, $5::timestamptz FROM unnest($1::uuid[], $2::uuid[], $3::text[]) AS x(f, t, rel)`,
+    [chunk.map((c) => c[0]), chunk.map((c) => c[1]), chunk.map((c) => c[2]), ctx.actor.userId, ctx.now]);
+  }
+  const links = rows.length;
   await db.query(`INSERT INTO qiyas.crosswalk_sets (from_framework_version_id, to_framework_version_id, source_file, imported_by, imported_at)
      VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (from_framework_version_id, to_framework_version_id) DO UPDATE SET source_file = EXCLUDED.source_file, imported_by = EXCLUDED.imported_by, imported_at = EXCLUDED.imported_at`,
