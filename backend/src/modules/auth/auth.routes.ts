@@ -39,6 +39,7 @@ const changePasswordLimiter = rateLimit({
 });
 
 // Public routes
+router.get('/csrf', authController.csrf);
 router.post('/login', loginLimiter, authController.login);
 router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logout);

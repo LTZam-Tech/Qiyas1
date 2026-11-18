@@ -158,10 +158,20 @@ export async function buildV1World(): Promise<V1World> {
   const roleOf: Record<keyof typeof users, string> = {
     admin: 'admin', dean: 'dean', consultant: 'consultant', e1: 'employee', e2: 'employee', r: '',
   };
+  // csurf: every state-changing request needs the _csrf secret cookie and the matching x-csrf-token,
+  // exactly as the SPA sends them after GET /api/v1/auth/csrf.
+  const csrfRes = await request(app).get('/api/v1/auth/csrf').set('X-Forwarded-For', nextIp());
+  const setCookies = ([] as string[]).concat(csrfRes.headers['set-cookie'] ?? []);
+  const secretCookie = setCookies.map((c) => c.split(';')[0]).find((c) => c.startsWith('_csrf='));
+  const csrfToken = csrfRes.body?.data?.csrfToken as string | undefined;
+  if (csrfRes.status !== 200 || !secretCookie || !csrfToken) throw new Error(`v1World: no CSRF token (${csrfRes.status})`);
+  const csrf = { cookie: secretCookie, token: csrfToken };
+
   const http = () => {
     const agent = request(app);
     const ip = nextIp();
-    const wrap = (m: 'get' | 'post' | 'put' | 'patch' | 'delete') => (u: string) => agent[m](u).set('X-Forwarded-For', ip);
+    const wrap = (m: 'get' | 'post' | 'put' | 'patch' | 'delete') => (u: string) =>
+      agent[m](u).set('X-Forwarded-For', ip).set('Cookie', csrf.cookie).set('x-csrf-token', csrf.token);
     return { get: wrap('get'), post: wrap('post'), put: wrap('put'), patch: wrap('patch'), delete: wrap('delete') } as unknown as request.SuperTest<request.Test>;
   };
 

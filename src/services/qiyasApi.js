@@ -1,6 +1,7 @@
 // Client for the Phase 1 API (/api/v2). Uses the same sign-in token as the rest of the app.
 import { env } from '../config/env.js';
 import { getAccessToken } from '../lib/authStorage.js';
+import { ensureCsrfToken, isMutating } from '../lib/csrf.js';
 
 const base = () => env.apiBaseUrl.replace(/\/v1\/?$/, '/v2');
 
@@ -17,6 +18,10 @@ async function call(method, path, body, { form = false, raw = false } = {}) {
   const headers = {};
   const token = getAccessToken();
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (isMutating(method)) {
+    const csrf = await ensureCsrfToken();
+    if (csrf) headers['x-csrf-token'] = csrf;
+  }
   if (body !== undefined && !form) headers['Content-Type'] = 'application/json';
   const res = await fetch(`${base()}${path}`, {
     method,

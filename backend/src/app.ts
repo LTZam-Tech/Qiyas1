@@ -1,10 +1,10 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application, NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import csurf from 'csurf';
 import rateLimit from 'express-rate-limit';
-import { timingSafeEqual } from 'crypto';
 import config from '@/config';
 import { errorHandler } from '@/utils/errors';
 import logger from '@/utils/logger';
@@ -48,54 +48,31 @@ app.use(cookieParser());
 // Compression
 app.use(compression());
 
-// CSRF guard for cookie-authenticated state-changing requests
-app.use((req, res, next) => {
-  const method = req.method.toUpperCase();
-  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
-  if (!isMutating) {
-    return next();
-  }
-
-  // Exempt auth routes that are establishing/refreshing the session
-  const exemptPaths = ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh'];
-  if (exemptPaths.some(p => req.path === p)) {
-    return next();
-  }
-
-  const hasRefreshCookie = Boolean(req.cookies?.refreshToken);
-  if (!hasRefreshCookie) {
-    return next();
-  }
-
-  const csrfCookie = req.cookies?.csrfToken;
-  const csrfHeader = req.get('x-csrf-token');
-  if (!csrfCookie || !csrfHeader) {
-    return res.status(403).json({
-      success: false,
-      error: {
-        type: 'https://errors.platform.sa/csrf',
-        title: 'CSRF token missing',
-        status: 403,
-        detail: 'Missing CSRF token for cookie-authenticated request',
-      },
-    });
-  }
-
-  const cookieBuf = Buffer.from(csrfCookie);
-  const headerBuf = Buffer.from(csrfHeader);
-  if (cookieBuf.length !== headerBuf.length || !timingSafeEqual(cookieBuf, headerBuf)) {
-    return res.status(403).json({
-      success: false,
-      error: {
-        type: 'https://errors.platform.sa/csrf',
-        title: 'Invalid CSRF token',
-        status: 403,
-        detail: 'CSRF validation failed',
-      },
-    });
-  }
-
-  return next();
+// CSRF protection (csurf, double-submit with a secret cookie). Every POST/PUT/PATCH/DELETE must carry
+// x-csrf-token matching the httpOnly _csrf secret; the SPA gets the token from GET /api/v1/auth/csrf (or
+// from login/refresh) via the readable csrfToken cookie. Both cookies are SameSite=strict.
+app.use(
+  csurf({
+    cookie: {
+      key: '_csrf',
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+    },
+  }),
+);
+app.use((err: Error & { code?: string }, _req: Request, res: Response, next: NextFunction) => {
+  if (err.code !== 'EBADCSRFTOKEN') return next(err);
+  return res.status(403).json({
+    success: false,
+    error: {
+      type: 'https://errors.platform.sa/csrf',
+      title: 'Invalid CSRF token',
+      status: 403,
+      detail: 'CSRF validation failed',
+    },
+  });
 });
 
 // Rate limiting

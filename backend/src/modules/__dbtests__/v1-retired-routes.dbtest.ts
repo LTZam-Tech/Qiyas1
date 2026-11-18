@@ -8,6 +8,7 @@
 import fs from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
+import request from 'supertest';
 import { PASSWORD, V1World, buildV1World } from './v1World';
 
 let w: V1World;
@@ -114,5 +115,35 @@ describe('positive controls', () => {
   it('a v2 route without a token is still refused', async () => {
     const res = await w.http().get('/api/v2/me');
     expect(res.status).toBe(401);
+  });
+});
+
+describe('CSRF protection (csurf; CodeQL js/missing-token-validation)', () => {
+  it('a state-changing request without the CSRF token is refused with 403', async () => {
+    const res = await request(w.app).post('/api/v1/auth/login').set('X-Forwarded-For', '10.250.0.1')
+      .send({ email: w.users.e1.email, password: PASSWORD });
+    expect(res.status).toBe(403);
+    expect(res.body.error.type).toBe('https://errors.platform.sa/csrf');
+    expect(res.body.data).toBeUndefined();
+  });
+
+  it('a token that does not match the secret cookie is refused', async () => {
+    const issued = await request(w.app).get('/api/v1/auth/csrf').set('X-Forwarded-For', '10.250.0.2');
+    const secret = ([] as string[]).concat(issued.headers['set-cookie'] ?? []).map((c) => c.split(';')[0]).find((c) => c.startsWith('_csrf='))!;
+    const res = await request(w.app).post('/api/v1/auth/login').set('X-Forwarded-For', '10.250.0.2')
+      .set('Cookie', secret).set('x-csrf-token', 'forged-token').send({ email: w.users.e1.email, password: PASSWORD });
+    expect(res.status).toBe(403);
+  });
+
+  it('positive control: GET /api/v1/auth/csrf issues a token that lets the same browser sign in', async () => {
+    const issued = await request(w.app).get('/api/v1/auth/csrf').set('X-Forwarded-For', '10.250.0.3');
+    expect(issued.status).toBe(200);
+    const cookies = ([] as string[]).concat(issued.headers['set-cookie'] ?? []);
+    const secret = cookies.map((c) => c.split(';')[0]).find((c) => c.startsWith('_csrf='))!;
+    expect(cookies.find((c) => c.startsWith('_csrf='))).toMatch(/HttpOnly/i);
+    expect(cookies.find((c) => c.startsWith('csrfToken='))).toMatch(/SameSite=Strict/i);
+    const res = await request(w.app).post('/api/v1/auth/login').set('X-Forwarded-For', '10.250.0.3')
+      .set('Cookie', secret).set('x-csrf-token', issued.body.data.csrfToken).send({ email: w.users.e1.email, password: PASSWORD });
+    expect(res.status).toBe(200);
   });
 });

@@ -1,6 +1,5 @@
 import { Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { randomBytes } from 'crypto';
 import authService from './auth.service';
 import { AuthRequest } from '@/middleware/auth';
 import config from '@/config';
@@ -32,8 +31,9 @@ const changePasswordSchema = z.object({
 // });
 
 class AuthController {
-  private issueCsrfToken(res: Response): string {
-    const csrfToken = randomBytes(24).toString('hex');
+  /** Hands the SPA the csurf token for this browser's _csrf secret, as a readable SameSite=strict cookie. */
+  private issueCsrfToken(req: AuthRequest, res: Response): string {
+    const csrfToken = req.csrfToken();
     res.cookie('csrfToken', csrfToken, {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
@@ -42,6 +42,11 @@ class AuthController {
     });
     return csrfToken;
   }
+
+  // GET /api/v1/auth/csrf: the token a browser must send as x-csrf-token on POST/PUT/PATCH/DELETE
+  csrf = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
+    res.json({ success: true, data: { csrfToken: this.issueCsrfToken(req, res) } });
+  });
 
   // POST /api/v1/auth/login
   login = asyncHandler(async (req: AuthRequest, res: Response, _next: NextFunction) => {
@@ -65,7 +70,7 @@ class AuthController {
       maxAge: config.auth.refreshTokenCookieMaxAgeMs,
     });
 
-    const csrfToken = this.issueCsrfToken(res);
+    const csrfToken = this.issueCsrfToken(req, res);
 
     res.json({
       success: true,
@@ -111,7 +116,7 @@ class AuthController {
       maxAge: config.auth.refreshTokenCookieMaxAgeMs,
     });
 
-    const csrfToken = this.issueCsrfToken(res);
+    const csrfToken = this.issueCsrfToken(req, res);
 
     res.json({
       success: true,

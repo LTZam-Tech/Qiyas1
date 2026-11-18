@@ -1,6 +1,7 @@
 import { env } from '../config/env.js';
 import errorLogger from '../services/errorLogger.js';
 import { getAccessToken } from './authStorage.js';
+import { ensureCsrfToken, isMutating as isMutatingMethod } from './csrf.js';
 
 let authTokenGetter = null;
 let unauthorizedHandler = null;
@@ -91,12 +92,6 @@ const getSafeTimeoutMs = (value) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 10000;
 };
 
-const getCsrfToken = () => {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : null;
-};
-
 export async function request(path, options = {}, query = {}) {
   const { timeoutMs, headers: customHeaders = {}, ...restOptions } = options;
   const controller = new AbortController();
@@ -108,8 +103,7 @@ export async function request(path, options = {}, query = {}) {
   try {
     const token = authTokenGetter?.() || getAccessToken();
     const method = (restOptions.method || 'GET').toUpperCase();
-    const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
-    const csrfToken = isMutating ? getCsrfToken() : null;
+    const csrfToken = isMutatingMethod(method) ? await ensureCsrfToken() : null;
     const config = await applyRequestInterceptors({
       url: createUrl(path, query),
       options: {
