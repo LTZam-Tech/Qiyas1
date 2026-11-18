@@ -21,10 +21,10 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/checkout@v7 # TODO(CI-1): pin to full commit SHA
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/setup-node@v7 # TODO(CI-1): pin to full commit SHA
         with:
           node-version: 20
           cache: npm
@@ -38,10 +38,10 @@ jobs:
     name: Frontend (lint, build, test)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/checkout@v7 # TODO(CI-1): pin to full commit SHA
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/setup-node@v7 # TODO(CI-1): pin to full commit SHA
         with:
           node-version: 20
           cache: npm
@@ -61,10 +61,10 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/checkout@v7 # TODO(CI-1): pin to full commit SHA
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/setup-node@v7 # TODO(CI-1): pin to full commit SHA
         with:
           node-version: 20
           cache: npm
@@ -83,7 +83,7 @@ jobs:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/checkout@v7 # TODO(CI-1): pin to full commit SHA
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -123,7 +123,7 @@ jobs:
           exit $rc
       - name: Upload gitleaks report
         if: always()
-        uses: actions/upload-artifact@v4 # TODO(CI-1): pin to full commit SHA
+        uses: actions/upload-artifact@v7 # TODO(CI-1): pin to full commit SHA
         with:
           name: gitleaks-report
           path: gitleaks.sarif
@@ -139,14 +139,14 @@ jobs:
       actions: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/checkout@v7 # TODO(CI-1): pin to full commit SHA
         with:
           persist-credentials: false
-      - uses: github/codeql-action/init@v3 # TODO(CI-1): pin to full commit SHA
+      - uses: github/codeql-action/init@v4 # TODO(CI-1): pin to full commit SHA
         with:
           languages: javascript-typescript
           queries: security-extended
-      - uses: github/codeql-action/analyze@v3 # TODO(CI-1): pin to full commit SHA
+      - uses: github/codeql-action/analyze@v4 # TODO(CI-1): pin to full commit SHA
         with:
           category: "/language:javascript-typescript"
 
@@ -156,10 +156,10 @@ jobs:
     name: Dependency audit (npm audit --omit=dev)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/checkout@v7 # TODO(CI-1): pin to full commit SHA
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/setup-node@v7 # TODO(CI-1): pin to full commit SHA
         with:
           node-version: 20
       - name: Audit frontend (root)
@@ -178,10 +178,10 @@ jobs:
     name: SBOM (CycloneDX)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/checkout@v7 # TODO(CI-1): pin to full commit SHA
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/setup-node@v7 # TODO(CI-1): pin to full commit SHA
         with:
           node-version: 20
       - name: Frontend SBOM
@@ -194,7 +194,7 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm sbom --sbom-format=cyclonedx --omit=dev > "$RUNNER_TEMP/sbom/qiyas-api.cdx.json"
-      - uses: actions/upload-artifact@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/upload-artifact@v7 # TODO(CI-1): pin to full commit SHA
         with:
           name: sbom-cyclonedx
           path: ${{ runner.temp }}/sbom/
@@ -208,7 +208,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/checkout@v7 # TODO(CI-1): pin to full commit SHA
         with:
           persist-credentials: false
       - name: Build qiyas-api image
@@ -237,7 +237,7 @@ jobs:
           exit $rc
       - name: Upload scan reports
         if: always()
-        uses: actions/upload-artifact@v4 # TODO(CI-1): pin to full commit SHA
+        uses: actions/upload-artifact@v7 # TODO(CI-1): pin to full commit SHA
         with:
           name: trivy-reports
           path: ${{ runner.temp }}/trivy/
@@ -250,7 +250,7 @@ jobs:
     name: Tracked binaries and large files
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/checkout@v7 # TODO(CI-1): pin to full commit SHA
         with:
           persist-credentials: false
       - name: Check tracked files
