@@ -213,6 +213,10 @@ describe('/api/v2 evidence binding and task detail scopes (C3, C15)', () => {
     expect(up.status).toBe(201);
     s.hrVersion = up.body.data.versionId;
     s.hrArtifact = up.body.data.artifactId;
+    // a second HR file that stays unlinked, for the withdrawn-link case (the first is linked to the same requirement)
+    const up2 = await as('huda').upload(`/tasks/${s.hrTask}/evidence`).field('title', 'HR roster').attach('file', Buffer.from('%PDF DUMMY-HR-ROSTER'), 'hr-roster.pdf');
+    expect(up2.status).toBe(201);
+    s.hrVersion2 = up2.body.data.versionId;
     expect((await as('huda').post(`/tasks/${s.hrTask}/clarifications`, { question: 'Which salary scale applies?' })).status).toBe(201);
     expect((await as('huda').post(`/tasks/${s.hrTask}/more-time`, { requestedDueAt: at(2026, 11, 30, 20).toISOString(), justification: 'Waiting for payroll' })).status).toBe(201);
     const l = await as('huda').post(`/evidence-versions/${s.hrVersion}/links`, { taskId: s.hrTask, cycleRequirementId: w.requirementId });
@@ -240,11 +244,11 @@ describe('/api/v2 evidence binding and task detail scopes (C3, C15)', () => {
   });
 
   it('C3: a withdrawn link no longer grants download', async () => {
-    const l = await as('alaa').post(`/evidence-versions/${s.hrVersion}/links`, { taskId: s.itTask, cycleRequirementId: w.requirementId });
+    const l = await as('alaa').post(`/evidence-versions/${s.hrVersion2}/links`, { taskId: s.itTask, cycleRequirementId: w.requirementId });
     expect(l.status).toBe(201); // positive control: a consultant links any department's version
-    expect((await as('ali').get(`/evidence-versions/${s.hrVersion}/download`)).status).toBe(200);
+    expect((await as('ali').get(`/evidence-versions/${s.hrVersion2}/download`)).status).toBe(200);
     expect((await as('ali').post(`/evidence-links/${l.body.data.linkId}/withdraw`)).status).toBe(200);
-    expect((await as('ali').get(`/evidence-versions/${s.hrVersion}/download`)).status).toBe(403);
+    expect((await as('ali').get(`/evidence-versions/${s.hrVersion2}/download`)).status).toBe(403);
   });
 
   // ---- C15
