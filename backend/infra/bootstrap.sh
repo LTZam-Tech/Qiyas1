@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENV_FILE="${1:-../.env.example}"
-COMPOSE_FILE="$(cd "$(dirname "$0")" && pwd)/docker-compose.yml"
-MIGRATION_DIR="$(cd "$(dirname "$0")" && pwd)/../db/migrations"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# N3: default to the developer's own backend/.env (gitignored), resolved from this script's
+# folder, never to a committed example file with well-known placeholder credentials.
+ENV_FILE="${1:-$SCRIPT_DIR/../.env}"
+COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
+MIGRATION_DIR="$SCRIPT_DIR/../db/migrations"
 
 if [[ ! -f "$ENV_FILE" ]]; then
-  echo "Env file not found: $ENV_FILE" >&2
+  echo "Env file not found: $ENV_FILE (pass the path as the first argument)" >&2
   exit 1
 fi
+case "$ENV_FILE" in
+  *.example)
+    echo "Refusing to start with an example env file ($ENV_FILE). Copy it, set real values (including REDIS_PASSWORD) and pass the copy." >&2
+    exit 1 ;;
+esac
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "Docker CLI is not installed or not on PATH. Install Docker Desktop and retry." >&2
