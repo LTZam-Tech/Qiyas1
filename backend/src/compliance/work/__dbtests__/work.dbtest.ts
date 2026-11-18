@@ -3,7 +3,7 @@ import { ComplianceError } from '../../core/context';
 import { localDateKey } from '../../domain/calendar';
 import sample from '../../framework/samples/dga-v5.0-sample.json';
 import { importFramework, setApplicability, transitionCycle } from '../../framework/frameworkService';
-import { backendPid, connectTestDb, pause, resetSchema, track, waitUntilBlocked } from '../../db/__dbtests__/testDb';
+import { backendPid, connectTestDb, deactivateUser, pause, resetSchema, track, waitUntilBlocked } from '../../db/__dbtests__/testDb';
 import { buildContext } from '../../core/context';
 import { removeDepartmentMember } from '../../admin/admin';
 import { runScheduler } from '../../notifications/scheduler';
@@ -11,7 +11,7 @@ import { answerClarification, cancelClarification, closeClarification, followUpC
 import { escalateManually, runAutomaticEscalations } from '../escalations';
 import { approveExtension, askForMoreTime, declineAsk, forwardAsk, rejectExtension, requestExtension, withdrawExtension } from '../extensions';
 import { assignTask, cancelAssignment, createAssignment, getTask, publishAssignment, startTask, taskDeadline } from '../tasks';
-import { T0, World, at, buildWorld } from './world';
+import { T0, World, at, buildWorld, endOfLocalDay } from './world';
 
 let db: Client;
 let w: World;
@@ -429,6 +429,123 @@ describe('a closed cycle is read-only for work items (C5)', () => {
     await startTask(await w.ctx('ali'), taskId);
     await assignTask(await w.ctx('mona'), waiting, w.users.sara);
     expect((await getTask(db, taskId)).execution_status).toBe('in_progress');
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B6 (C12, D-C12-1/2)
+describe('an approved extension date is final at approval (C12, BR-EXT-03)', () => {
+  /**
+   * The audit reproduction: task due 22 Nov; Ali's clarification 15 Nov 09:00, answered by Ahmad
+   * 17 Nov 09:00 (2 working days paused, current due 24 Nov); Mona asks for 29 Nov end of day;
+   * Alaa approves that date on 17 Nov 11:00.
+   */
+  async function extendedAfterPause() {
+    const taskId = await w.publishedTask();
+    await assignTask(await w.ctx('mona'), taskId, w.users.ali);
+    const c = await requestClarification(await w.ctx('ali', at(2026, 11, 15, 9)), taskId, { question: 'Which edition?' });
+    await answerClarification(await w.ctx('ahmad', at(2026, 11, 17, 9)), c, 'The 2025 edition.');
+    const calendar = (await w.ctx('alaa')).calendar;
+    const before = await taskDeadline(await w.ctx('ali', at(2026, 11, 17, 10)), await getTask(db, taskId));
+    const requested = endOfLocalDay('2026-11-29', calendar);
+    const req = await requestExtension(await w.ctx('mona', at(2026, 11, 17, 10)), taskId, requested, 'Waiting for the board');
+    const approved = await approveExtension(await w.ctx('alaa', at(2026, 11, 17, 11)), req);
+    return { taskId, before, requested, approved, calendar };
+  }
+
+  it('BR-EXT-03: approved date is the deadline after an earlier clarification pause', async () => {
+    const { taskId, before, requested, approved } = await extendedAfterPause();
+    expect(dateKey(before.currentDueAt)).toBe('2026-11-24');
+    expect(approved.getTime()).toBe(requested.getTime());
+    const t = await getTask(db, taskId);
+    expect(new Date(t.approved_extension_at!).getTime()).toBe(at(2026, 11, 17, 11).getTime());
+    const d = await taskDeadline(await w.ctx('ali', at(2026, 11, 18)), t);
+    expect(d.currentDueAt.getTime()).toBe(approved.getTime()); // 1 Dec at 80ae855
+  });
+
+  it('D-C12-2: an approval without a recorded approval time (before migration 010) keeps the old rule', async () => {
+    const { taskId } = await extendedAfterPause();
+    await db.query('UPDATE qiyas.tasks SET approved_extension_at = NULL WHERE id = $1', [taskId]);
+    const d = await taskDeadline(await w.ctx('ali', at(2026, 11, 18)), await getTask(db, taskId));
+    expect(dateKey(d.currentDueAt)).toBe('2026-12-01');
+  });
+
+  it('a clarification after approval moves the approved date later', async () => {
+    const { taskId } = await extendedAfterPause();
+    const c = await requestClarification(await w.ctx('ali', at(2026, 11, 22, 9)), taskId, { question: 'And the annex?' });
+    await answerClarification(await w.ctx('alaa', at(2026, 11, 23, 9)), c, 'Annex B.');
+    const d = await taskDeadline(await w.ctx('ali', at(2026, 11, 23, 10)), await getTask(db, taskId));
+    expect(dateKey(d.currentDueAt)).toBe('2026-11-30');
+  });
+
+  it('automatic escalation fires at the approved date when pauses preceded approval', async () => {
+    const { taskId, approved, calendar } = await extendedAfterPause();
+    expect(await runAutomaticEscalations({ db, now: at(2026, 11, 29, 12), calendar })).toEqual([]);
+    const fired = await runAutomaticEscalations({ db, now: at(2026, 11, 30, 9), calendar }); // nothing at 80ae855 (due 1 Dec)
+    expect(fired).toHaveLength(1);
+    expect(fired[0]).toMatchObject({ taskId, kind: 'automatic', from: w.users.ali, to: w.users.mona });
+    const { rows } = await db.query('SELECT due_at_snapshot FROM qiyas.escalations WHERE id = $1', [fired[0].escalationId]);
+    expect(new Date(rows[0].due_at_snapshot).getTime()).toBe(approved.getTime());
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B6 (C17, D-C17-2)
+describe('deactivated accounts in work assignment and escalation (C17)', () => {
+  const blockedAudits = async (taskId: string) =>
+    (await db.query(`SELECT count(*)::int AS n FROM qiyas.audit_log WHERE action = 'task.escalation_blocked' AND entity_id = $1`, [taskId])).rows[0].n;
+  const received = async (user: keyof World['users'], event?: string) =>
+    (await db.query(`SELECT count(*)::int AS n FROM qiyas.notifications WHERE user_id = $1 AND ($2::text IS NULL OR event_code = $2)`,
+      [w.users[user], event ?? null])).rows[0].n;
+
+  async function twoOverdueTasks() {
+    const itTask = await w.publishedTask('it');
+    await assignTask(await w.ctx('mona'), itTask, w.users.ali);
+    const hrTask = await w.publishedTask('hr');
+    await assignTask(await w.ctx('khalid'), hrTask, w.users.huda);
+    return { itTask, hrTask }; // both due end of Sunday 22 Nov
+  }
+
+  it('automatic escalation never moves a task to a deactivated manager, and the tick does not abort', async () => {
+    const { itTask, hrTask } = await twoOverdueTasks();
+    await deactivateUser(db, w.users.mona, 'deleted');
+    const calendar = (await w.ctx('alaa')).calendar;
+    const report = await runScheduler({ db, now: at(2026, 11, 23, 9), calendar });
+    expect(report.escalations).toBe(1); // the HR task is still processed
+    const hr = await getTask(db, hrTask);
+    expect([hr.current_owner_id, hr.is_escalated]).toEqual([w.users.khalid, true]);
+    const itRow = await getTask(db, itTask);
+    expect([itRow.current_owner_id, itRow.is_escalated]).toEqual([w.users.ali, false]);
+    expect(await blockedAudits(itTask)).toBe(1);
+    await runScheduler({ db, now: at(2026, 11, 24, 9), calendar });
+    expect(await blockedAudits(itTask)).toBe(1); // once per deadline
+    for (const u of ['alaa', 'ahmad', 'tariq'] as const) expect(await received(u, 'task.escalation_blocked')).toBe(1);
+    expect(await received('mona')).toBe(0); // nothing at all reaches the deleted manager
+  });
+
+  it('a department without any manager no longer aborts the automatic escalation run', async () => {
+    const { itTask, hrTask } = await twoOverdueTasks();
+    await db.query(`UPDATE qiyas.department_members SET valid_to = valid_from WHERE user_id = $1 AND membership = 'manager'`, [w.users.mona]);
+    const calendar = (await w.ctx('alaa')).calendar;
+    const fired = await runAutomaticEscalations({ db, now: at(2026, 11, 23, 9), calendar }); // threw 'no manager' at 80ae855
+    expect(fired.map((e) => e.taskId)).toEqual([hrTask]);
+    expect(await blockedAudits(itTask)).toBe(1);
+  });
+
+  it('the manager cannot assign a task to a deactivated member', async () => {
+    const taskId = await w.publishedTask();
+    // deactivated before migration 011: membership and EMP grant still in place
+    await deactivateUser(db, w.users.sara, 'inactive', { cascade: false });
+    expect(await fails('validation', async () => assignTask(await w.ctx('mona'), taskId, w.users.sara))).toContain('not a member');
+    expect((await getTask(db, taskId)).current_owner_id).toBe(w.users.mona);
+    // positive control: an active member is assigned
+    await assignTask(await w.ctx('mona'), taskId, w.users.ali);
+    expect((await getTask(db, taskId)).current_owner_id).toBe(w.users.ali);
+  });
+
+  it('a task cannot be published to a deactivated manager', async () => {
+    await deactivateUser(db, w.users.mona, 'inactive', { cascade: false });
+    expect(await fails('conflict', () => w.publishedTask('it'))).toContain('no manager');
+    // positive control: the HR manager is active
+    expect((await getTask(db, await w.publishedTask('hr'))).current_owner_id).toBe(w.users.khalid);
   });
 });
 

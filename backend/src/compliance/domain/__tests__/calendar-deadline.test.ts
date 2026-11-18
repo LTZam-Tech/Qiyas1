@@ -134,6 +134,55 @@ describe('deadline engine', () => {
     expect(s.originalDueAt.getTime()).toBe(original.getTime());
   });
 
+  describe('C12: an approved extension date is final at approval (BR-EXT-03)', () => {
+    // due Sun 22 Nov; clarification Sun 15 09:00 → Tue 17 09:00 (2 working days); current due Tue 24 Nov
+    const due = endOfLocalDay('2026-11-22', cal);
+    const earlier = { reason: 'clarification' as const, from: local(2026, 11, 15, 9), to: local(2026, 11, 17, 9) };
+    const approvedAt = local(2026, 11, 18, 10);
+    const approved = endOfLocalDay('2026-11-29', cal);
+
+    it('approved extension equals the current deadline despite earlier pauses', () => {
+      const s = computeDeadline({ originalDueAt: due, approvedExtensionDueAt: approved, approvedAt, pauses: [earlier], now: local(2026, 11, 19), calendar: cal });
+      expect(s.currentDueAt.getTime()).toBe(approved.getTime());
+      expect(s.pausedBusinessDays).toBe(0);
+      expect(s.isPaused).toBe(false);
+    });
+
+    it('old rule kept when the approval time is unknown (approved before migration 010, D-C12-2)', () => {
+      const s = computeDeadline({ originalDueAt: due, approvedExtensionDueAt: approved, approvedAt: null, pauses: [earlier], now: local(2026, 11, 19), calendar: cal });
+      expect(localDateKey(s.currentDueAt, cal)).toBe('2026-12-01');
+    });
+
+    it('a pause after approval moves the approved date by its working days', () => {
+      const later = { reason: 'clarification' as const, from: local(2026, 11, 22, 9), to: local(2026, 11, 23, 9) };
+      const s = computeDeadline({ originalDueAt: due, approvedExtensionDueAt: approved, approvedAt, pauses: [earlier, later], now: local(2026, 11, 24), calendar: cal });
+      expect(s.pausedBusinessDays).toBe(1);
+      expect(localDateKey(s.currentDueAt, cal)).toBe('2026-11-30');
+    });
+
+    it('a pause spanning the approval counts only after approval', () => {
+      // awaiting review from Mon 16 09:00 to Thu 19 10:00; approved Wed 18 10:00 → one working day counts
+      const spanning = { reason: 'awaiting_review' as const, from: local(2026, 11, 16, 9), to: local(2026, 11, 19, 10) };
+      const s = computeDeadline({ originalDueAt: due, approvedExtensionDueAt: approved, approvedAt, pauses: [spanning], now: local(2026, 11, 22), calendar: cal });
+      expect(s.pausedBusinessMs).toBe(DAY);
+      expect(localDateKey(s.currentDueAt, cal)).toBe('2026-11-30');
+    });
+
+    it('an open pause that began before approval still pauses, and counts only from approval', () => {
+      const open = { reason: 'clarification' as const, from: local(2026, 11, 16, 9), to: null };
+      const s = computeDeadline({ originalDueAt: due, approvedExtensionDueAt: approved, approvedAt, pauses: [open], now: local(2026, 11, 19, 10), calendar: cal });
+      expect(s.isPaused).toBe(true);
+      expect(s.openPauseReasons).toEqual(['clarification']);
+      expect(s.pausedBusinessMs).toBe(DAY);
+    });
+
+    it('control: without approval all pauses still count', () => {
+      const s = computeDeadline({ originalDueAt: due, approvedAt, pauses: [earlier], now: local(2026, 11, 19), calendar: cal });
+      expect(s.pausedBusinessDays).toBe(2);
+      expect(localDateKey(s.currentDueAt, cal)).toBe('2026-11-24');
+    });
+  });
+
   it('is overdue after the current deadline when not paused', () => {
     const s = computeDeadline({ originalDueAt: original, pauses: [], now: local(2026, 11, 22, 8), calendar: cal });
     expect(s.isOverdue).toBe(true);

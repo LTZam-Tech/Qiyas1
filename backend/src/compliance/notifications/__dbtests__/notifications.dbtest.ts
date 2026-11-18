@@ -1,11 +1,12 @@
 import { Client } from 'pg';
-import { connectTestDb, resetSchema } from '../../db/__dbtests__/testDb';
+import { connectTestDb, createUser, deactivateUser, reactivateUser, resetSchema, roleId } from '../../db/__dbtests__/testDb';
 import { linkEvidence, submitEvidence, uploadEvidence } from '../../evidence/evidence';
 import { acceptEvidence, claimEvidence } from '../../evidence/review';
 import { DevScanner, EICAR_TEST_STRING, InMemoryStorage } from '../../evidence/storage';
 import { answerClarification, requestClarification } from '../../work/clarifications';
+import { approveExtension, requestExtension } from '../../work/extensions';
 import { assignTask } from '../../work/tasks';
-import { World, at, buildWorld } from '../../work/__dbtests__/world';
+import { World, at, buildWorld, endOfLocalDay } from '../../work/__dbtests__/world';
 import { dispatchAuditEvents } from '../dispatcher';
 import { Mailer, OutgoingEmail, sendPendingEmails } from '../mailer';
 import { runScheduler } from '../scheduler';
@@ -177,5 +178,113 @@ describe('email delivery', () => {
     for (const h of [10, 11, 12]) await sendPendingEmails(db, mailer, at(2026, 11, 15, h));
     const { rows } = await db.query(`SELECT email_status, email_attempts, show_in_app FROM qiyas.notifications WHERE user_id = $1 AND event_code = 'task.assigned'`, [w.users.ali]);
     expect(rows[0]).toEqual({ email_status: 'dead', email_attempts: 3, show_in_app: true });
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B6 (C17, D-C17-4)
+describe('deactivated or deleted accounts get no notifications or emails (C17)', () => {
+  class RecordingMailer implements Mailer {
+    sent: OutgoingEmail[] = [];
+    async send(e: OutgoingEmail) { this.sent.push(e); }
+  }
+  const grant = async (userId: string, role: string) =>
+    db.query('INSERT INTO qiyas.role_grants (role_id, user_id) VALUES ($1, $2)', [await roleId(db, role), userId]);
+  const emailStatus = async (user: keyof World['users'], event: string) =>
+    (await db.query('SELECT email_status, show_in_app FROM qiyas.notifications WHERE user_id = $1 AND event_code = $2', [w.users[user], event])).rows;
+
+  it('cycle.open does not notify a deactivated or soft-deleted submission officer', async () => {
+    // the audit reproduction: three officers, one deactivated (updateUser status=inactive) and one
+    // deleted (deleteUser) before migration 011, so their DSO grants are still live
+    const officers = { active: await createUser(db, 'DsoActive'), inactive: await createUser(db, 'DsoInactive'), deleted: await createUser(db, 'DsoDeleted') };
+    for (const id of Object.values(officers)) await grant(id, 'DSO');
+    await deactivateUser(db, officers.inactive, 'inactive', { cascade: false });
+    await deactivateUser(db, officers.deleted, 'deleted', { cascade: false });
+    await db.query(`INSERT INTO qiyas.audit_log (actor_id, action, entity_type, entity_id) VALUES ($1, 'cycle.open', 'cycle', $2)`, [w.users.tariq, w.cycleId]);
+    await tick(at(2026, 11, 16, 9));
+    const { rows } = await db.query(`SELECT user_id FROM qiyas.notifications WHERE event_code = 'cycle.opened' AND user_id = ANY($1::uuid[])`, [Object.values(officers)]);
+    expect(rows.map((r) => r.user_id)).toEqual([officers.active, officers.active]); // one per cycle.open record (the world's and this one)
+    const mailer = new RecordingMailer();
+    await sendPendingEmails(db, mailer, at(2026, 11, 16, 10), 500);
+    const to = mailer.sent.map((e) => e.to);
+    expect(to).toContain('dsoactive@test.local');
+    expect(to).not.toContain('dsoinactive@test.local');
+    expect(to).not.toContain('dsodeleted@test.local');
+  });
+
+  it('a deactivated consultant gets no clarification.requested', async () => {
+    const taskId = await aliTask();
+    await deactivateUser(db, w.users.ahmad, 'inactive', { cascade: false });
+    await requestClarification(await w.ctx('ali'), taskId, { question: 'Which template?' });
+    await dispatchAuditEvents(db, at(2026, 11, 15));
+    expect(await count('ahmad', 'clarification.requested')).toBe(0);
+    // positive control: the active consultant and the manager (D4)
+    expect(await count('alaa', 'clarification.requested')).toBe(1);
+    expect(await count('mona', 'clarification.requested')).toBe(1);
+  });
+
+  it('a pending email for a user deactivated after queueing is skipped, not sent', async () => {
+    await aliTask();
+    await dispatchAuditEvents(db, at(2026, 11, 15));
+    await db.query(`UPDATE qiyas.notifications SET email_status = 'skipped' WHERE user_id <> $1`, [w.users.ali]);
+    expect(await emailStatus('ali', 'task.assigned')).toEqual([{ email_status: 'pending', show_in_app: true }]);
+    await deactivateUser(db, w.users.ali);
+    const mailer = new RecordingMailer();
+    expect(await sendPendingEmails(db, mailer, at(2026, 11, 15, 10))).toMatchObject({ sent: 0 });
+    expect(mailer.sent).toEqual([]);
+    expect(await emailStatus('ali', 'task.assigned')).toEqual([{ email_status: 'skipped', show_in_app: true }]); // in-app kept (D-C17-4)
+    // skipped for good: reactivating the account does not flush it
+    await reactivateUser(db, w.users.ali);
+    expect(await sendPendingEmails(db, mailer, at(2026, 11, 15, 11))).toMatchObject({ sent: 0 });
+  });
+
+  it('an active user still gets the email', async () => {
+    await aliTask();
+    await dispatchAuditEvents(db, at(2026, 11, 15));
+    await db.query(`UPDATE qiyas.notifications SET email_status = 'skipped' WHERE user_id <> $1`, [w.users.ali]);
+    await deactivateUser(db, w.users.sara); // someone else's deactivation changes nothing for Ali
+    const mailer = new RecordingMailer();
+    expect(await sendPendingEmails(db, mailer, at(2026, 11, 15, 10))).toMatchObject({ sent: 1 });
+    expect(mailer.sent.map((e) => e.to)).toEqual(['ali@test.local']);
+    expect(await emailStatus('ali', 'task.assigned')).toEqual([{ email_status: 'sent', show_in_app: true }]);
+  });
+
+  it('a late review alerts only active consultants and oversight members', async () => {
+    await db.query(`INSERT INTO qiyas.group_members (group_id, user_id) SELECT id, u FROM qiyas.groups, unnest($1::uuid[]) AS u WHERE code = 'compliance_oversight'`,
+      [[w.users.tariq, w.users.yousef]]);
+    const taskId = await aliTask();
+    const ali = await w.ctx('ali');
+    const d = deps();
+    const up = await uploadEvidence(ali, d, { taskId, title: 'Strategy', file: { content: Buffer.from('%PDF plan'), filename: 'plan.pdf' } });
+    await linkEvidence(ali, up.versionId, { taskId, cycleRequirementId: w.requirementId });
+    await submitEvidence(ali, taskId); // review due Sun 22
+    // deactivated before migration 011: grant and group membership still in place
+    await deactivateUser(db, w.users.ahmad, 'inactive', { cascade: false });
+    await deactivateUser(db, w.users.yousef, 'deleted', { cascade: false });
+    await tick(at(2026, 11, 23, 9));
+    expect(await count('ahmad', 'evidence.review_overdue')).toBe(0);
+    expect(await count('yousef', 'evidence.review_overdue')).toBe(0);
+    // positive control
+    expect(await count('alaa', 'evidence.review_overdue')).toBe(1);
+    expect(await count('tariq', 'evidence.review_overdue')).toBe(1);
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B6 (C12)
+describe('an approved extension date is final at approval (C12)', () => {
+  it('the overdue notice is sent the day after the approved date', async () => {
+    // no automatic escalation in this test, so the overdue notice stays with Ali
+    await db.query(`UPDATE qiyas.sla_policies SET escalation_after_business_days = 20 WHERE timer_kind = 'implementation'`);
+    const taskId = await aliTask(); // due 22 Nov
+    const c = await requestClarification(await w.ctx('ali', at(2026, 11, 15, 9)), taskId, { question: 'Which edition?' });
+    await answerClarification(await w.ctx('ahmad', at(2026, 11, 17, 9)), c, 'The 2025 edition.'); // 2 working days paused
+    const approved = endOfLocalDay('2026-11-29', await calendar());
+    const req = await requestExtension(await w.ctx('mona', at(2026, 11, 17, 10)), taskId, approved, 'Waiting for the board');
+    await approveExtension(await w.ctx('alaa', at(2026, 11, 17, 11)), req);
+    await tick(at(2026, 11, 29, 12));
+    expect(await count('ali', 'task.overdue')).toBe(0);
+    await tick(at(2026, 11, 30, 9)); // nothing at 80ae855: the deadline was 1 Dec
+    expect(await count('ali', 'task.overdue')).toBe(1);
+    const { rows } = await db.query(`SELECT payload->>'date' AS date FROM qiyas.notifications WHERE user_id = $1 AND event_code = 'task.overdue'`, [w.users.ali]);
+    expect(rows[0].date).toBe('2026-11-29');
   });
 });
