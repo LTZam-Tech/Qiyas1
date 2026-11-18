@@ -1,7 +1,8 @@
 import { Client } from 'pg';
+import { toHttpError } from '../../api/http';
 import { ComplianceError } from '../../core/context';
 import { connectTestDb, resetSchema } from '../../db/__dbtests__/testDb';
-import { createCycle, transitionCycle } from '../../framework/frameworkService';
+import { createCycle, setApplicability, transitionCycle } from '../../framework/frameworkService';
 import { assignTask, getTask, taskDeadline } from '../../work/tasks';
 import { World, at, buildWorld } from '../../work/__dbtests__/world';
 import { canSee, versionResource } from '../access';
@@ -9,7 +10,7 @@ import { EvidenceDeps, linkEvidence, submitEvidence, uploadEvidence, withdrawEvi
 import { acceptEvidence, claimEvidence, rejectEvidence, releaseEvidence, revokeEvidence } from '../review';
 import { DevScanner, EICAR_TEST_STRING, InMemoryStorage } from '../storage';
 import { createPackage, markNotPosted, markPosted, reuseEvidence, searchBank } from '../submission';
-import { addSuggestions, useSuggestion } from '../suggestions';
+import { addSuggestions, carryOver, useSuggestion } from '../suggestions';
 
 let db: Client;
 let w: World;
@@ -284,6 +285,169 @@ describe('evidence banks (BR-BNK)', () => {
     const links = await db.query('SELECT count(*)::int AS n FROM qiyas.evidence_links WHERE artifact_version_id = $1', [reused.versionId]);
     expect(links.rows[0].n).toBe(0); // starts unlinked: must be linked and reviewed in 2027
     await fails('forbidden', async () => reuseEvidence(await w.ctx('ali'), versionId, next.cycleId));
+  });
+
+  // ---- security remediation B4 (C5): a closed cycle is read-only until an administrator reopens it
+  const close = async () => transitionCycle(await w.ctx('alaa'), w.cycleId, 'close', 'Submitted to DGA');
+  const reopen = async () => transitionCycle(await w.ctx('tariq'), w.cycleId, 'reopen', 'Late DGA correction');
+  const countOf = async (table: string) => (await db.query(`SELECT count(*)::int AS n FROM qiyas.${table}`)).rows[0].n;
+  /** Runs a statement in a savepoint; returns the database error, or undefined when it succeeds. */
+  async function dbError(text: string, params: unknown[] = []): Promise<{ code?: string } | undefined> {
+    await db.query('SAVEPOINT s');
+    try {
+      await db.query(text, params);
+      await db.query('RELEASE SAVEPOINT s');
+      return undefined;
+    } catch (e) {
+      await db.query('ROLLBACK TO SAVEPOINT s');
+      return e as { code?: string };
+    }
+  }
+  const acceptedLink = async (text: string) => {
+    const ahmad = await w.ctx('ahmad');
+    const { linkId } = await aliSubmits(await aliTask(), text);
+    await claimEvidence(ahmad, linkId);
+    await acceptEvidence(ahmad, linkId);
+    return linkId;
+  };
+
+  it('a closed cycle refuses new links and submissions', async () => {
+    const taskId = await aliTask();
+    const ali = await w.ctx('ali');
+    const a = await uploadEvidence(ali, deps, { taskId, title: 'Strategy', file: pdf('strategy C5') });
+    const draft = await linkEvidence(ali, a.versionId, { taskId, cycleRequirementId: w.requirementId, proofItemId });
+    const b = await uploadEvidence(ali, deps, { taskId, title: 'Annex', file: pdf('annex C5') });
+    await addSuggestions(await w.ctx('alaa'), b.versionId, [w.requirementId], 'folder_import', { note: 'test' });
+    const sg = (await db.query(`SELECT id FROM qiyas.link_suggestions WHERE artifact_version_id = $1 AND status = 'open'`, [b.versionId])).rows[0];
+    const before = await readiness();
+    await close();
+
+    await fails('conflict', () => linkEvidence(ali, b.versionId, { taskId, cycleRequirementId: w.requirementId }));
+    await fails('conflict', async () => linkEvidence(await w.ctx('alaa'), b.versionId, { taskId, cycleRequirementId: w.requirementId })); // a consultant too
+    await fails('conflict', () => useSuggestion(ali, sg.id, taskId));
+    await fails('conflict', () => submitEvidence(ali, taskId));
+    await fails('conflict', () => withdrawEvidence(ali, draft));
+    expect(await linksOf(b.versionId)).toBe(0);
+    expect((await link(draft)).review_status).toBe('draft');
+    expect(await readiness()).toEqual(before);
+  });
+
+  it('a closed cycle refuses claim, accept, reject and revoke, and readiness is unchanged', async () => {
+    const ahmad = await w.ctx('ahmad');
+    const accepted = await acceptedLink('plan A');
+    const waiting = (await aliSubmits(await aliTask(), 'plan B')).linkId;
+    const claimed = (await aliSubmits(await aliTask(), 'plan C')).linkId;
+    await claimEvidence(ahmad, claimed);
+    const before = await readiness();
+    const decisions = await countOf('review_decisions');
+    await close();
+
+    await fails('conflict', () => claimEvidence(ahmad, waiting));
+    await fails('conflict', () => acceptEvidence(ahmad, claimed, 'ok'));
+    await fails('conflict', () => rejectEvidence(ahmad, claimed, 'Not the signed version'));
+    await fails('conflict', () => releaseEvidence(ahmad, claimed));
+    await fails('conflict', () => revokeEvidence(ahmad, accepted, 'Changed my mind'));
+    // D-C5-2 (b): links in flight are frozen as they were at closing
+    expect([(await link(accepted)).review_status, (await link(waiting)).review_status, (await link(claimed)).review_status])
+      .toEqual(['accepted', 'submitted', 'under_review']);
+    expect(await readiness()).toEqual(before);
+    expect(await countOf('review_decisions')).toBe(decisions);
+  });
+
+  it('a closed cycle refuses posting, unposting and packages', async () => {
+    const yousef = await w.ctx('yousef');
+    const notPosted = await acceptedLink('plan A');
+    const posted = await acceptedLink('plan B');
+    await markPosted(yousef, [posted], { dgaReference: 'DGA-1' });
+    const before = await readiness();
+    const events = await countOf('submission_events');
+    await close();
+
+    await fails('conflict', () => markPosted(yousef, [notPosted], { dgaReference: 'DGA-2' }));
+    await fails('conflict', () => markNotPosted(yousef, posted, 'Posted by mistake'));
+    await fails('conflict', () => createPackage(yousef, w.cycleId, 'Standard 5.1.1', [notPosted]));
+    expect([(await link(notPosted)).submission_status, (await link(posted)).submission_status]).toEqual(['not_posted', 'posted']);
+    expect(await countOf('submission_events')).toBe(events);
+    expect(await countOf('submission_packages')).toBe(0);
+    expect(await readiness()).toEqual(before);
+  });
+
+  it('the database refuses a direct evidence_links insert or update on a closed cycle (SQLSTATE 55000)', async () => {
+    const taskId = await aliTask();
+    const ali = await w.ctx('ali');
+    const a = await uploadEvidence(ali, deps, { taskId, title: 'Strategy', file: pdf('strategy C5') });
+    const b = await uploadEvidence(ali, deps, { taskId, title: 'Annex', file: pdf('annex C5') });
+    const draft = await linkEvidence(ali, a.versionId, { taskId, cycleRequirementId: w.requirementId, proofItemId });
+    const pkg = (await db.query(`INSERT INTO qiyas.submission_packages (cycle_id, prepared_by, title) VALUES ($1, $2, 'open package') RETURNING id`,
+      [w.cycleId, w.users.yousef])).rows[0].id; // allowed while the cycle is active
+    await close();
+
+    const insertLink = await dbError(`INSERT INTO qiyas.evidence_links (artifact_version_id, cycle_requirement_id, task_id, created_by) VALUES ($1, $2, $3, $4)`,
+      [b.versionId, w.requirementId, taskId, w.users.ali]);
+    expect(insertLink?.code).toBe('55000');
+    expect(toHttpError(insertLink).status).toBe(409);
+    expect((await dbError(`UPDATE qiyas.evidence_links SET review_status = 'accepted' WHERE id = $1`, [draft]))?.code).toBe('55000');
+    expect((await dbError(`UPDATE qiyas.cycle_requirements SET readiness = 'ready', readiness_pct = 100 WHERE id = $1`, [w.requirementId]))?.code).toBe('55000');
+    expect((await dbError(`INSERT INTO qiyas.review_decisions (evidence_link_id, reviewer_id, decision) VALUES ($1, $2, 'accept')`, [draft, w.users.ahmad]))?.code).toBe('55000');
+    expect((await dbError(`INSERT INTO qiyas.submission_events (evidence_link_id, from_status, to_status, actor_id) VALUES ($1, 'not_posted', 'posted', $2)`,
+      [draft, w.users.yousef]))?.code).toBe('55000');
+    expect((await dbError(`INSERT INTO qiyas.submission_packages (cycle_id, prepared_by, title) VALUES ($1, $2, 'late')`, [w.cycleId, w.users.yousef]))?.code).toBe('55000');
+    expect((await dbError(`INSERT INTO qiyas.submission_package_items (package_id, evidence_link_id, sort_order) VALUES ($1, $2, 1)`, [pkg, draft]))?.code).toBe('55000');
+    expect((await link(draft)).review_status).toBe('draft');
+
+    // positive control: the same writes pass once an administrator reopens the cycle
+    await reopen();
+    expect(await dbError(`UPDATE qiyas.cycle_requirements SET readiness = readiness WHERE id = $1`, [w.requirementId])).toBeUndefined();
+    expect(await dbError(`UPDATE qiyas.evidence_links SET proof_item_id = proof_item_id WHERE id = $1`, [draft])).toBeUndefined();
+    // an archived cycle stays read-only for good
+    await close();
+    await transitionCycle(await w.ctx('tariq'), w.cycleId, 'archive');
+    expect((await dbError(`UPDATE qiyas.cycle_requirements SET readiness = readiness WHERE id = $1`, [w.requirementId]))?.code).toBe('55000');
+    expect(await fails('conflict', () => linkEvidence(ali, b.versionId, { taskId, cycleRequirementId: w.requirementId }))).toContain('archived');
+  });
+
+  it('closing, reopening and archiving work with links in flight; carry-over from the closed cycle and readiness of an open cycle still work', async () => {
+    await acceptedLink('plan A');
+    const inFlight = (await aliSubmits(await aliTask(), 'plan B')).linkId;
+    await close();
+    await reopen();
+    await close();
+    expect((await link(inFlight)).review_status).toBe('submitted');
+
+    const alaa = await w.ctx('alaa');
+    const next = await createCycle(alaa, { frameworkVersionId: w.frameworkVersionId, year: 2027, name: 'Qiyas 2027', startsOn: '2027-01-01', endsOn: '2027-12-31' });
+    expect(await carryOver(alaa, next.cycleId, w.cycleId)).toMatchObject({ carried: 1, suggestions: 1 });
+    const nextReq = (await db.query('SELECT id FROM qiyas.cycle_requirements WHERE cycle_id = $1', [next.cycleId])).rows[0].id;
+    await setApplicability(alaa, nextReq, false, 'Exempted by decree 123'); // readiness recompute in an open cycle
+    expect((await db.query('SELECT readiness FROM qiyas.cycle_requirements WHERE id = $1', [nextReq])).rows[0].readiness).toBe('not_applicable');
+    await fails('conflict', () => setApplicability(alaa, w.requirementId, false, 'Exempted by decree 123')); // the closed cycle stays frozen
+
+    await transitionCycle(await w.ctx('tariq'), w.cycleId, 'archive');
+    expect((await db.query('SELECT status FROM qiyas.measurement_cycles WHERE id = $1', [w.cycleId])).rows[0].status).toBe('archived');
+  });
+
+  it('after an administrator reopens with a reason, linking and review work again', async () => {
+    const taskId = await aliTask();
+    const { linkId } = await aliSubmits(taskId, 'plan A');
+    const ali = await w.ctx('ali');
+    const ahmad = await w.ctx('ahmad');
+    const annex = await uploadEvidence(ali, deps, { taskId, title: 'Annex', file: pdf('annex C5') });
+    await close();
+    await fails('conflict', () => linkEvidence(ali, annex.versionId, { taskId, cycleRequirementId: w.requirementId }));
+    await fails('conflict', () => claimEvidence(ahmad, linkId));
+    await fails('forbidden', async () => transitionCycle(await w.ctx('alaa'), w.cycleId, 'reopen', 'Late DGA correction'));
+    await fails('validation', async () => transitionCycle(await w.ctx('tariq'), w.cycleId, 'reopen'));
+
+    await reopen();
+    const annexLink = await linkEvidence(ali, annex.versionId, { taskId, cycleRequirementId: w.requirementId });
+    expect((await link(annexLink)).review_status).toBe('draft');
+    const before = await readiness();
+    await claimEvidence(ahmad, linkId);
+    await acceptEvidence(ahmad, linkId);
+    expect((await link(linkId)).review_status).toBe('accepted');
+    expect(await readiness()).not.toEqual(before);
+    await markPosted(await w.ctx('yousef'), [linkId], { dgaReference: 'DGA-1' });
+    expect((await link(linkId)).submission_status).toBe('posted');
   });
 });
 

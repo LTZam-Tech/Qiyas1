@@ -4,6 +4,7 @@ import { localDateKey } from '../../domain/calendar';
 import sample from '../../framework/samples/dga-v5.0-sample.json';
 import { importFramework, setApplicability, transitionCycle } from '../../framework/frameworkService';
 import { connectTestDb, resetSchema } from '../../db/__dbtests__/testDb';
+import { runScheduler } from '../../notifications/scheduler';
 import { answerClarification, cancelClarification, followUpClarification, requestClarification } from '../clarifications';
 import { escalateManually, runAutomaticEscalations } from '../escalations';
 import { approveExtension, askForMoreTime, declineAsk, forwardAsk, rejectExtension, requestExtension } from '../extensions';
@@ -280,4 +281,102 @@ it('every change leaves an audit record', async () => {
   const { rows } = await db.query(`SELECT action FROM qiyas.audit_log WHERE entity_id = $1 ORDER BY id`, [taskId]);
   expect(rows.map((r) => r.action)).toEqual(['task.publish', 'task.assign', 'task.assign']);
   expect(T0.toISOString()).toBe('2026-11-15T06:00:00.000Z');
+});
+
+// ------------------------------------------------------------------ security remediation B4 (C5, D-C5-3)
+describe('a closed cycle is read-only for work items (C5)', () => {
+  const close = async (now?: Date) => transitionCycle(await w.ctx('alaa', now), w.cycleId, 'close', 'Submitted to DGA');
+  const reopen = async (now?: Date) => transitionCycle(await w.ctx('tariq', now), w.cycleId, 'reopen', 'Late DGA correction');
+  const notifications = async (user: keyof World['users'], event: string) =>
+    (await db.query('SELECT count(*)::int AS n FROM qiyas.notifications WHERE user_id = $1 AND event_code = $2', [w.users[user], event])).rows[0].n;
+  async function aliTask() {
+    const taskId = await w.publishedTask();
+    await assignTask(await w.ctx('mona'), taskId, w.users.ali);
+    return taskId;
+  }
+
+  it('no automatic escalation or reminders for tasks in a closed cycle', async () => {
+    const taskId = await aliTask(); // due end of Sunday 22 Nov
+    await requestClarification(await w.ctx('ali'), (await aliTask()), { question: 'Which template?' }); // an open clarification on a second task
+    await close();
+    const calendar = (await w.ctx('alaa')).calendar;
+    const tick = (now: Date) => runScheduler({ db, now, calendar });
+
+    await tick(at(2026, 11, 16, 9)); // the 5-day reminder would be due
+    expect(await notifications('ali', 'task.deadline_reminder')).toBe(0);
+    const late = at(2026, 11, 23, 9);
+    expect(await runAutomaticEscalations({ db, now: late, calendar })).toEqual([]);
+    const report = await tick(late);
+    expect(report).toMatchObject({ escalations: 0, reminders: 0, overdue: 0 });
+    await tick(at(2026, 12, 10, 9)); // the clarification answer is long overdue
+    expect(await notifications('alaa', 'task.overdue')).toBe(0);
+    expect(await notifications('alaa', 'clarification.overdue')).toBe(0);
+    const t = await getTask(db, taskId);
+    expect([t.current_owner_id, t.is_escalated]).toEqual([w.users.ali, false]);
+
+    // positive control: once an administrator reopens the cycle, the overdue task escalates
+    await reopen(late);
+    const after = await runAutomaticEscalations({ db, now: late, calendar });
+    expect(after).toHaveLength(1);
+    expect(after[0]).toMatchObject({ kind: 'automatic', from: w.users.ali, to: w.users.mona });
+  });
+
+  it('publishAssignment refuses a closed cycle', async () => {
+    const alaa = await w.ctx('alaa');
+    const draft = await createAssignment(alaa, {
+      cycleId: w.cycleId, departmentId: w.depts.it, cycleRequirementIds: [w.requirementId], title: 'Late plan',
+      implementationDueAt: at(2026, 11, 25), managerDueAt: at(2026, 11, 17),
+    });
+    await close();
+    await fails('conflict', () => publishAssignment(alaa, draft));
+    await fails('conflict', () => createAssignment(alaa, {
+      cycleId: w.cycleId, departmentId: w.depts.it, cycleRequirementIds: [w.requirementId], title: 'Another',
+      implementationDueAt: at(2026, 11, 25), managerDueAt: at(2026, 11, 17),
+    }));
+    expect((await db.query('SELECT count(*)::int AS n FROM qiyas.tasks WHERE assignment_id = $1', [draft])).rows[0].n).toBe(0);
+
+    // positive control
+    await reopen();
+    const taskId = await publishAssignment(alaa, draft);
+    expect((await getTask(db, taskId)).execution_status).toBe('awaiting_assignment');
+  });
+
+  it('assignment, start, clarification, extension and manual escalation are refused on a closed cycle (D-C5-3)', async () => {
+    const waiting = await w.publishedTask(); // awaiting assignment
+    const taskId = await aliTask();
+    const clarificationId = await requestClarification(await w.ctx('ali'), taskId, { question: 'Which template?' });
+    const askId = await askForMoreTime(await w.ctx('ali'), taskId, at(2026, 11, 26), 'Waiting for the signed copy');
+    const formalId = await requestExtension(await w.ctx('khalid'), await (async () => {
+      const hr = await w.publishedTask('hr');
+      await assignTask(await w.ctx('khalid'), hr, w.users.huda);
+      return hr;
+    })(), at(2026, 11, 26), 'Board meets on the 25th');
+    const assignmentId = (await getTask(db, taskId)).assignment_id;
+    await close();
+
+    await fails('conflict', async () => assignTask(await w.ctx('mona'), waiting, w.users.sara));
+    await fails('conflict', async () => startTask(await w.ctx('ali'), taskId));
+    await fails('conflict', async () => requestClarification(await w.ctx('ali'), taskId, { question: 'Another question?' }));
+    await fails('conflict', async () => answerClarification(await w.ctx('ahmad'), clarificationId, 'Use template B'));
+    await fails('conflict', async () => cancelClarification(await w.ctx('ali'), clarificationId));
+    await fails('conflict', async () => forwardAsk(await w.ctx('mona'), askId));
+    await fails('conflict', async () => declineAsk(await w.ctx('mona'), askId, 'The plan already exists'));
+    await fails('conflict', async () => requestExtension(await w.ctx('mona'), taskId, at(2026, 11, 30), 'More time'));
+    await fails('conflict', async () => approveExtension(await w.ctx('ahmad'), formalId));
+    await fails('conflict', async () => rejectExtension(await w.ctx('ahmad'), formalId, 'Not a valid reason'));
+    await fails('conflict', async () => escalateManually(await w.ctx('alaa'), taskId, 'No progress after two reminders'));
+    await fails('conflict', async () => cancelAssignment(await w.ctx('alaa'), assignmentId, 'Moved to another department'));
+    await fails('conflict', async () => setApplicability(await w.ctx('alaa'), w.requirementId, false, 'Exempted by decree 123'));
+    const t = await getTask(db, taskId);
+    expect([t.execution_status, t.current_owner_id]).toEqual(['assigned', w.users.ali]);
+
+    // positive control: after the administrator's reopen the same actions work
+    await reopen();
+    await answerClarification(await w.ctx('ahmad'), clarificationId, 'Use template B');
+    await forwardAsk(await w.ctx('mona'), askId);
+    await approveExtension(await w.ctx('ahmad'), formalId);
+    await startTask(await w.ctx('ali'), taskId);
+    await assignTask(await w.ctx('mona'), waiting, w.users.sara);
+    expect((await getTask(db, taskId)).execution_status).toBe('in_progress');
+  });
 });

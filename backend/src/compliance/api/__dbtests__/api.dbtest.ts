@@ -294,3 +294,47 @@ describe('/api/v2 evidence binding and task detail scopes (C3, C15)', () => {
     expect((await as('yousef').get(`/evidence-versions/${s.hrVersion}/download`)).status).toBe(200);
   });
 });
+
+// ------------------------------------------------------------------ security remediation B4
+// Runs last: it closes the shared cycle and reopens it at the end.
+describe('/api/v2 closed cycle is read-only (C5)', () => {
+  const s: Record<string, string> = {};
+  const dueDates = { implementationDueAt: at(2026, 11, 22, 20).toISOString(), managerDueAt: at(2026, 11, 17, 20).toISOString() };
+
+  it('setup: Ali owns an assigned IT task; the posted link of the journey is in the cycle', async () => {
+    const created = await as('alaa').post('/assignments', { cycleId: w.cycleId, departmentId: w.depts.it, cycleRequirementIds: [w.requirementId], title: 'IT plan C5', ...dueDates });
+    s.task = (await as('alaa').post(`/assignments/${created.body.data.assignmentId}/publish`)).body.data.taskId;
+    expect((await as('mona').post(`/tasks/${s.task}/assign`, { assigneeId: w.users.ali })).status).toBe(200);
+    const d = (await as('ali').get(`/tasks/${s.task}`)).body.data;
+    expect(d.can).toMatchObject({ cycleOpen: true, workEvidence: true, start: true }); // positive control before closing
+    expect((await as('alaa').post(`/cycles/${w.cycleId}/transition`, { event: 'close', reason: 'Submitted to DGA' })).status).toBe(200);
+  });
+
+  it('C5: unposting on a closed cycle returns 409 and the link stays posted', async () => {
+    const res = await as('yousef').post(`/evidence-links/${state.link2}/unpost`, { reason: 'Wrong portal entry' });
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('conflict');
+    const queue = (await as('yousef').get(`/cycles/${w.cycleId}/submission-queue?status=posted`)).body.data;
+    expect(queue.map((l: any) => [l.id, l.submission_status, l.cycleOpen])).toEqual([[state.link2, 'posted', false]]);
+  });
+
+  it('C5: GET /tasks/:id shows can.workEvidence = false (and no other action) on a closed cycle', async () => {
+    const d = (await as('ali').get(`/tasks/${s.task}`)).body.data;
+    expect(d.can).toEqual({
+      cycleOpen: false, assign: false, start: false, workEvidence: false, askClarification: false,
+      askForMoreTime: false, requestExtension: false, escalate: false, cancel: false,
+    });
+    expect((await as('ali').post(`/tasks/${s.task}/start`)).status).toBe(409);
+    const up = await as('ali').upload(`/tasks/${s.task}/evidence`).field('title', 'late').attach('file', Buffer.from('%PDF late C5'), 'late.pdf');
+    expect(up.status).toBe(409);
+  });
+
+  it('C5 positive control: after the administrator reopens with a reason, unposting and work are allowed again', async () => {
+    expect((await as('alaa').post(`/cycles/${w.cycleId}/transition`, { event: 'reopen', reason: 'Late DGA correction' })).status).toBe(403);
+    expect((await as('tariq').post(`/cycles/${w.cycleId}/transition`, { event: 'reopen' })).status).toBe(422);
+    expect((await as('tariq').post(`/cycles/${w.cycleId}/transition`, { event: 'reopen', reason: 'Late DGA correction' })).status).toBe(200);
+    expect((await as('ali').get(`/tasks/${s.task}`)).body.data.can).toMatchObject({ cycleOpen: true, workEvidence: true, start: true });
+    expect((await as('yousef').post(`/evidence-links/${state.link2}/unpost`, { reason: 'Wrong portal entry' })).status).toBe(200);
+    expect((await as('ali').post(`/tasks/${s.task}/start`)).status).toBe(200);
+  });
+});
