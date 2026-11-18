@@ -1,0 +1,3 @@
+# CI-7 exceptions for the image scan (trivy). One CVE or GHSA ID per line, each preceded by a
+# comment with the image, the reason it is not exploitable here, the reviewer and a review date.
+# Add entries only in a reviewed PR.

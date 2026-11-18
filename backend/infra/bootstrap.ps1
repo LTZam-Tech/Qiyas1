@@ -1,5 +1,7 @@
 param(
-  [string]$EnvFile = "..\\.env.example"
+  # N3: default to the developer's own backend/.env (gitignored), resolved from this script's
+  # folder, never to a committed example file with well-known placeholder credentials.
+  [string]$EnvFile = (Join-Path $PSScriptRoot "..\.env")
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,8 +14,13 @@ if (-not $dockerCmd) {
 }
 
 if (-not (Test-Path $EnvFile)) {
-  throw "Env file not found: $EnvFile"
+  throw "Env file not found: $EnvFile (pass -EnvFile <path>)"
 }
+if ($EnvFile -like "*.example") {
+  throw "Refusing to start with an example env file ($EnvFile). Copy it, set real values (including REDIS_PASSWORD) and pass the copy."
+}
+# Absolute path, because the script changes folder below.
+$EnvFile = (Resolve-Path $EnvFile).Path
 
 Push-Location $PSScriptRoot
 try {

@@ -1,5 +1,11 @@
 version: '3.8'
 
+# Repository-root stack (legacy; the supported deployment is deploy/). Run with
+#   docker compose --env-file .env.production up -d
+# N3/NC5: its own project name, so it never shares containers or volumes with the deploy/
+# stack (name: qiyas). Redis requires a password; every port is bound to 127.0.0.1.
+name: qiyas-root
+
 services:
   db:
     image: postgres:15-alpine
@@ -24,14 +30,16 @@ services:
   redis:
     image: redis:7-alpine
     container_name: qiyas_redis
-    command: ["redis-server", "--appendonly", "yes"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env.production}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
     ports:
       - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -73,6 +81,7 @@ services:
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env.production}
       - REDIS_DB=0
       - MINIO_ENDPOINT=minio
       - MINIO_PORT=9000
@@ -102,7 +111,7 @@ services:
         VITE_API_BASE_URL: /api/v1
     container_name: qiyas_frontend
     ports:
-      - "80:80"
+      - "127.0.0.1:80:80"
     depends_on:
       - backend
     restart: unless-stopped

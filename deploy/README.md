@@ -24,7 +24,15 @@ updater can reach its mirror.
 
 ## Install
 
-1. Copy the release folder to the server. Check it:  `sha256sum -c SHA256SUMS`
+1. Copy the release folder to the server. Verify it **before** loading anything:
+   - Get the IltizamTech release public key (`qiyas-release.pub`) and the published SHA-256 of
+     `SHA256SUMS` through a separate channel (not from the release folder).
+   - Check the signature of the manifest:
+     `minisign -V -p qiyas-release.pub -m SHA256SUMS` (signature `SHA256SUMS.minisig`), or for a
+     cosign-signed release `cosign verify-blob --key qiyas-release.pub --signature SHA256SUMS.sig SHA256SUMS`.
+     Stop if it fails, or if the release has no signature file.
+   - Compare `sha256sum SHA256SUMS` with the published digest.
+   - Only then check the files:  `sha256sum -c SHA256SUMS`
 2. Load the images (offline):  `docker load -i images.tar`
 3. Settings:  `cp .env.example .env`, then fill in every empty secret, each with its own `openssl rand -base64 48`. Set `CORS_ORIGIN` to the site address.
    The API refuses to start on a placeholder, short or repetitive secret: `JWT_ACCESS_SECRET` needs at least 32 characters, `POSTGRES_PASSWORD`, `REDIS_PASSWORD` (required) and `MINIO_ROOT_PASSWORD` at least 16, each with at least 10 distinct characters; the JWT secret must differ from every other secret, and `MINIO_ROOT_USER` must not be `minioadmin`.
@@ -68,7 +76,9 @@ Other sites are untouched: only requests for the Qiyas domain are forwarded.
 ## Upgrade
 
 1. Back up (below).
-2. `docker load -i images.tar` from the new release, set `QIYAS_VERSION` in `.env`.
+2. Verify the new release exactly as in Install step 1 (signature of `SHA256SUMS`, its published
+   digest, then `sha256sum -c SHA256SUMS`). Then `docker load -i images.tar` from the new
+   release, set `QIYAS_VERSION` in `.env`.
    If an existing `.env` still holds a placeholder or short secret, the new API refuses to start. Rotate it first: change `JWT_ACCESS_SECRET`, `REDIS_PASSWORD` and the MinIO values in `.env` (picked up on restart; signed-in users sign in again within 15 minutes). For `POSTGRES_PASSWORD`, run `ALTER ROLE qiyas PASSWORD '…'` inside the database first, then change `.env`.
 3. `docker compose up -d`. Database migrations run at start-up; each runs once and is checksum-verified.
    New DGA framework versions in the release are imported; existing ones are never changed.
@@ -100,3 +110,10 @@ Test a restore every quarter.
 `./make-release.sh 1.0.0` builds the images and writes `release/qiyas-1.0.0/` with `images.tar`,
 the compose file without build steps, `.env.example`, this guide and `SHA256SUMS`. No client data
 is ever part of a release.
+
+The manifest is signed: with minisign (`QIYAS_MINISIGN_KEY=<secret key>`, writes
+`SHA256SUMS.minisig`) or cosign (`QIYAS_COSIGN_KEY=<key>`, writes `SHA256SUMS.sig`). Without a
+signing tool and key the script stops (`QIYAS_ALLOW_UNSIGNED=1` is for internal test builds only).
+If `syft` is installed, CycloneDX SBOMs of the two Qiyas images are added and covered by the
+manifest. Publish the public key and the printed digest of `SHA256SUMS` out of band; the secret
+key never leaves the release machine.

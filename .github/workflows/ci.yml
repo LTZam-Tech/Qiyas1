@@ -4,9 +4,14 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Manual run: also produces the full-history secret-scan report (CI-3).
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+# CI-1: actions are referenced by tag until their full commit SHAs are pinned. Dependabot
+# (.github/dependabot.yml, github-actions ecosystem) proposes the updates.
 
 jobs:
   backend:
@@ -16,8 +21,10 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4 # TODO(CI-1): pin to full commit SHA
         with:
           node-version: 20
           cache: npm
@@ -31,8 +38,10 @@ jobs:
     name: Frontend (lint, build, test)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4 # TODO(CI-1): pin to full commit SHA
         with:
           node-version: 20
           cache: npm
@@ -40,3 +49,229 @@ jobs:
       - run: npm run lint
       - run: npm run build
       - run: npm run test:run
+
+  # CI-10: backend unit tests and database tests. The DB tests start a throw-away PostgreSQL
+  # through embedded-postgres (backend/test/db-global-setup.mjs): a dev dependency with
+  # linux-x64 binaries, run as the unprivileged runner user, data in the OS temp folder.
+  backend-tests:
+    name: Backend tests (unit, DB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Database tests (embedded PostgreSQL)
+        run: npm run test:db
+
+  # CI-3: secret scanning. Pull requests and pushes scan only the new commits and block on a
+  # finding. A manual run scans the full history and uploads the report without blocking,
+  # because the history still holds files removed from the tree (D-N2-1: no history purge).
+  # Reviewed false positives go in .gitleaksignore (one finding fingerprint per line).
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Run gitleaks
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          set -uo pipefail
+          case "$EVENT" in
+            pull_request) RANGE="$PR_BASE..$PR_HEAD" ;;
+            push)
+              if [ -z "$PUSH_BEFORE" ] || [ "$PUSH_BEFORE" = "0000000000000000000000000000000000000000" ]; then
+                RANGE="-n 1 $PUSH_AFTER"
+              else
+                RANGE="$PUSH_BEFORE..$PUSH_AFTER"
+              fi ;;
+            *) RANGE="" ;;
+          esac
+          echo "gitleaks range: ${RANGE:-full history}"
+          args=()
+          if [ -n "$RANGE" ]; then args+=("--log-opts=$RANGE"); fi
+          # TODO(CI-15): pin the gitleaks image by digest.
+          docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/repo" -w /repo \
+            ghcr.io/gitleaks/gitleaks:v8.18.4 \
+            detect --source /repo --redact --verbose \
+            --report-format sarif --report-path /repo/gitleaks.sarif \
+            "${args[@]}"
+          rc=$?
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "Full-history scan exit code $rc (report only)."
+            exit 0
+          fi
+          exit $rc
+      - name: Upload gitleaks report
+        if: always()
+        uses: actions/upload-artifact@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          name: gitleaks-report
+          path: gitleaks.sarif
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # CI-4: static analysis.
+  sast:
+    name: SAST (CodeQL)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@v3 # TODO(CI-1): pin to full commit SHA
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - uses: github/codeql-action/analyze@v3 # TODO(CI-1): pin to full commit SHA
+        with:
+          category: "/language:javascript-typescript"
+
+  # CI-5: production dependency audit. Fails on high or critical advisories that have no
+  # current entry in .github/audit-exceptions.json (see .github/scripts/audit-check.mjs).
+  dependency-audit:
+    name: Dependency audit (npm audit --omit=dev)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          node-version: 20
+      - name: Audit frontend (root)
+        run: |
+          npm audit --omit=dev --json > "$RUNNER_TEMP/audit-root.json" || true
+          node .github/scripts/audit-check.mjs "$RUNNER_TEMP/audit-root.json" root
+      - name: Audit backend
+        if: always()
+        working-directory: backend
+        run: |
+          npm audit --omit=dev --json > "$RUNNER_TEMP/audit-backend.json" || true
+          node ../.github/scripts/audit-check.mjs "$RUNNER_TEMP/audit-backend.json" backend
+
+  # CI-6: CycloneDX SBOMs of the production dependency trees, kept as a build artifact.
+  sbom:
+    name: SBOM (CycloneDX)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          node-version: 20
+      - name: Frontend SBOM
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          mkdir -p "$RUNNER_TEMP/sbom"
+          npm sbom --sbom-format=cyclonedx --omit=dev > "$RUNNER_TEMP/sbom/qiyas-web.cdx.json"
+      - name: Backend SBOM
+        working-directory: backend
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm sbom --sbom-format=cyclonedx --omit=dev > "$RUNNER_TEMP/sbom/qiyas-api.cdx.json"
+      - uses: actions/upload-artifact@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          name: sbom-cyclonedx
+          path: ${{ runner.temp }}/sbom/
+          if-no-files-found: error
+          retention-days: 90
+
+  # CI-7: build the API and web images (no push) and scan them. Fails on fixable HIGH or
+  # CRITICAL vulnerabilities not listed in .trivyignore.
+  image-scan:
+    name: Image scan (trivy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          persist-credentials: false
+      - name: Build qiyas-api image
+        run: docker build -t qiyas-api:ci -f backend/Dockerfile backend
+      - name: Build qiyas-web image
+        run: docker build -t qiyas-web:ci -f deploy/web.Dockerfile .
+      - name: Scan images
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/trivy-cache" "$RUNNER_TEMP/trivy"
+          rc=0
+          for image in qiyas-api:ci qiyas-web:ci; do
+            # TODO(CI-15): pin the trivy image by digest.
+            docker run --rm \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              -v "$RUNNER_TEMP/trivy-cache:/root/.cache/" \
+              -v "$RUNNER_TEMP/trivy:/out" \
+              -v "$PWD/.trivyignore:/.trivyignore:ro" \
+              aquasec/trivy:0.56.2 image \
+              --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+              --ignorefile /.trivyignore --exit-code 1 \
+              --format table --output "/out/${image%%:*}.txt" \
+              "$image" || rc=1
+            cat "$RUNNER_TEMP/trivy/${image%%:*}.txt" || true
+          done
+          exit $rc
+      - name: Upload scan reports
+        if: always()
+        uses: actions/upload-artifact@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          name: trivy-reports
+          path: ${{ runner.temp }}/trivy/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # CI-9: no tracked PE/ELF binaries and no tracked file over 1 MB, except paths listed in
+  # .github/large-file-allowlist.txt.
+  tracked-files:
+    name: Tracked binaries and large files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # TODO(CI-1): pin to full commit SHA
+        with:
+          persist-credentials: false
+      - name: Check tracked files
+        run: |
+          set -euo pipefail
+          LIMIT=1048576
+          allow="$(sed -e 's/#.*//' -e 's/[[:space:]]*$//' -e '/^$/d' .github/large-file-allowlist.txt)"
+          fail=0
+          while IFS= read -r -d '' f; do
+            [ -L "$f" ] && continue
+            [ -f "$f" ] || continue
+            if [ -n "$allow" ] && printf '%s\n' "$allow" | grep -qxF -- "$f"; then continue; fi
+            size=$(stat -c %s -- "$f")
+            if [ "$size" -gt "$LIMIT" ]; then
+              echo "::error file=$f::tracked file is $size bytes (limit $LIMIT)"
+              fail=1
+            fi
+            magic=$(head -c 4 -- "$f" | od -An -tx1 | tr -d ' \n')
+            case "$magic" in
+              7f454c46) echo "::error file=$f::tracked ELF binary"; fail=1 ;;
+              4d5a*)    echo "::error file=$f::tracked PE (Windows) binary"; fail=1 ;;
+            esac
+          done < <(git ls-files -z)
+          exit $fail

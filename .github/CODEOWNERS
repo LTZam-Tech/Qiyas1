@@ -1,0 +1,14 @@
+# CI-14: code owners for the paths that control builds, deployment and security.
+# TODO(CI-14): replace the placeholder team below with the real GitHub team or user handles,
+# uncomment the lines, and enable "Require review from Code Owners" in the main branch
+# protection rule. The placeholder is left commented out so that no account is notified.
+#
+# Placeholder owner: LTZam-Tech/maintainers (team, written here without the leading at-sign)
+#
+# *                         <owner>
+# /.github/                 <owner>
+# /deploy/                  <owner>
+# /backend/Dockerfile       <owner>
+# /backend/infra/           <owner>
+# /docker-compose.yml       <owner>
+# /backend/src/compliance/db/migrations/  <owner>
