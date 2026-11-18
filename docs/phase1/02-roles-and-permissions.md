@@ -12,9 +12,10 @@
 | `DSO` | **DGA Submission Officer** | Operational | Person accountable for DGA portal entry |
 | `EXE` | Executive Viewer (D6) | Read-only | Top management |
 | `ADM` | System Administrator (D8) | Administrative | Phase 1: the installation's operator. Can later be granted to client IT staff. |
+| `EXA` | Executive Approver — **proposed (P1), awaiting approval** | Approval | Head of digital transformation, or the executive who signs off projects and procurement. Approves or rejects project charters and RFPs produced from Qiyas AI findings. |
 
 - **Each role is held by several users** (e.g. Alaa and Ahmad are `QC`; Yousef and Jan are `DSO`). Queues are shared by all holders; one holder claims an item while acting on it, and can release it.
-- A user may hold several roles; effective permissions are the union. **Exception: `QC` and `DSO` can never be held by the same person (D3).**
+- A user may hold several roles; effective permissions are the union. **Exception: `QC` and `DSO` can never be held by the same person (D3).** *Proposed (P1): `QC` and `EXA` can never be held by the same person either.*
 - `DM` and `EMP` are granted **per department**. A person can be an employee in one department and manager of another.
 - Roles and permissions are data: administrators can create custom roles from the permission catalogue (BR-ADM-04). The six roles above ship as defaults.
 
@@ -129,6 +130,32 @@ Note 1: the consultant can attach evidence to any task like a normal employee (D
 
 The administrator has **no access to evidence content** by default (data minimization). A client may grant it explicitly.
 
+### Qiyas AI — proposed (P1), awaiting approval
+
+These permissions are sent by the platform gateway, in each request's short-lived scope token, to the Qiyas AI
+engine (a separate service; the platform stays the system of record). They are implemented and tested in the
+engine (`qiyas-ai-engine`, branch `feature/roles`); this section asks to adopt them here.
+
+| Permission | QC | DM | EMP | DSO | EXE | ADM | EXA |
+|---|---|---|---|---|---|---|---|
+| `ai.coverage.read` — requirement coverage, gaps, corrective actions | ✅ | 🔸 Dept | 🔸 Own tasks | — | ✅ | — | ✅ |
+| `ai.coverage.assess` — run a coverage check | ✅ | — | — | — | — | — | — |
+| `ai.coverage.review` — confirm coverage and gaps, decide corrective action or project, accept proposed projects | ✅ | — | — | — | — | — | — |
+| `ai.charters.read` / `ai.rfps.read` | ✅ | — | — | — | ✅ | — | ✅ |
+| `ai.charters.prepare` / `ai.rfps.prepare` — create and edit charters, generate RFPs, manage RFP Word templates | ✅ | — | — | — | — | — | — |
+| `ai.charters.approve` / `ai.rfps.approve` | — | — | — | — | — | — | ✅ |
+| `ai.documents.read`, `ai.search` — evidence content and search | ✅ | 🔸 Dept | — | — | — | — | — |
+| `ai.branding.manage` — entity name and logo in generated documents | — | — | — | — | — | ✅ | — |
+| `ai.packages.install` — install IltizamTech-signed framework and template packages | — | — | — | — | — | ✅ | — |
+| `ai.health.read` | — | — | — | — | — | ✅ | — |
+
+- `EXA` sees results with evidence titles and citations, **not evidence files** (data minimisation, like `ADM`).
+- `DSO` gets no AI permissions in this phase.
+- For `DM` the gateway also sends `codes`: the standards assigned to the manager's departments in the active
+  cycle; for `EMP`, the proof items of their own tasks. The engine limits results and search to those codes.
+- The DGA framework catalogue and the expert project templates are approved by IltizamTech and arrive in signed
+  packages; the entity installs them and cannot change them.
+
 ## 4. Separation-of-duty rules (cannot be switched off unless stated)
 
 | ID | Rule |
@@ -140,6 +167,9 @@ The administrator has **no access to evidence content** by default (data minimiz
 | SoD-5 | One user can never hold both `QC` and `DSO` (D3), so nobody posts evidence they reviewed. Enforced when roles are granted. |
 | SoD-6 | An administrator cannot grant themselves operational roles without a second administrator's approval *(recommended; confirm)*. |
 | SoD-7 | Nobody can edit or delete audit records. |
+| SoD-8 | *Proposed (P1):* one user can never hold both `QC` and `EXA`. Enforced when roles are granted; the AI engine also refuses a scope token that carries both a prepare and an approve permission. |
+| SoD-9 | *Proposed (P1):* nobody approves a project charter they created or edited, or an RFP version they generated (enforced by the AI engine). |
+| SoD-10 | *Proposed (P1):* approve permissions are minted only for people, never for service accounts. |
 
 ## 5. Mapping from today's roles
 

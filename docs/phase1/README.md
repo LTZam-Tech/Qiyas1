@@ -72,6 +72,12 @@ Confirmed by the business on 2026-11-15. Documents reference them as **(Dn)**.
 | D8 | Is there a client-side System Administrator role? | **Not for now.** Administration is performed by the system administrator (the installation's operator). The role exists and can be granted to client staff later from the system-administrator side. |
 | D9 | When a consultant attaches evidence himself (D3), who reviews it? | **Another consultant.** Every role is held by several people (e.g. Alaa and Ahmad are consultants; Yousef and Jan are submission officers). The consultant who uploaded a piece of evidence is never the one who reviews it. |
 
+### Proposed — awaiting approval
+
+| ID | Proposal | Status |
+|---|---|---|
+| P1 | Roles for the Qiyas AI features: a new **Executive Approver (`EXA`)** approves project charters and RFPs; `QC` prepares them; `QC` and `EXA` are never the same person; `EXA` sees results, not evidence files; `DM`/`EMP` see only their department's or tasks' requirements; shared knowledge is installed from IltizamTech-signed packages. Details: [02 · Roles](02-roles-and-permissions.md#qiyas-ai--proposed-p1-awaiting-approval), SoD-8 to SoD-10. | **Awaiting approval.** Agreed with the product owner for the AI engine on 2026-11-18 and implemented there; adopting it here needs approval. |
+
 **Roles are shared by several people.** Work queues (reviews, clarifications, extension decisions, posting) are shared by everyone holding the role. A person *claims* an item to work on it so two people don't act on it at once. No open decisions remain.
 
 ## What this changes in today's code
