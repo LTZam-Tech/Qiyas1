@@ -440,10 +440,16 @@ describe('SoD-3 under concurrency', () => {
   let c1: Client;
   let c2: Client;
   let cw: World;
+  let pid1: number;
+  let pid2: number;
 
   beforeAll(async () => {
     c1 = await connectTestDb();
     c2 = await connectTestDb();
+    // read the backend pids now: a pg client queues queries, so asking a client for its pid while
+    // its own statement is blocked would wait forever
+    pid1 = await backendPid(c1);
+    pid2 = await backendPid(c2);
   });
   beforeEach(async () => {
     await db.query('ROLLBACK'); // drop the uncommitted world of the file's beforeEach
@@ -474,7 +480,7 @@ describe('SoD-3 under concurrency', () => {
     await assignTask(mona, task1, cw.users.ali); // not committed
     await c2.query('BEGIN');
     const removal = track(removeDepartmentMember(tariq, cw.depts.it, cw.users.ali));
-    await waitUntilBlocked(db, await backendPid(c2)); // fails on baseline 80ae855: the membership read takes no lock
+    await waitUntilBlocked(db, pid2); // fails on baseline 80ae855: the membership read takes no lock
     await pause(200);
     expect(removal.state).toBe('pending');
     await c1.query('COMMIT');
@@ -490,7 +496,7 @@ describe('SoD-3 under concurrency', () => {
     await removeDepartmentMember(tariq, cw.depts.it, cw.users.sara); // not committed
     await c1.query('BEGIN');
     const assignment = track(assignTask(mona, task2, cw.users.sara));
-    await waitUntilBlocked(db, await backendPid(c1));
+    await waitUntilBlocked(db, pid1);
     await pause(200);
     expect(assignment.state).toBe('pending');
     await c2.query('COMMIT');
