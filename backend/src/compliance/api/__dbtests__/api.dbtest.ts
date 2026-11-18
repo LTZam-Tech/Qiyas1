@@ -5,7 +5,7 @@
 import express from 'express';
 import { Pool } from 'pg';
 import request from 'supertest';
-import { connectTestDb, resetSchema } from '../../db/__dbtests__/testDb';
+import { connectTestDb, createUser, resetSchema, roleId } from '../../db/__dbtests__/testDb';
 import { DevScanner, InMemoryStorage } from '../../evidence/storage';
 import { runComplianceTick } from '../../runtime';
 import { World, at, buildWorld } from '../../work/__dbtests__/world';
@@ -182,5 +182,115 @@ describe('/api/v2 journey', () => {
     const res = await as('ali').get('/tasks/not-a-uuid');
     expect(res.status).toBe(422);
     expect(res.body.error.issues).toBeDefined();
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B3 (C3, C15)
+describe('/api/v2 evidence binding and task detail scopes (C3, C15)', () => {
+  const s: Record<string, string> = {};
+  let exe: string;
+  const asId = (userId: string) => ({
+    get: (url: string) => request(app).get(`/api/v2${url}`).set('x-test-user', userId),
+  });
+  const dueDates = { implementationDueAt: at(2026, 11, 22, 20).toISOString(), managerDueAt: at(2026, 11, 17, 20).toISOString() };
+  const newTask = async (dept: 'it' | 'hr', title: string) => {
+    const created = await as('alaa').post('/assignments', { cycleId: w.cycleId, departmentId: w.depts[dept], cycleRequirementIds: [w.requirementId], title, ...dueDates });
+    return (await as('alaa').post(`/assignments/${created.body.data.assignmentId}/publish`)).body.data.taskId as string;
+  };
+
+  beforeAll(async () => {
+    // an executive viewer, added to the shared world for these cases
+    const c = await connectTestDb();
+    exe = await createUser(c, 'Nadia');
+    await c.query('INSERT INTO qiyas.role_grants (role_id, user_id, department_id) VALUES ($1, $2, NULL)', [await roleId(c, 'EXE'), exe]);
+    await c.end();
+  });
+
+  it('setup: Huda works an HR task (upload, clarification, more time, submit); Ali owns an IT task', async () => {
+    s.hrTask = await newTask('hr', 'HR policy 5.1.1');
+    expect((await as('khalid').post(`/tasks/${s.hrTask}/assign`, { assigneeId: w.users.huda })).status).toBe(200);
+    const up = await as('huda').upload(`/tasks/${s.hrTask}/evidence`).field('title', 'HR-CONFIDENTIAL salaries').attach('file', Buffer.from('%PDF DUMMY-HR-CONFIDENTIAL'), 'hr-salaries.pdf');
+    expect(up.status).toBe(201);
+    s.hrVersion = up.body.data.versionId;
+    s.hrArtifact = up.body.data.artifactId;
+    expect((await as('huda').post(`/tasks/${s.hrTask}/clarifications`, { question: 'Which salary scale applies?' })).status).toBe(201);
+    expect((await as('huda').post(`/tasks/${s.hrTask}/more-time`, { requestedDueAt: at(2026, 11, 30, 20).toISOString(), justification: 'Waiting for payroll' })).status).toBe(201);
+    const l = await as('huda').post(`/evidence-versions/${s.hrVersion}/links`, { taskId: s.hrTask, cycleRequirementId: w.requirementId });
+    expect(l.status).toBe(201);
+    s.hrLink = l.body.data.linkId;
+    expect((await as('huda').post(`/tasks/${s.hrTask}/submit`)).status).toBe(200);
+    expect((await as('alaa').post(`/tasks/${s.hrTask}/escalate`, { reason: 'Confidential escalation reason' })).status).toBe(200);
+
+    s.itTask = await newTask('it', 'IT plan 5.1.1');
+    expect((await as('mona').post(`/tasks/${s.itTask}/assign`, { assigneeId: w.users.ali })).status).toBe(200);
+  });
+
+  // ---- C3
+  it('C3: POST /evidence-versions/:id/links from another department returns 403', async () => {
+    const res = await as('ali').post(`/evidence-versions/${s.hrVersion}/links`, { taskId: s.itTask, cycleRequirementId: w.requirementId });
+    expect(res.status).toBe(403);
+    expect((await as('ali').get(`/evidence-versions/${s.hrVersion}/download`)).status).toBe(403);
+  });
+
+  it('C3: POST /tasks/:id/evidence with a foreign artifactId is refused and adds no version', async () => {
+    const res = await as('ali').upload(`/tasks/${s.itTask}/evidence`).field('artifactId', s.hrArtifact).attach('file', Buffer.from('%PDF replaced'), 'replaced.pdf');
+    expect([403, 404]).toContain(res.status);
+    const v = await as('khalid').get(`/tasks/${s.hrTask}`);
+    expect(v.body.data.evidence.map((e: any) => e.version_no)).toEqual([1]);
+  });
+
+  it('C3: a withdrawn link no longer grants download', async () => {
+    const l = await as('alaa').post(`/evidence-versions/${s.hrVersion}/links`, { taskId: s.itTask, cycleRequirementId: w.requirementId });
+    expect(l.status).toBe(201); // positive control: a consultant links any department's version
+    expect((await as('ali').get(`/evidence-versions/${s.hrVersion}/download`)).status).toBe(200);
+    expect((await as('ali').post(`/evidence-links/${l.body.data.linkId}/withdraw`)).status).toBe(200);
+    expect((await as('ali').get(`/evidence-versions/${s.hrVersion}/download`)).status).toBe(403);
+  });
+
+  // ---- C15
+  it('C15: the submission officer\'s task detail shows no unaccepted evidence and no clarifications', async () => {
+    const res = await as('yousef').get(`/tasks/${s.hrTask}`);
+    expect(res.status).toBe(200);
+    const d = res.body.data;
+    expect(d.evidence).toEqual([]);
+    expect(d.clarifications).toEqual([]);
+    expect(d.extensions).toEqual([]);
+    expect(d.escalations).toEqual([]);
+    expect(d.history.filter((h: any) => h.reason_kind === 'escalation').map((h: any) => h.note)).toEqual([null]);
+    expect(JSON.stringify(d)).not.toContain('HR-CONFIDENTIAL');
+    expect(JSON.stringify(d)).not.toContain('Which salary scale');
+    expect(d.visibility).toMatchObject({ evidence: 'accepted_only', clarifications: false, escalations: false });
+    expect((await as('yousef').get(`/evidence-versions/${s.hrVersion}/download`)).status).toBe(403);
+  });
+
+  it('C15: an executive viewer sees only accepted evidence and escalations, never clarifications', async () => {
+    const d = (await asId(exe).get(`/tasks/${s.hrTask}`)).body.data;
+    expect(d.evidence).toEqual([]);
+    expect(d.clarifications).toEqual([]);
+    expect(d.extensions).toEqual([]);
+    expect(d.escalations.map((e: any) => e.reason)).toEqual(['Confidential escalation reason']);
+    expect(d.history.filter((h: any) => h.reason_kind === 'escalation').map((h: any) => h.note)).toEqual(['Confidential escalation reason']);
+  });
+
+  it('C15 positive control: the owner (manager) and the original assignee still see draft evidence and clarifications', async () => {
+    const mgr = (await as('khalid').get(`/tasks/${s.hrTask}`)).body.data;
+    expect(mgr.current_owner_id).toBe(w.users.khalid);
+    expect(mgr.evidence).toHaveLength(1);
+    expect(mgr.clarifications).toHaveLength(1);
+    expect(mgr.clarifications[0].messages.length).toBeGreaterThan(0);
+    expect(mgr.extensions).toHaveLength(1);
+    const emp = (await as('huda').get(`/tasks/${s.hrTask}`)).body.data;
+    expect(emp.evidence).toHaveLength(1);
+    expect(emp.clarifications).toHaveLength(1);
+    expect(emp.extensions).toHaveLength(1);
+  });
+
+  it('C15 positive control: once accepted, the officer sees that evidence in task detail', async () => {
+    expect((await as('ahmad').post(`/evidence-links/${s.hrLink}/claim`)).status).toBe(200);
+    expect((await as('ahmad').post(`/evidence-links/${s.hrLink}/accept`, { comment: 'ok' })).status).toBe(200);
+    const d = (await as('yousef').get(`/tasks/${s.hrTask}`)).body.data;
+    expect(d.evidence.map((e: any) => e.id)).toEqual([s.hrLink]);
+    expect(d.clarifications).toEqual([]);
+    expect((await as('yousef').get(`/evidence-versions/${s.hrVersion}/download`)).status).toBe(200);
   });
 });

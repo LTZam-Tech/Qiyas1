@@ -4,10 +4,12 @@ import { connectTestDb, resetSchema } from '../../db/__dbtests__/testDb';
 import { createCycle, transitionCycle } from '../../framework/frameworkService';
 import { assignTask, getTask, taskDeadline } from '../../work/tasks';
 import { World, at, buildWorld } from '../../work/__dbtests__/world';
+import { canSee, versionResource } from '../access';
 import { EvidenceDeps, linkEvidence, submitEvidence, uploadEvidence, withdrawEvidence } from '../evidence';
 import { acceptEvidence, claimEvidence, rejectEvidence, releaseEvidence, revokeEvidence } from '../review';
 import { DevScanner, EICAR_TEST_STRING, InMemoryStorage } from '../storage';
 import { createPackage, markNotPosted, markPosted, reuseEvidence, searchBank } from '../submission';
+import { addSuggestions, useSuggestion } from '../suggestions';
 
 let db: Client;
 let w: World;
@@ -282,5 +284,142 @@ describe('evidence banks (BR-BNK)', () => {
     const links = await db.query('SELECT count(*)::int AS n FROM qiyas.evidence_links WHERE artifact_version_id = $1', [reused.versionId]);
     expect(links.rows[0].n).toBe(0); // starts unlinked: must be linked and reviewed in 2027
     await fails('forbidden', async () => reuseEvidence(await w.ctx('ali'), versionId, next.cycleId));
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B3
+
+/** Khalid (DM HR) assigns an HR task to Huda; Huda uploads a confidential HR file to it. */
+async function hudaUploads(text = 'HR confidential salaries') {
+  const hrTask = await w.publishedTask('hr');
+  await assignTask(await w.ctx('khalid'), hrTask, w.users.huda);
+  const up = await uploadEvidence(await w.ctx('huda'), deps, { taskId: hrTask, title: 'HR-CONFIDENTIAL disciplinary case file', file: pdf(text) });
+  return { hrTask, ...up };
+}
+const linksOf = async (versionId: string) => (await db.query('SELECT count(*)::int AS n FROM qiyas.evidence_links WHERE artifact_version_id = $1', [versionId])).rows[0].n;
+const versionsOf = async (artifactId: string) => (await db.query('SELECT count(*)::int AS n FROM qiyas.artifact_versions WHERE artifact_id = $1', [artifactId])).rows[0].n;
+
+describe('evidence object binding (C3)', () => {
+  it('an IT employee cannot link an HR version to his own task', async () => {
+    const hr = await hudaUploads();
+    const taskId = await aliTask();
+    await fails('forbidden', async () => linkEvidence(await w.ctx('ali'), hr.versionId, { taskId, cycleRequirementId: w.requirementId, proofItemId }));
+    expect(await linksOf(hr.versionId)).toBe(0);
+    expect(canSee(await w.ctx('ali'), 'evidence.download', await versionResource(db, hr.versionId))).toBe(false);
+  });
+
+  it('an IT employee cannot add a version to an HR artifact', async () => {
+    const hr = await hudaUploads();
+    const taskId = await aliTask();
+    const ali = await w.ctx('ali');
+    const notVisible = await fails('not_found', () => uploadEvidence(ali, deps, { taskId, artifactId: hr.artifactId, file: pdf('replaced') }));
+    expect(await versionsOf(hr.artifactId)).toBe(1);
+    // "another cycle" gives the very same answer, so the ID cannot be probed
+    const own = await uploadEvidence(ali, deps, { taskId, title: 'Strategy', file: pdf('own') });
+    const alaa = await w.ctx('alaa');
+    const next = await createCycle(alaa, { frameworkVersionId: w.frameworkVersionId, year: 2027, name: 'Qiyas 2027', startsOn: '2027-01-01', endsOn: '2027-12-31' });
+    const copy = await reuseEvidence(alaa, own.versionId, next.cycleId);
+    const otherCycle = await fails('not_found', () => uploadEvidence(ali, deps, { taskId, artifactId: copy.artifactId, file: pdf('other cycle') }));
+    expect(otherCycle).toBe(notVisible);
+  });
+
+  it('a withdrawn link no longer grants download ownership', async () => {
+    const hr = await hudaUploads();
+    const taskId = await aliTask();
+    // a consultant links the HR file to Ali's task: Ali may open it while the link is active
+    const linkId = await linkEvidence(await w.ctx('alaa'), hr.versionId, { taskId, cycleRequirementId: w.requirementId, proofItemId });
+    const ali = await w.ctx('ali');
+    expect(canSee(ali, 'evidence.download', await versionResource(db, hr.versionId))).toBe(true);
+    await withdrawEvidence(ali, linkId);
+    expect((await link(linkId)).review_status).toBe('withdrawn');
+    expect(canSee(ali, 'evidence.download', await versionResource(db, hr.versionId))).toBe(false);
+  });
+
+  it('D-C3-2: an employee cannot link a colleague draft; the department manager can', async () => {
+    const taskId = await aliTask();
+    const up = await uploadEvidence(await w.ctx('ali'), deps, { taskId, title: 'Strategy', file: pdf('ali draft') });
+    const saraTask = await w.publishedTask();
+    await assignTask(await w.ctx('mona'), saraTask, w.users.sara);
+    await fails('forbidden', async () => linkEvidence(await w.ctx('sara'), up.versionId, { taskId: saraTask, cycleRequirementId: w.requirementId }));
+    const monaTask = await w.publishedTask();
+    const mona = await w.ctx('mona');
+    await assignTask(mona, monaTask, w.users.mona);
+    expect(await linkEvidence(mona, up.versionId, { taskId: monaTask, cycleRequirementId: w.requirementId })).toBeTruthy();
+  });
+
+  // ---- positive controls
+  it('a suggested carry-over or imported version can still be used on the owner task', async () => {
+    const hr = await hudaUploads('carried-over HR policy');
+    const taskId = await aliTask();
+    await addSuggestions(await w.ctx('alaa'), hr.versionId, [w.requirementId], 'carry_over', { note: 'test' });
+    const sg = (await db.query(`SELECT id FROM qiyas.link_suggestions WHERE artifact_version_id = $1 AND status = 'open'`, [hr.versionId])).rows[0];
+    const linkId = await useSuggestion(await w.ctx('ali'), sg.id, taskId);
+    expect((await link(linkId)).task_id).toBe(taskId);
+    expect((await db.query('SELECT status FROM qiyas.link_suggestions WHERE id = $1', [sg.id])).rows[0].status).toBe('linked');
+  });
+
+  it('a consultant may link any department version', async () => {
+    const hr = await hudaUploads();
+    const taskId = await aliTask();
+    expect(await linkEvidence(await w.ctx('ahmad'), hr.versionId, { taskId, cycleRequirementId: w.requirementId, proofItemId })).toBeTruthy();
+    expect(await linksOf(hr.versionId)).toBe(1);
+  });
+
+  it('the owner links his own upload, and adds a version to his own artifact', async () => {
+    const taskId = await aliTask();
+    const ali = await w.ctx('ali');
+    const up = await uploadEvidence(ali, deps, { taskId, title: 'Strategy', file: pdf('own v1') });
+    expect(await linkEvidence(ali, up.versionId, { taskId, cycleRequirementId: w.requirementId, proofItemId })).toBeTruthy();
+    expect((await uploadEvidence(ali, deps, { taskId, artifactId: up.artifactId, file: pdf('own v2') })).versionNo).toBe(2);
+  });
+});
+
+describe('duplicate message (C16)', () => {
+  it('a duplicate from another department is refused without naming it', async () => {
+    const hr = await hudaUploads('same bytes');
+    const taskId = await aliTask();
+    const msg = await fails('conflict', async () => uploadEvidence(await w.ctx('ali'), deps, { taskId, title: 'Copy', file: pdf('same bytes') }));
+    expect(msg).toContain('already in the evidence bank');
+    expect(msg).not.toContain('HR-CONFIDENTIAL');
+    expect(msg).not.toContain(hr.artifactId);
+  });
+
+  it('a colleague duplicate in the same department is not named to an employee (own scope)', async () => {
+    const taskId = await aliTask();
+    const up = await uploadEvidence(await w.ctx('ali'), deps, { taskId, title: 'Ali strategy', file: pdf('colleague bytes') });
+    const saraTask = await w.publishedTask();
+    await assignTask(await w.ctx('mona'), saraTask, w.users.sara);
+    const msg = await fails('conflict', async () => uploadEvidence(await w.ctx('sara'), deps, { taskId: saraTask, title: 'Copy', file: pdf('colleague bytes') }));
+    expect(msg).not.toContain('Ali strategy');
+    expect(msg).not.toContain(up.artifactId);
+  });
+
+  // ---- positive controls
+  it('the user own duplicate still names his own artifact', async () => {
+    const taskId = await aliTask();
+    const ali = await w.ctx('ali');
+    const up = await uploadEvidence(ali, deps, { taskId, title: 'Strategy', file: pdf('mine') });
+    const msg = await fails('conflict', () => uploadEvidence(ali, deps, { taskId, title: 'Copy', file: pdf('mine') }));
+    expect(msg).toContain('"Strategy"');
+    expect(msg).toContain(up.artifactId);
+  });
+
+  it('a consultant sees the detailed duplicate message', async () => {
+    const hr = await hudaUploads('central bytes');
+    const taskId = await aliTask();
+    const msg = await fails('conflict', async () => uploadEvidence(await w.ctx('alaa'), deps, { taskId, title: 'Copy', file: pdf('central bytes') }));
+    expect(msg).toContain('HR-CONFIDENTIAL disciplinary case file');
+    expect(msg).toContain(hr.artifactId);
+  });
+
+  it('D-C16-2: a department manager sees same-department duplicate titles', async () => {
+    const taskId = await aliTask();
+    const up = await uploadEvidence(await w.ctx('ali'), deps, { taskId, title: 'Ali strategy', file: pdf('dept bytes') });
+    const monaTask = await w.publishedTask();
+    const mona = await w.ctx('mona');
+    await assignTask(mona, monaTask, w.users.mona);
+    const msg = await fails('conflict', () => uploadEvidence(mona, deps, { taskId: monaTask, title: 'Copy', file: pdf('dept bytes') }));
+    expect(msg).toContain('"Ali strategy"');
+    expect(msg).toContain(up.artifactId);
   });
 });
