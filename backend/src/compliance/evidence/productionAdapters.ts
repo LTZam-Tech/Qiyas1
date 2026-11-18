@@ -105,7 +105,8 @@ function clamd(opts: ClamAvOptions, write: (socket: net.Socket) => void): Promis
     socket.setTimeout(opts.timeoutMs ?? 60_000, () => done(new Error('ClamAV did not answer in time')));
     socket.on('error', (e) => done(e));
     socket.on('data', (d) => {
-      chunks.push(d);
+      // No encoding is set on this socket, so d is always a Buffer; the guard satisfies @types/node 26.
+      chunks.push(typeof d === 'string' ? Buffer.from(d, 'utf8') : d);
       const all = Buffer.concat(chunks);
       const end = all.indexOf(0);
       if (end >= 0) done(null, all.subarray(0, end).toString('utf8').trim());
