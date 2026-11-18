@@ -34,6 +34,10 @@ COPY package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev --no-audit --no-fund; \
     else echo "WARNING: backend/package-lock.json missing, falling back to npm install (unpinned)" >&2; npm install --omit=dev --no-audit --no-fund; fi
 
+# The runtime needs only node: drop npm, npx and corepack (and their bundled tar, glob, minimatch,
+# sigstore, pacote... that the image scan flags). CI-7
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack            /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /root/.npm
+
 # Copy built files from builder stage (dist includes the Qiyas migrations and DGA data)
 COPY --from=builder /app/dist ./dist
 # The original schema's SQL migrations, applied at start-up before the Qiyas ones
@@ -47,4 +51,4 @@ USER node
 EXPOSE 8000
 
 # Start server
-CMD ["npm", "start"]
+CMD ["node", "dist/server.js"]

@@ -1,3 +1,9 @@
 # CI-7 exceptions for the image scan (trivy). One CVE or GHSA ID per line, each preceded by a
 # comment with the image, the reason it is not exploitable here, the reviewer and a review date.
 # Add entries only in a reviewed PR.
+
+# qiyas-api: decode-uri-component 0.2.2, pulled in only by minio@8 -> query-string@7 (requires ^0.2.2); the
+# fixed 0.5.1 is ESM-only and cannot load under Node 20. Decodes only S3 protocol strings exchanged with the
+# internal MinIO service, not user input. Same exception as GHSA-qr28-fpjm-wq7f in .github/audit-exceptions.json.
+# Reviewer: product owner (sign-off pending). Review by 2027-02-18.
+CVE-2026-118664

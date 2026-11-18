@@ -1,0 +1,4 @@
+# Reviewed gitleaks false positives (one finding fingerprint per line), CI-3.
+# Dummy test marker (not a credential) in the original B2 test commit; the current file uses a
+# low-entropy value annotated gitleaks:allow. Reviewed 2026-11-18.
+c2376acf4b7af3730a28bd1f06d033bb50658efd:backend/src/modules/__dbtests__/v1-retired-routes.dbtest.ts:generic-api-key:14
