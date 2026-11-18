@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 // Shared pieces for Phase 1 screens: loading data, status badges, deadlines, dates.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { localeOf, makeT } from '../../i18n/index.js';
 
@@ -8,7 +8,11 @@ import { localeOf, makeT } from '../../i18n/index.js';
 export function useApi(loader, deps) {
   const [state, setState] = useState({ data: null, error: null, loading: true });
   const loaderRef = useRef(loader);
-  loaderRef.current = loader;
+  // Keep the latest loader without writing a ref during render; layout effects run before the
+  // loading effect below, so it always calls the current loader.
+  useLayoutEffect(() => {
+    loaderRef.current = loader;
+  });
   const [tick, setTick] = useState(0);
   const reload = useCallback(() => setTick((n) => n + 1), []);
   useEffect(() => {
