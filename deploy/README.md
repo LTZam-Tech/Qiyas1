@@ -26,7 +26,8 @@ updater can reach its mirror.
 
 1. Copy the release folder to the server. Check it:  `sha256sum -c SHA256SUMS`
 2. Load the images (offline):  `docker load -i images.tar`
-3. Settings:  `cp .env.example .env`, then replace every `CHANGE-ME` (`openssl rand -base64 48` makes good secrets). Set `CORS_ORIGIN` to the site address.
+3. Settings:  `cp .env.example .env`, then fill in every empty secret, each with its own `openssl rand -base64 48`. Set `CORS_ORIGIN` to the site address.
+   The API refuses to start on a placeholder, short or repetitive secret: `JWT_ACCESS_SECRET` needs at least 32 characters, `POSTGRES_PASSWORD`, `REDIS_PASSWORD` (required) and `MINIO_ROOT_PASSWORD` at least 16, each with at least 10 distinct characters; the JWT secret must differ from every other secret, and `MINIO_ROOT_USER` must not be `minioadmin`.
 4. Certificate: put `fullchain.pem` and `privkey.pem` in `./certs`. Without them the site starts with a temporary self-signed certificate.
 5. Start:  `docker compose up -d`. The first start downloads ClamAV signatures (a few minutes); the API waits for it.
 6. Check:  `curl -k https://localhost/api/v2/public/health` → `"status": "healthy"`, storage `minio`, scanner `clamav`.
@@ -68,6 +69,7 @@ Other sites are untouched: only requests for the Qiyas domain are forwarded.
 
 1. Back up (below).
 2. `docker load -i images.tar` from the new release, set `QIYAS_VERSION` in `.env`.
+   If an existing `.env` still holds a placeholder or short secret, the new API refuses to start. Rotate it first: change `JWT_ACCESS_SECRET`, `REDIS_PASSWORD` and the MinIO values in `.env` (picked up on restart; signed-in users sign in again within 15 minutes). For `POSTGRES_PASSWORD`, run `ALTER ROLE qiyas PASSWORD '…'` inside the database first, then change `.env`.
 3. `docker compose up -d`. Database migrations run at start-up; each runs once and is checksum-verified.
    New DGA framework versions in the release are imported; existing ones are never changed.
 
