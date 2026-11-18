@@ -1,7 +1,7 @@
 # Qiyas web: the React build behind Nginx, which also proxies /api to the API service.
 # Fonts are bundled by the build; the image makes no internet calls at run time.
 # TODO(CI-15): pin node:20-alpine by digest (node:20-alpine@sha256:...).
-FROM node:20-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
