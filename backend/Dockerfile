@@ -1,5 +1,5 @@
 # TODO(CI-15): pin node:20-alpine by digest (node:20-alpine@sha256:...).
-FROM node:20-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ RUN npm run build
 
 # Stage 2: Production runtime
 # TODO(CI-15): pin node:20-alpine by digest (node:20-alpine@sha256:...).
-FROM node:20-alpine
+FROM node:26-alpine
 # Pull the latest Alpine security fixes for OS packages (musl, zlib, pcre2, nghttp2...); CI-7 trivy gate
 RUN apk upgrade --no-cache
 

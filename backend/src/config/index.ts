@@ -3,7 +3,8 @@ import path from 'path';
 import { assertProductionSecrets } from './secretPolicy';
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+// quiet: dotenv 17+ otherwise prints an "injecting env" line on every start.
+dotenv.config({ path: path.join(__dirname, '../../.env'), quiet: true });
 
 interface Config {
   env: string;

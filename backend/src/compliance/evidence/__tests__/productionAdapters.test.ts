@@ -10,7 +10,8 @@ function fakeClamd(mode: 'normal' | 'silent' | 'limit' = 'normal'): Promise<{ po
     const server = net.createServer((socket) => {
       let buf = Buffer.alloc(0);
       socket.on('data', (d) => {
-        buf = Buffer.concat([buf, d]);
+        // No encoding is set, so d is a Buffer; the guard satisfies @types/node 26.
+        buf = Buffer.concat([buf, typeof d === 'string' ? Buffer.from(d, 'latin1') : d]);
         if (mode === 'silent') return;
         if (buf.toString('latin1').startsWith('zPING\0')) { socket.end('PONG\0'); return; }
         if (!buf.toString('latin1').startsWith('zINSTREAM\0')) return;

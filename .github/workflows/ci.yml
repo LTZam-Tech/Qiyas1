@@ -26,7 +26,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7 # TODO(CI-1): pin to full commit SHA
         with:
-          node-version: 20
+          node-version: 26
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
@@ -43,7 +43,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7 # TODO(CI-1): pin to full commit SHA
         with:
-          node-version: 20
+          node-version: 26
           cache: npm
       - run: npm ci
       - run: npm run lint
@@ -66,7 +66,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7 # TODO(CI-1): pin to full commit SHA
         with:
-          node-version: 20
+          node-version: 26
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
@@ -161,7 +161,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7 # TODO(CI-1): pin to full commit SHA
         with:
-          node-version: 20
+          node-version: 26
       - name: Audit frontend (root)
         run: |
           npm audit --omit=dev --json > "$RUNNER_TEMP/audit-root.json" || true
@@ -183,7 +183,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7 # TODO(CI-1): pin to full commit SHA
         with:
-          node-version: 20
+          node-version: 26
       - name: Frontend SBOM
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
