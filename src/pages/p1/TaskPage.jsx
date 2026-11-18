@@ -66,6 +66,7 @@ export default function TaskPage({ lang, id, onNavigate }) {
       </div>
 
       <ErrorNote error={act.error} lang={lang} />
+      {task.can.cycleOpen === false && <p className={s.sub} role="note">{t('الدورة مغلقة وللقراءة فقط؛ يمكن لمدير النظام إعادة فتحها.', 'The cycle is closed and read-only; an administrator can reopen it.', 'یہ دور بند ہے اور صرف پڑھنے کے لیے ہے؛ سسٹم ایڈمنسٹریٹر اسے دوبارہ کھول سکتا ہے۔')}</p>}
 
       <div className={s.grid4}>
         <Fact label={t('الموعد', 'Deadline', 'آخری تاریخ')}><Deadline deadline={task.deadline} lang={lang} /></Fact>
@@ -354,7 +355,7 @@ function Clarifications({ lang, task, me, canAnswerAll, managed, onDone }) {
                 <div dir="auto">{m.body}</div>
               </div>
             ))}
-            {(canAnswer(c) || (c.requested_by === me && c.status === 'answered')) && (
+            {task.can.cycleOpen !== false && (canAnswer(c) || (c.requested_by === me && c.status === 'answered')) && (
               <div className={s.row}>
                 <input className="q-input" style={{ flex: 1 }} value={replies[c.id] ?? ''} onChange={(e) => setReplies({ ...replies, [c.id]: e.target.value })}
                   placeholder={canAnswer(c) ? t('اكتب الرد...', 'Write the answer...', 'جواب لکھیں...') : t('سؤال متابعة...', 'Follow-up question...', 'مزید سوال...')} />
@@ -411,7 +412,7 @@ function TimePanel({ lang, task, isQc, onDone }) {
             </div>
             <div dir="auto">{e.justification}</div>
             {e.decision_reason && <div className={s.sub} dir="auto">“{e.decision_reason}”</div>}
-            {isQc && e.level === 'formal' && e.status === 'pending' && (
+            {isQc && task.can.cycleOpen !== false && e.level === 'formal' && e.status === 'pending' && (
               <div className={s.row} style={{ marginTop: 8 }}>
                 <button type="button" className="q-btn q-btn-success q-btn-sm" disabled={act.busy} onClick={() => act.run(() => api.post(`/extensions/${e.id}/approve`, {}), onDone)}>{t('اعتماد', 'Approve', 'منظور کریں')}</button>
                 <button type="button" className="q-btn q-btn-danger q-btn-sm" disabled={act.busy} onClick={() => {
