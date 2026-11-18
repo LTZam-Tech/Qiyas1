@@ -1,7 +1,12 @@
 /**
  * Local Phase 1 server for development and demos — NEVER for production.
  *
- *   npm run dev:phase1      (from backend/)
+ *   npm run dev:phase1      (from backend/; sets QIYAS_DEV_SERVER=1)
+ *
+ * Guarded (N4): refuses to start under NODE_ENV=production or without QIYAS_DEV_SERVER=1,
+ * signs demo tokens with a random per-run secret, and answers only direct loopback requests
+ * with a localhost Host header and no proxy headers. Not part of the production build
+ * (tsconfig.build.json excludes src/compliance/dev).
  *
  * - Starts a local PostgreSQL (embedded-postgres, dev dependency) whose data
  *   persists in backend/.devdata, applies the qiyas schema, seeds a demo
@@ -29,6 +34,7 @@ import { createComplianceRouter } from '../api/router';
 import { createPublicRouter, runComplianceTick } from '../runtime';
 import { assignTask, createAssignment, publishAssignment } from '../work/tasks';
 import { existsSync as fileExists, readFileSync } from 'fs';
+import { devRequestRejection, devServerStartRefusal, newDevSecret } from './devServerGuard';
 
 // The official DGA v5.0 framework when available, otherwise the small demo framework.
 const OFFICIAL = path.resolve(__dirname, '../framework/data/dga-v5.0.json');
@@ -41,7 +47,7 @@ const CROSSWALK = path.resolve(__dirname, '../framework/data/crosswalk-v4.0-v5.0
 const ROOT = path.resolve(__dirname, '../../../.devdata');
 const PG_PORT = Number(process.env.QIYAS_DEV_PG_PORT || 54330);
 const API_PORT = Number(process.env.QIYAS_DEV_API_PORT || 8082);
-const SECRET = 'qiyas-dev-only-secret';
+const SECRET = newDevSecret(); // per run: tokens from an earlier run, or forged from the source, never verify
 
 export const DEMO_USERS = [
   { key: 'tariq', email: 'admin@demo.qiyas', ar: 'طارق السالم', en: 'Tariq Alsalem' },
@@ -194,6 +200,8 @@ async function seedDemo(db: Client): Promise<void> {
 }
 
 async function main() {
+  const refusal = devServerStartRefusal(process.env);
+  if (refusal) throw new Error(`Qiyas dev server ${refusal}`);
   const url = await startPostgres();
   const setup = new Client({ connectionString: url });
   await setup.connect();
@@ -210,6 +218,12 @@ async function main() {
   const pool = new Pool({ connectionString: url, max: 10 });
   const poolLike = { connect: () => pool.connect() };
   const app = express();
+  // Only direct requests from this machine: no remote peers, no proxies, no other Host names.
+  app.use((req, res, next) => {
+    const rejected = devRequestRejection({ remoteAddress: req.socket.remoteAddress, headers: req.headers });
+    if (rejected) res.status(403).json({ success: false, message: `Dev server: ${rejected}` });
+    else next();
+  });
   app.use(express.json());
 
   // Demo sign-in: same shape as the real /api/v1/auth endpoints the login screen uses.

@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --watch src --exec ts-node -r tsconfig-paths/register src/server.ts",
-    "build": "tsc && tsc-alias && node -e \"const fs=require('fs');fs.cpSync('src/compliance/db/migrations','dist/compliance/db/migrations',{recursive:true});fs.cpSync('src/compliance/framework/data','dist/compliance/framework/data',{recursive:true})\"",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && node -e \"const fs=require('fs');fs.cpSync('src/compliance/db/migrations','dist/compliance/db/migrations',{recursive:true});fs.cpSync('src/compliance/framework/data','dist/compliance/framework/data',{recursive:true})\"",
     "start": "node dist/server.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
@@ -15,7 +15,7 @@
     "migrate": "node dist/scripts/migrate.js",
     "test:unit": "jest",
     "test:db": "jest -c jest.db.config.js",
-    "dev:phase1": "ts-node --transpile-only -r tsconfig-paths/register src/compliance/dev/devServer.ts"
+    "dev:phase1": "node -e \"process.env.QIYAS_DEV_SERVER='1';require('ts-node').register({transpileOnly:true});require('tsconfig-paths/register');require('./src/compliance/dev/devServer.ts')\""
   },
   "keywords": [
     "compliance",
