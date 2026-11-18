@@ -5,24 +5,13 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { timingSafeEqual } from 'crypto';
-import path from 'path';
 import config from '@/config';
 import { errorHandler } from '@/utils/errors';
 import logger from '@/utils/logger';
 
-// Import routes (will be created)
+// v1 routes: only sign-in stays mounted (security B2, Option A). The other v1 modules remain in the
+// tree, unmounted, for a later cleanup PR; the live frontend and /api/v2 use none of them.
 import authRoutes from '@/modules/auth/auth.routes';
-import userRoutes from '@/modules/users/users.routes';
-import perspectiveRoutes from '@/modules/perspectives/perspectives.routes';
-import axisRoutes from '@/modules/axes/axes.routes';
-import standardRoutes from '@/modules/standards/standards.routes';
-import taskRoutes from '@/modules/tasks/tasks.routes';
-import submissionRoutes from '@/modules/submissions/submissions.routes';
-import reviewRoutes from '@/modules/reviews/reviews.routes';
-import dashboardRoutes from '@/modules/dashboard/dashboard.routes';
-import reportRoutes from '@/modules/reports/reports.routes';
-import orgStructureRoutes from '@/modules/org-structure/org-structure.routes';
-import notificationRoutes from '@/modules/notifications/notifications.routes';
 import db from '@/db';
 import { authenticate } from '@/middleware/auth';
 import { evidenceDepsFromEnv, mountComplianceApi } from '@/compliance/runtime';
@@ -155,22 +144,10 @@ app.get('/health', async (_req: Request, res: Response) => {
   });
 });
 
-// Serve local uploads statically through API prefix so reverse proxy reaches backend
-app.use('/api/v1/uploads', express.static(path.join(process.cwd(), 'uploads')));
-
-// API routes
+// API routes. The static /api/v1/uploads mount and the users, perspectives, axes, standards, tasks,
+// org-structure, submissions, reviews, dashboard, reports and notifications v1 routers are retired
+// (C1, C2, C8, C18, N8, N9, NC1-NC3): their paths now fall through to the 404 handler below.
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/users', userRoutes);
-app.use('/api/v1/perspectives', perspectiveRoutes);
-app.use('/api/v1/axes', axisRoutes);
-app.use('/api/v1/standards', standardRoutes);
-app.use('/api/v1/tasks', taskRoutes);
-app.use('/api/v1', orgStructureRoutes);
-app.use('/api/v1/submissions', submissionRoutes);
-app.use('/api/v1/reviews', reviewRoutes);
-app.use('/api/v1/dashboard', dashboardRoutes);
-app.use('/api/v1/reports', reportRoutes);
-app.use('/api/v1/notifications', notificationRoutes);
 
 // Phase 1 compliance API (docs/phase1), alongside the legacy v1 routes
 mountComplianceApi(app, { connect: () => db.getClient() }, authenticate, evidenceDepsFromEnv(logger));
