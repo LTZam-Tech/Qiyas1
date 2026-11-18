@@ -37,3 +37,9 @@ dist
 deploy/.env
 deploy/certs/
 release/
+
+# Local launchers, binaries and credential notes (removed from the repo; never commit again)
+*.exe
+Caddyfile
+Credentials.md
+DEBUG-LOGIN.md
