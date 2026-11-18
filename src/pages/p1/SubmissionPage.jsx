@@ -78,6 +78,7 @@ export default function SubmissionPage({ lang }) {
                     <span className={s.title}>{l.title}</span>
                     <span className={s.sub}>{l.original_filename ?? l.external_url} · {l.requirement_code} · {t('قُبل في', 'Accepted on', 'منظوری کی تاریخ')} {fmtDate(l.accepted_at, lang)}</span>
                     {l.posted_at && <span className={s.sub}>{l.posted_by_name} · {fmtDate(l.posted_at, lang)}{l.dga_reference ? ` · ${l.dga_reference}` : ''}</span>}
+                    {officer && l.reviewed_by_me && <span className={s.sub} role="note">{t('راجعتَ هذا الدليل؛ يسجّل رفعه مسؤول رفع آخر.', 'You reviewed this evidence; another submission officer must post it.', 'آپ نے اس ثبوت کا جائزہ لیا تھا؛ اسے کوئی دوسرا سبمیشن آفیسر پوسٹ کرے گا۔')}</span>}
                   </div>
                 </div>
                 <div className={s.row}>

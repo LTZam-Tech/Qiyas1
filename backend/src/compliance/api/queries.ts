@@ -229,13 +229,15 @@ export async function submissionQueue<P extends PageRequest | null = null>(ctx: 
       a.title, v.id AS version_id, v.original_filename, v.external_url, r.code AS requirement_code, s.code AS standard_code,
       s.title_ar AS standard_ar, s.title_en AS standard_en,
       (SELECT max(d.at) FROM qiyas.review_decisions d WHERE d.evidence_link_id = l.id AND d.decision = 'accept') AS accepted_at,
-      (mc.status IN ('planning', 'active')) AS "cycleOpen"
+      (mc.status IN ('planning', 'active')) AS "cycleOpen",
+      -- C10: the caller accepted this link, so another officer must post or unpost it
+      EXISTS (SELECT 1 FROM qiyas.review_decisions d WHERE d.evidence_link_id = l.id AND d.decision = 'accept' AND d.reviewer_id = $3) AS reviewed_by_me
      FROM qiyas.evidence_links l JOIN qiyas.artifact_versions v ON v.id = l.artifact_version_id JOIN qiyas.artifacts a ON a.id = v.artifact_id
      JOIN qiyas.cycle_requirements cr ON cr.id = l.cycle_requirement_id JOIN qiyas.requirements r ON r.id = cr.requirement_id
      JOIN qiyas.standards s ON s.id = r.standard_id LEFT JOIN public.users pu ON pu.id = l.posted_by
      JOIN qiyas.measurement_cycles mc ON mc.id = cr.cycle_id
      WHERE cr.cycle_id = $1 AND l.review_status = 'accepted' AND ($2::text IS NULL OR l.submission_status = $2)`,
-  'standard_code, requirement_code, id', [cycleId, status ?? null], page);
+  'standard_code, requirement_code, id', [cycleId, status ?? null, ctx.actor.userId], page);
 }
 
 export async function inbox(ctx: ServiceContext) {
