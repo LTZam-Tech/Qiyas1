@@ -147,3 +147,15 @@ describe('CSRF protection (csurf; CodeQL js/missing-token-validation)', () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe('requests without a body (Express 5 leaves req.body undefined; app.ts restores {})', () => {
+  // Both handlers read req.body.refreshToken when there is no refreshToken cookie.
+  it('refresh without a body or refresh cookie is a validation error (422), not a 500', async () => {
+    const res = await w.http().post('/api/v1/auth/refresh');
+    expect(res.status).toBe(422);
+  });
+  it('logout without a body or refresh cookie succeeds, not a 500', async () => {
+    const res = await w.http().post('/api/v1/auth/logout');
+    expect(res.status).toBe(200);
+  });
+});

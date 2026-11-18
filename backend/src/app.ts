@@ -41,6 +41,12 @@ app.use(cors({
 mountFrameworkUploadParser(app);
 app.use(express.json({ limit: config.security.bodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: config.security.bodyLimit }));
+// Express 5 leaves req.body undefined when a request has no body (Express 4 gave {}). Keep {} so
+// handlers that destructure the body answer with a validation error (400), not a crash (500).
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  if (req.body === undefined) req.body = {};
+  next();
+});
 
 // Cookie parsing
 app.use(cookieParser());
