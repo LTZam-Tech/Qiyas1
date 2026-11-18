@@ -2,7 +2,9 @@ import { Client } from 'pg';
 import { loadMigrations, migrate } from '../migrate';
 import { seedRbac } from '../seedRbac';
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS, ROLE_CODES } from '../../domain/permissions';
-import { connectTestDb, createUser, expectDbError, resetSchema, roleId } from './testDb';
+import { buildContext } from '../../core/context';
+import { grantRole } from '../../admin/admin';
+import { backendPid, connectTestDb, createUser, expectDbError, pause, resetSchema, roleId, track, waitUntilBlocked } from './testDb';
 
 let db: Client;
 
@@ -98,6 +100,46 @@ describe('organization rules enforced by the database', () => {
     await db.query('INSERT INTO qiyas.role_grants (role_id, user_id) VALUES ($1, $2)', [await roleId(db, 'DSO'), u]);
   });
 
+  // ---- security remediation B5 (C9, D-C9-1): QC and DSO are never granted through groups
+  async function group(code: string, ...members: string[]): Promise<string> {
+    const { rows } = await db.query(`INSERT INTO qiyas.groups (code, name_ar, name_en) VALUES ($1, $1, $1) RETURNING id`, [code]);
+    for (const m of members) await db.query('INSERT INTO qiyas.group_members (group_id, user_id) VALUES ($1, $2)', [rows[0].id, m]);
+    return rows[0].id;
+  }
+  /** A QC/DSO group grant as it could exist before migration 008 (the trigger is off inside this test transaction only). */
+  async function legacyGroupGrant(role: string, groupId: string): Promise<void> {
+    await db.query('ALTER TABLE qiyas.role_grants DISABLE TRIGGER trg_role_grant_check');
+    await db.query('INSERT INTO qiyas.role_grants (role_id, group_id) VALUES ($1, $2)', [await roleId(db, role), groupId]);
+    await db.query('ALTER TABLE qiyas.role_grants ENABLE TRIGGER trg_role_grant_check');
+  }
+
+  it('a QC grant to a group with a DSO member is refused', async () => {
+    const yousef = await createUser(db, 'Yousef');
+    await db.query('INSERT INTO qiyas.role_grants (role_id, user_id) VALUES ($1, $2)', [await roleId(db, 'DSO'), yousef]);
+    const g = await group('consultants', yousef);
+    expect(await expectDbError(db, 'INSERT INTO qiyas.role_grants (role_id, group_id) VALUES ($1, $2)', [await roleId(db, 'QC'), g])).toContain('cannot be granted to a group');
+    // D-C9-1 applies to every QC/DSO group grant, even to an empty group
+    const empty = await group('officers');
+    expect(await expectDbError(db, 'INSERT INTO qiyas.role_grants (role_id, group_id) VALUES ($1, $2)', [await roleId(db, 'DSO'), empty])).toContain('cannot be granted to a group');
+    // positive control: another organization role can still be granted to a group
+    await db.query('INSERT INTO qiyas.role_grants (role_id, group_id) VALUES ($1, $2)', [await roleId(db, 'EXE'), g]);
+  });
+
+  it('adding a DSO holder to a QC group is refused', async () => {
+    const [jan, rana] = [await createUser(db, 'Jan'), await createUser(db, 'Rana')];
+    await db.query('INSERT INTO qiyas.role_grants (role_id, user_id) VALUES ($1, $2)', [await roleId(db, 'DSO'), jan]);
+    const g = await group('legacy_consultants');
+    await legacyGroupGrant('QC', g);
+    expect(await expectDbError(db, 'INSERT INTO qiyas.group_members (group_id, user_id) VALUES ($1, $2)', [g, jan])).toContain('cannot be held by the same person');
+    // positive control: a person without DSO joins the group
+    await db.query('INSERT INTO qiyas.group_members (group_id, user_id) VALUES ($1, $2)', [g, rana]);
+    // and the group-derived QC now blocks a personal DSO grant (the 001 trigger ignored groups)
+    expect(await expectDbError(db, 'INSERT INTO qiyas.role_grants (role_id, user_id) VALUES ($1, $2)', [await roleId(db, 'DSO'), rana])).toContain('cannot be held by the same person');
+    // revoking the legacy group grant stays possible, and then DSO is legal
+    await db.query('UPDATE qiyas.role_grants SET revoked_at = NOW() WHERE group_id = $1', [g]);
+    await db.query('INSERT INTO qiyas.role_grants (role_id, user_id) VALUES ($1, $2)', [await roleId(db, 'DSO'), rana]);
+  });
+
   it('the same active grant cannot be given twice', async () => {
     const u = await createUser(db, 'Huda');
     const qc = await roleId(db, 'QC');
@@ -147,5 +189,97 @@ describe('audit log', () => {
     expect(await expectDbError(db, `UPDATE qiyas.audit_log SET action = 'x' WHERE id = $1`, [rows[0].id])).toContain('append-only');
     expect(await expectDbError(db, `DELETE FROM qiyas.audit_log WHERE id = $1`, [rows[0].id])).toContain('append-only');
     expect(await expectDbError(db, `TRUNCATE qiyas.audit_log`)).toContain('append-only');
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B5 (C9)
+// Two connections and committed fixtures: each test of this file otherwise runs inside one
+// BEGIN/ROLLBACK, where a race cannot happen. Runs last; the schema is reset afterwards.
+describe('SoD-5 under concurrency', () => {
+  let c1: Client;
+  let c2: Client;
+  let pid2: number;
+  let qc: string;
+  let dso: string;
+  let n = 0;
+  const person = async () => createUser(c1, `Race${++n}x${Date.now()}`);
+  const activeRoles = async (userId: string) => (await c1.query(`SELECT r.code FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id
+     WHERE g.user_id = $1 AND g.revoked_at IS NULL ORDER BY r.code`, [userId])).rows.map((r) => r.code);
+  const insertGrant = 'INSERT INTO qiyas.role_grants (role_id, user_id) VALUES ($1, $2)';
+
+  beforeAll(async () => {
+    c1 = await connectTestDb();
+    c2 = await connectTestDb();
+    pid2 = await backendPid(c2);
+    qc = await roleId(c1, 'QC');
+    dso = await roleId(c1, 'DSO');
+  });
+  afterEach(async () => {
+    // a failed assertion must not leave a transaction (and its locks) open for the next test
+    await c1.query('ROLLBACK');
+    await c2.query('ROLLBACK');
+  });
+  afterAll(async () => {
+    await c1?.end();
+    await c2?.end();
+    // cleanup of the committed fixtures (audit_log is append-only, so reset instead of DELETE)
+    await resetSchema(db);
+  });
+
+  it('interleaved QC and DSO grants for one user: the second fails', async () => {
+    const u = await person();
+    await c1.query('BEGIN');
+    await c1.query(insertGrant, [qc, u]); // not committed
+    await c2.query('BEGIN');
+    const second = track(c2.query(insertGrant, [dso, u]));
+    await waitUntilBlocked(db, pid2); // fails on baseline 80ae855: nothing serializes the two
+    await pause(200);
+    expect(second.state).toBe('pending');
+    await c1.query('COMMIT');
+    await second.done;
+    expect(second.state).toBe('rejected');
+    expect((second.error as Error).message).toContain('cannot be held by the same person');
+    await c2.query('ROLLBACK');
+    expect(await activeRoles(u)).toEqual(['QC']);
+  });
+
+  it('the same race through admin.grantRole', async () => {
+    const admin = await person();
+    await c1.query(insertGrant, [await roleId(c1, 'ADM'), admin]);
+    const u = await person();
+    await c1.query('BEGIN');
+    await grantRole(await buildContext(c1, admin), u, 'QC'); // not committed
+    await c2.query('BEGIN');
+    const second = track(buildContext(c2, admin).then((ctx) => grantRole(ctx, u, 'DSO')));
+    await waitUntilBlocked(db, pid2); // the service lock, taken before its read
+    await pause(200);
+    expect(second.state).toBe('pending');
+    await c1.query('COMMIT');
+    await second.done;
+    expect(second.state).toBe('rejected');
+    // the service's own validation message (422), not a raw database error
+    expect(second.error).toMatchObject({ code: 'validation', message: 'Qiyas Consultant and DGA Submission Officer cannot be held by the same person' });
+    await c2.query('ROLLBACK');
+    expect(await activeRoles(u)).toEqual(['QC']);
+  });
+
+  it('concurrent QC grants for two different users both commit (the lock is per user)', async () => {
+    const [a, b] = [await person(), await person()];
+    await c1.query('BEGIN');
+    await c1.query(insertGrant, [qc, a]); // not committed
+    await c2.query('BEGIN');
+    const second = track(c2.query(insertGrant, [qc, b]));
+    await Promise.race([second.done, pause(5000)]);
+    expect(second.state).toBe('resolved'); // did not wait for client 1
+    await c2.query('COMMIT');
+    await c1.query('COMMIT');
+    expect([await activeRoles(a), await activeRoles(b)]).toEqual([['QC'], ['QC']]);
+  });
+
+  it('positive control: once a QC grant is revoked and committed, DSO is granted from the other connection', async () => {
+    const u = await person();
+    await c1.query('INSERT INTO qiyas.role_grants (role_id, user_id, revoked_at) VALUES ($1, $2, NOW())', [qc, u]);
+    await c2.query(insertGrant, [dso, u]);
+    expect(await activeRoles(u)).toEqual(['DSO']);
   });
 });

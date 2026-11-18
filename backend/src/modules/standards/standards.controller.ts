@@ -5,7 +5,7 @@ import { AuthRequest } from '@/middleware/auth';
 import { asyncHandler, ValidationError } from '@/utils/errors';
 
 const createStandardSchema = z.object({
-  axisId: z.string().uuid('Invalid axis ID'),
+  axisId: z.guid('Invalid axis ID'),
   name: z.string().min(1, 'Name is required'),
   code: z.string().min(1, 'Code is required'),
   description: z.string().optional(),

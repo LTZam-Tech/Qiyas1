@@ -14,7 +14,7 @@ flowchart LR
     subgraph ClientB["Client B data centre"]
         IB["Qiyas installation B<br/>own DB · own storage · own users"]
     end
-    R["IltizamTech release package<br/>(versioned, signed)"] -->|"offline or internal transfer"| IA
+    R["IltizamTech release package<br/>(versioned; SHA256SUMS signed with minisign or cosign,<br/>key and digest published out of band)"] -->|"offline or internal transfer"| IA
     R --> IB
 ```
 
@@ -77,7 +77,7 @@ Object storage grows with evidence; plan 1–2 TB per cycle for large entities a
 | Topic | Approach |
 |---|---|
 | Packaging | Container images (Docker / Podman with Compose) as the standard; a Windows Server variant using the existing PowerShell scripts is possible but not the primary target. |
-| Offline install | Release = images + migrations + checksum manifest, transferable without internet access. |
+| Offline install | Release = images + migrations + checksum manifest (`SHA256SUMS`), transferable without internet access. `make-release.sh` signs the manifest (minisign, or cosign `sign-blob`) and adds image SBOMs when `syft` is available; the installer verifies the signature with the public key received out of band before running `sha256sum -c` (see `deploy/README.md`). |
 | Configuration | Per-installation `.env` (secrets, endpoints) + in-app settings (branding, calendar, SLAs, notifications). No client data in the release. |
 | First run | Setup wizard: organization profile, first administrator, SMTP, calendar, import DGA framework version. |
 | Upgrades | Versioned database migrations run by a dedicated step; backup taken automatically first; documented rollback. |
@@ -132,3 +132,4 @@ Not yet: a setup wizard (the admin command plus the Organization page cover it),
 - Google Fonts were loaded from the internet: now **bundled** with the web app (done).
 - The Jouf University logo was built into the login page: branding now comes from **settings** (done; the logo file was removed from the code).
 - Development-only pieces (`mock-api/`, debug files, `caddy.exe` and helper scripts in the repo root) are excluded from the images by `.dockerignore` and are not part of release packages (done).
+- The old Windows/Caddy launch path (`Caddyfile`, `caddy.exe`, the `Start-Qiyas-*.ps1`, `Start-Frontend-Port80.ps1`, `Open-Firewall.ps1` and `Stop-IIS.ps1` scripts) was **removed from the repository**. The Docker stack in `deploy/` (see `deploy/README.md`) is the only supported way to serve Qiyas to users. The Vite dev server, `mock-api/` and `npm run dev:phase1` are for a developer's own machine only: they listen on localhost and refuse proxied or non-localhost requests.

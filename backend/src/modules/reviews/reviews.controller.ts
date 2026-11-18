@@ -6,7 +6,7 @@ import { asyncHandler } from '@/utils/errors';
 import { ValidationError, ForbiddenError } from '@/utils/errors';
 
 const createReviewSchema = z.object({
-  submissionId: z.string().uuid('Invalid submission ID'),
+  submissionId: z.guid('Invalid submission ID'),
   decision: z.enum(['approved', 'rejected', 'revision_requested']),
   feedback: z.string().min(1, 'Feedback is required'),
 });

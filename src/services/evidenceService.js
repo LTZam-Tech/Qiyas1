@@ -1,6 +1,5 @@
 import { httpClient } from '../lib/httpClient.js';
 import errorLogger from './errorLogger.js';
-import { getAccessToken } from '../lib/authStorage.js';
 
 export async function getEvidenceItems() {
   try {

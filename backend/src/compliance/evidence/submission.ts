@@ -5,6 +5,7 @@
  * DGA's own verdict is out of scope.
  */
 import { ComplianceError, ServiceContext, audit, fromTransition, mustOne, requirePermission } from '../core/context';
+import { assertCycleWritable } from '../core/cycleGuard';
 import { ListOf, PageRequest, listQuery } from '../api/paging';
 import { submissionMachine } from '../domain/stateMachines';
 import { recomputeRequirement } from './readiness';
@@ -13,11 +14,24 @@ function officerActors(ctx: ServiceContext) {
   return ctx.actor.grants.some((g) => g.role === 'DSO') ? (['DSO'] as const) : ([] as const);
 }
 
+/**
+ * C10, D-C10-1: SoD-5 binds per record across role history. A consultant who accepted a link
+ * (and later became a submission officer) neither posts it nor reverts its posting.
+ * The database refuses the same (migration 009 guard_poster_not_reviewer).
+ */
+async function assertNotReviewerOf(ctx: ServiceContext, linkIds: string[]): Promise<void> {
+  const { rows } = await ctx.db.query(`SELECT 1 FROM qiyas.review_decisions
+     WHERE evidence_link_id = ANY($1::uuid[]) AND decision = 'accept' AND reviewer_id = $2 LIMIT 1`, [linkIds, ctx.actor.userId]);
+  if (rows.length > 0) throw new ComplianceError('forbidden', 'You reviewed this evidence; another submission officer must post it (SoD-5)');
+}
+
 export async function markPosted(ctx: ServiceContext, linkIds: string[], details: { dgaReference?: string } = {}): Promise<number> {
   requirePermission(ctx, 'submission.mark_posted');
   if (linkIds.length === 0) throw new ComplianceError('validation', 'Choose the evidence that was posted');
   const { rows } = await ctx.db.query('SELECT id, review_status, submission_status, cycle_requirement_id FROM qiyas.evidence_links WHERE id = ANY($1::uuid[]) FOR UPDATE', [linkIds]);
   if (rows.length !== new Set(linkIds).size) throw new ComplianceError('not_found', 'Some evidence was not found');
+  await assertCycleWritable(ctx.db, { linkIds }); // C5, D-C5-1
+  await assertNotReviewerOf(ctx, linkIds); // C10
   for (const l of rows) {
     if (l.review_status !== 'accepted') throw new ComplianceError('conflict', 'Only accepted evidence can be marked as posted'); // SoD-4
     let next;
@@ -40,6 +54,8 @@ export async function markPosted(ctx: ServiceContext, linkIds: string[], details
 export async function markNotPosted(ctx: ServiceContext, linkId: string, reason: string): Promise<void> {
   requirePermission(ctx, 'submission.mark_not_posted');
   const l = await mustOne(ctx.db, 'evidence', 'SELECT submission_status, cycle_requirement_id FROM qiyas.evidence_links WHERE id = $1 FOR UPDATE', [linkId]);
+  await assertCycleWritable(ctx.db, { linkIds: [linkId] }); // C5, D-C5-1
+  await assertNotReviewerOf(ctx, [linkId]); // C10, D-C10-1: unposting too
   let next;
   try {
     next = submissionMachine.next(l.submission_status, 'unpost', [...officerActors(ctx)], reason);
@@ -57,6 +73,7 @@ export async function markNotPosted(ctx: ServiceContext, linkId: string, reason:
 export async function createPackage(ctx: ServiceContext, cycleId: string, title: string, linkIds: string[]): Promise<string> {
   requirePermission(ctx, 'submission.package');
   if (!title?.trim() || linkIds.length === 0) throw new ComplianceError('validation', 'A package needs a title and at least one item');
+  await assertCycleWritable(ctx.db, { cycleId }); // C5, D-C5-1
   const { rows } = await ctx.db.query(`SELECT l.id, l.review_status FROM qiyas.evidence_links l
      JOIN qiyas.cycle_requirements cr ON cr.id = l.cycle_requirement_id WHERE l.id = ANY($1::uuid[]) AND cr.cycle_id = $2`, [linkIds, cycleId]);
   if (rows.length !== new Set(linkIds).size) throw new ComplianceError('validation', 'Some evidence is not part of this cycle');

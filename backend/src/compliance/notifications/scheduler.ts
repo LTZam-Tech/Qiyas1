@@ -18,6 +18,13 @@ import { Recipient, groupMembers, notify, people, taskInfo, usersWithRole } from
 
 const DAY = 24 * 60 * 60 * 1000;
 
+// C5, D-C5-3: a closed or archived cycle is frozen, so its timers send nothing
+const OPEN_CYCLE_STATUSES = "('planning', 'active')";
+const taskInOpenCycle = (taskId: string) => `${taskId} IN (SELECT t.id FROM qiyas.tasks t JOIN qiyas.measurement_cycles c ON c.id = t.cycle_id
+  WHERE c.status IN ${OPEN_CYCLE_STATUSES})`;
+const requirementInOpenCycle = (cycleRequirementId: string) => `${cycleRequirementId} IN (SELECT cr.id FROM qiyas.cycle_requirements cr
+  JOIN qiyas.measurement_cycles c ON c.id = cr.cycle_id WHERE c.status IN ${OPEN_CYCLE_STATUSES})`;
+
 export interface Policy {
   timer_kind: string;
   duration_business_days: number | null;
@@ -86,7 +93,7 @@ export async function runScheduler(ctx: SchedulerContext): Promise<SchedulerRepo
   }
 
   // 2a. implementation deadlines (paused deadlines send nothing)
-  const tasks = (await db.query(`SELECT * FROM qiyas.tasks WHERE execution_status IN ('assigned', 'in_progress', 'rework_required')`)).rows as TaskRow[];
+  const tasks = (await db.query(`SELECT * FROM qiyas.tasks WHERE execution_status IN ('assigned', 'in_progress', 'rework_required') AND ${taskInOpenCycle('id')}`)).rows as TaskRow[];
   for (const task of tasks) {
     const d = await taskDeadline(ctx, task);
     if (d.isPaused) continue;
@@ -105,7 +112,7 @@ export async function runScheduler(ctx: SchedulerContext): Promise<SchedulerRepo
   }
 
   // 2b. manager action: distributing the assignment inside the department
-  const waiting = (await db.query(`SELECT id, manager_due_at FROM qiyas.tasks WHERE execution_status = 'awaiting_assignment'`)).rows;
+  const waiting = (await db.query(`SELECT id, manager_due_at FROM qiyas.tasks WHERE execution_status = 'awaiting_assignment' AND ${taskInOpenCycle('id')}`)).rows;
   for (const w of waiting) {
     const t = await taskInfo(db, w.id);
     if (!t) continue;
@@ -118,7 +125,7 @@ export async function runScheduler(ctx: SchedulerContext): Promise<SchedulerRepo
 
   // 2c. consultants answering clarifications
   const clarPolicy = policies.get('clarification_response');
-  const clar = (await db.query(`SELECT id, task_id, response_due_at FROM qiyas.clarifications WHERE status = 'open'`)).rows;
+  const clar = (await db.query(`SELECT id, task_id, response_due_at FROM qiyas.clarifications WHERE status = 'open' AND ${taskInOpenCycle('task_id')}`)).rows;
   for (const c of clar) {
     const t = await taskInfo(db, c.task_id);
     if (!t) continue;
@@ -132,7 +139,8 @@ export async function runScheduler(ctx: SchedulerContext): Promise<SchedulerRepo
 
   // 2d. consultants deciding extension requests
   const extPolicy = policies.get('extension_decision');
-  const ext = (await db.query(`SELECT id, task_id, decision_due_at FROM qiyas.extension_requests WHERE level = 'formal' AND status = 'pending' AND decision_due_at IS NOT NULL`)).rows;
+  const ext = (await db.query(`SELECT id, task_id, decision_due_at FROM qiyas.extension_requests WHERE level = 'formal' AND status = 'pending' AND decision_due_at IS NOT NULL
+     AND ${taskInOpenCycle('task_id')}`)).rows;
   for (const e of ext) {
     const t = await taskInfo(db, e.task_id);
     if (!t) continue;
@@ -147,7 +155,7 @@ export async function runScheduler(ctx: SchedulerContext): Promise<SchedulerRepo
   const revPolicy = policies.get('review');
   const links = (await db.query(`SELECT l.id, l.review_due_at, l.claimed_by, a.title FROM qiyas.evidence_links l
      JOIN qiyas.artifact_versions v ON v.id = l.artifact_version_id JOIN qiyas.artifacts a ON a.id = v.artifact_id
-     WHERE l.review_status IN ('submitted', 'under_review') AND l.review_due_at IS NOT NULL`)).rows;
+     WHERE l.review_status IN ('submitted', 'under_review') AND l.review_due_at IS NOT NULL AND ${requirementInOpenCycle('l.cycle_requirement_id')}`)).rows;
   for (const l of links) {
     const reviewers = l.claimed_by ? [l.claimed_by] : await usersWithRole(db, 'QC');
     await timer({
@@ -163,7 +171,7 @@ export async function runScheduler(ctx: SchedulerContext): Promise<SchedulerRepo
     const accepted = (await db.query(`SELECT l.id, a.title,
          (SELECT max(d.at) FROM qiyas.review_decisions d WHERE d.evidence_link_id = l.id AND d.decision = 'accept') AS accepted_at
        FROM qiyas.evidence_links l JOIN qiyas.artifact_versions v ON v.id = l.artifact_version_id JOIN qiyas.artifacts a ON a.id = v.artifact_id
-       WHERE l.review_status = 'accepted' AND l.submission_status = 'not_posted'`)).rows;
+       WHERE l.review_status = 'accepted' AND l.submission_status = 'not_posted' AND ${requirementInOpenCycle('l.cycle_requirement_id')}`)).rows;
     const officers = await usersWithRole(db, 'DSO');
     for (const l of accepted) {
       if (!l.accepted_at) continue;

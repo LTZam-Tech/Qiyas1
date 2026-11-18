@@ -20,8 +20,9 @@ class Database {
       connectionTimeoutMillis: 10000,
       // The original tables live in "public" and are queried unqualified. Pin the search path so a
       // database user named like another schema (e.g. "qiyas") never redirects them; Qiyas Phase 1
-      // always names its schema explicitly.
-      options: '-c search_path=public',
+      // always names its schema explicitly. A session left idle inside a transaction is ended after
+      // 60 s so it cannot hold its locks and pooled connection indefinitely (C13).
+      options: '-c search_path=public -c idle_in_transaction_session_timeout=60000',
     });
 
     this.pool.on('error', (err: Error) => {

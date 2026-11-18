@@ -6,6 +6,17 @@
 import { ComplianceError, ServiceContext, audit, mustOne, one, requirePermission } from '../core/context';
 import { ListOf, PageRequest, listQuery } from '../api/paging';
 import { RoleCode, RoleGrant, validateGrant, GrantError } from '../domain/permissions';
+import { releaseClaimsOf } from '../evidence/review';
+
+/**
+ * C17: role grants, department membership and group membership are only given to an active
+ * account. The row is read FOR SHARE, so a concurrent deactivation waits for this transaction and
+ * its cascade (migration 011) then revokes what was just given.
+ */
+async function assertActiveUser(db: ServiceContext['db'], userId: string): Promise<void> {
+  const u = await mustOne(db, 'user', 'SELECT is_active, deleted_at FROM public.users WHERE id = $1 FOR SHARE', [userId]);
+  if (!u.is_active || u.deleted_at) throw new ComplianceError('validation', 'This account is deactivated; reactivate it before giving it roles or memberships');
+}
 
 export async function createDepartment(ctx: ServiceContext, input: { code: string; nameAr: string; nameEn: string; parentId?: string | null }): Promise<string> {
   requirePermission(ctx, 'admin.departments');
@@ -29,6 +40,7 @@ export async function updateDepartment(ctx: ServiceContext, id: string, input: {
 export async function setDepartmentManager(ctx: ServiceContext, departmentId: string, userId: string): Promise<void> {
   requirePermission(ctx, 'admin.departments');
   const db = ctx.db;
+  await assertActiveUser(db, userId); // C17
   const current = await one(db, `SELECT id, user_id FROM qiyas.department_members WHERE department_id = $1 AND membership = 'manager' AND valid_to IS NULL FOR UPDATE`, [departmentId]);
   if (current?.user_id === userId) return;
   if (current) {
@@ -44,6 +56,7 @@ export async function setDepartmentManager(ctx: ServiceContext, departmentId: st
 
 export async function addDepartmentMember(ctx: ServiceContext, departmentId: string, userId: string): Promise<void> {
   requirePermission(ctx, 'admin.departments');
+  await assertActiveUser(ctx.db, userId); // C17
   const exists = await one(ctx.db, 'SELECT 1 FROM qiyas.department_members WHERE department_id = $1 AND user_id = $2 AND valid_to IS NULL', [departmentId, userId]);
   if (exists) throw new ComplianceError('conflict', 'Already a member of this department');
   await ctx.db.query(`INSERT INTO qiyas.department_members (department_id, user_id, membership, created_by) VALUES ($1, $2, 'member', $3)`, [departmentId, userId, ctx.actor.userId]);
@@ -63,14 +76,31 @@ export async function removeDepartmentMember(ctx: ServiceContext, departmentId: 
   await audit(ctx, { action: 'admin.member_removed', entityType: 'department', entityId: departmentId, before: { userId } });
 }
 
+/** Roles whose grants are serialized per user for SoD-5 (C9). */
+const SOD_LOCKED_ROLES: readonly RoleCode[] = ['QC', 'DSO'];
+
+/** Same key as qiyas.check_role_grant() and qiyas.check_group_member_sod() (migration 008); held until commit. */
+async function lockUserGrants(db: ServiceContext['db'], userId: string): Promise<void> {
+  await db.query('SELECT pg_advisory_xact_lock(7301, hashtext($1::text))', [userId]);
+}
+
 /** Grants a role, enforcing separation of duties (D3) before the database does. */
 export async function grantRole(ctx: ServiceContext, userId: string, role: RoleCode, departmentId: string | null = null, internal = false): Promise<string | null> {
   if (!internal) requirePermission(ctx, 'admin.roles');
-  const { rows } = await ctx.db.query(`SELECT r.code AS role, g.department_id FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id
-     WHERE g.user_id = $1 AND g.revoked_at IS NULL`, [userId]);
-  const existing: RoleGrant[] = rows.map((r) => ({ role: r.role, departmentId: r.department_id }));
+  await assertActiveUser(ctx.db, userId); // C17
+  // C9: the same per-user lock as the check_role_grant trigger (migration 008), taken before the read,
+  // so a concurrent QC/DSO grant for this person waits and then sees the committed row.
+  if (SOD_LOCKED_ROLES.includes(role)) await lockUserGrants(ctx.db, userId);
+  const { rows } = await ctx.db.query(`SELECT r.code AS role, g.department_id, g.user_id IS NULL AS via_group
+       FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id
+     WHERE g.revoked_at IS NULL
+       AND (g.user_id = $1 OR g.group_id IN (SELECT group_id FROM qiyas.group_members WHERE user_id = $1))`, [userId]);
+  // duplicates are judged on personal grants only (unchanged); SoD-5 also counts group-derived grants
+  const existing: RoleGrant[] = rows.filter((r) => !r.via_group).map((r) => ({ role: r.role, departmentId: r.department_id }));
+  const viaGroups: RoleGrant[] = rows.filter((r) => r.via_group).map((r) => ({ role: r.role, departmentId: r.department_id }));
   try {
     validateGrant(existing, { role, departmentId });
+    validateGrant(viaGroups.filter((g) => g.role !== role), { role, departmentId });
   } catch (e) {
     if (e instanceof GrantError && e.code === 'duplicate' && internal) return null;
     if (e instanceof GrantError) throw new ComplianceError(e.code === 'duplicate' ? 'conflict' : 'validation', e.message);
@@ -84,15 +114,35 @@ export async function grantRole(ctx: ServiceContext, userId: string, role: RoleC
 
 export async function revokeGrant(ctx: ServiceContext, grantId: string, reason?: string): Promise<void> {
   requirePermission(ctx, 'admin.roles');
-  const g = await mustOne(ctx.db, 'grant', `SELECT g.user_id, r.code FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id WHERE g.id = $1 AND g.revoked_at IS NULL FOR UPDATE`, [grantId]);
+  const g = await mustOne(ctx.db, 'grant', `SELECT g.user_id, g.group_id, r.code FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id WHERE g.id = $1 AND g.revoked_at IS NULL FOR UPDATE`, [grantId]);
   if (g.user_id === ctx.actor.userId && g.code === 'ADM') throw new ComplianceError('conflict', 'You cannot remove your own administrator role');
   await ctx.db.query('UPDATE qiyas.role_grants SET revoked_at = $2, revoked_by = $3 WHERE id = $1', [grantId, ctx.now, ctx.actor.userId]);
   await audit(ctx, { action: 'admin.role_revoked', entityType: 'user', entityId: g.user_id, before: { role: g.code }, reason });
+  if (g.code === 'QC') await releaseClaimsOfFormerConsultants(ctx, g.user_id ? [g.user_id] : await groupMembers(ctx.db, g.group_id));
+}
+
+async function groupMembers(db: ServiceContext['db'], groupId: string): Promise<string[]> {
+  const { rows } = await db.query('SELECT user_id FROM qiyas.group_members WHERE group_id = $1', [groupId]);
+  return rows.map((r) => r.user_id as string);
+}
+
+/**
+ * C11, D-C11-3: a person who no longer holds QC (directly or through a group) gives their review
+ * claims back to the shared queue, audited as review.released with reason 'role revoked'.
+ */
+async function releaseClaimsOfFormerConsultants(ctx: ServiceContext, userIds: string[]): Promise<void> {
+  for (const userId of userIds) {
+    const stillQc = await one(ctx.db, `SELECT 1 FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id
+       WHERE r.code = 'QC' AND g.revoked_at IS NULL
+         AND (g.user_id = $1 OR g.group_id IN (SELECT group_id FROM qiyas.group_members WHERE user_id = $1))`, [userId]);
+    if (!stillQc) await releaseClaimsOf(ctx.db, userId, { at: ctx.now, actorId: ctx.actor.userId, reason: 'role revoked' });
+  }
 }
 
 export async function setGroupMembers(ctx: ServiceContext, groupCode: string, userIds: string[]): Promise<void> {
   requirePermission(ctx, 'admin.groups');
   const g = await mustOne(ctx.db, 'group', 'SELECT id FROM qiyas.groups WHERE code = $1', [groupCode]);
+  for (const u of new Set(userIds)) await assertActiveUser(ctx.db, u); // C17
   await ctx.db.query('DELETE FROM qiyas.group_members WHERE group_id = $1', [g.id]);
   for (const u of new Set(userIds)) await ctx.db.query('INSERT INTO qiyas.group_members (group_id, user_id) VALUES ($1, $2)', [g.id, u]);
   await audit(ctx, { action: 'admin.group_members', entityType: 'group', entityId: g.id, after: { userIds } });
@@ -122,7 +172,7 @@ export async function saveOrgSettings(ctx: ServiceContext, input: { nameAr: stri
 
 export async function listUsers<P extends PageRequest | null = null>(ctx: ServiceContext, page: P = null as P, text?: string): Promise<ListOf<any, P>> {
   requirePermission(ctx, 'admin.users');
-  return listQuery(ctx.db, `SELECT u.id, u.name, u.email,
+  return listQuery(ctx.db, `SELECT u.id, u.name, u.email, (u.is_active AND u.deleted_at IS NULL) AS active,
       COALESCE((SELECT json_agg(json_build_object('id', g.id, 'role', r.code, 'departmentId', g.department_id))
         FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id WHERE g.user_id = u.id AND g.revoked_at IS NULL), '[]') AS grants
      FROM public.users u

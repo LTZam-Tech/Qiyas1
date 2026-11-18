@@ -1,0 +1,35 @@
+# CI-2: dependency update proposals. CI-1: the github-actions entry proposes updates for the
+# actions in .github/workflows; replace each tag with its full commit SHA when reviewing.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: npm
+    directory: "/backend"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: "/backend"
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: "/deploy"
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly

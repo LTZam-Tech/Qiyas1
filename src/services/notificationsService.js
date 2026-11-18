@@ -37,7 +37,7 @@ export async function markNotificationAsRead(id) {
   try {
     await httpClient.post(`/notifications/${id}/mark-read`);
     return true;
-  } catch (error) {
+  } catch {
     errorLogger.logWarning('Mark notification as read failed', 'backend', { id });
     return false;
   }
@@ -47,7 +47,7 @@ export async function markAllNotificationsAsRead() {
   try {
     await httpClient.post('/notifications/mark-all-read');
     return true;
-  } catch (error) {
+  } catch {
     errorLogger.logWarning('Mark all notifications as read failed', 'backend');
     return false;
   }

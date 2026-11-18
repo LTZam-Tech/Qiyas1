@@ -16,6 +16,7 @@ import { EvidenceDeps, fileRules } from '../evidence/evidence';
 import { sha256Hex } from '../evidence/storage';
 import catalogueFile from './dga-library.json';
 import { ListOf, PageRequest, listQuery } from '../api/paging';
+import { FRAMEWORK_LIMITS } from '../framework/frameworkFile';
 
 export const LIBRARY_KINDS = ['law', 'regulation', 'royal_decree', 'royal_order', 'decision', 'circular', 'directive',
   'controls', 'policy', 'guide', 'framework', 'user_guide', 'report', 'presentation', 'other'] as const;
@@ -55,6 +56,9 @@ export interface Citation {
   detail: string | null;
 }
 
+/** Longest reference text parseCitation reads (same as FRAMEWORK_LIMITS.reference). */
+export const MAX_CITATION_CHARS = 2000;
+
 const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
 const westernDigits = (s: string) => s.replace(/[٠-٩]/g, (d) => String(ARABIC_DIGITS.indexOf(d)));
 
@@ -81,17 +85,20 @@ function shortHash(s: string): string {
  * Returns null when the entry names no numbered instrument.
  */
 export function parseCitation(ref: { ar?: string; en?: string }): Citation | null {
+  // C14: no real reference comes close; longer text is never parsed (it also neutralises rows already stored)
+  if ((ref.ar ?? '').length > MAX_CITATION_CHARS || (ref.en ?? '').length > MAX_CITATION_CHARS) return null;
   const ar = westernDigits((ref.ar ?? '').replace(/\s+/g, ' ').trim());
-  const m = ar.match(/^(.*?)\s*(?:الصادرة?\s+)?(?:رقم|برقم|رقـم)\s*\(([^)]+)\)\s*(?:و?بتاريخ|وتاريخ|وتاريـخ)\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\s*هـ?/);
+  // whitespace is collapsed above, so \s? matches what \s* did; the prefix and the number are bounded (C14)
+  const m = ar.match(/^(.{0,300}?)\s?(?:الصادرة?\s)?(?:رقم|برقم|رقـم)\s?\(([^)]{1,60})\)\s?(?:و?بتاريخ|وتاريخ|وتاريـخ)\s?(\d{1,2})\s?\/\s?(\d{1,2})\s?\/\s?(\d{4})\s?هـ?/);
   if (!m) return null;
   const prefix = m[1].replace(/\s+الصادر(ة)?$/, '').trim();
   if (!prefix) return null;
   const number = m[2].replace(/\s+/g, ' ').trim();
   const date = `${Number(m[3])}/${Number(m[4])}/${m[5]}هـ`;
   const kind = citationKind(prefix);
-  const rest = ar.slice(m[0].length).replace(/^[\s،,.]+/, '').replace(/[.\s]+$/, '');
+  const rest = trimTrailingDotsAndSpaces(ar.slice(m[0].length).replace(/^[\s،,.]+/, ''));
   const en = (ref.en ?? '').replace(/\s+/g, ' ').trim();
-  const em = en.match(/^(.*?\bNo\.\s*\([^)]+\)\s*dated\s*[\d/]+\s*H?)/i);
+  const em = en.match(/^(.{0,300}?\bNo\.\s?\([^)]{1,60}\)\s?dated\s?[\d/]+\s?H?)/i);
   return {
     code: `cite-${kind}-${number.replace(/[^0-9A-Za-zء-ي]+/g, '-')}-${m[5]}-${shortHash(prefix.replace(/[\sً-ْ]/g, ''))}`,
     kind,
@@ -100,6 +107,13 @@ export function parseCitation(ref: { ar?: string; en?: string }): Citation | nul
     issuedOn: date,
     detail: rest || null,
   };
+}
+
+/** Same as .replace(/[.\s]+$/, '') without the regex, which is quadratic on a long run of dots followed by a letter. */
+function trimTrailingDotsAndSpaces(s: string): string {
+  let end = s.length;
+  while (end > 0 && (s[end - 1] === '.' || /\s/.test(s[end - 1]))) end -= 1;
+  return s.slice(0, end);
 }
 
 // ------------------------------------------------------------------ sync
@@ -154,7 +168,9 @@ export async function syncLibrary(db: Db, catalogue: LibraryCatalogue = SHIPPED_
 
   const citationIds = new Map<string, string>();
   for (const s of standards) {
-    for (const ref of s.references ?? []) {
+    // C14: at most referencesPerStandard references per standard, also for rows stored before the file caps
+    const refs = Array.isArray(s.references) ? s.references.slice(0, FRAMEWORK_LIMITS.referencesPerStandard) : [];
+    for (const ref of refs) {
       const c = parseCitation(ref);
       if (!c) continue;
       let documentId = citationIds.get(c.code);
@@ -251,6 +267,9 @@ export interface NewLibraryDocument {
   frameworkVersionId?: string;
 }
 
+/** Standard codes one client document may be linked to in one request. */
+export const MAX_LINKED_STANDARD_CODES = 500;
+
 export async function addLibraryDocument(ctx: ServiceContext, input: NewLibraryDocument): Promise<string> {
   requirePermission(ctx, 'library.manage');
   if (input.externalUrl && !/^https?:\/\//i.test(input.externalUrl)) throw new ComplianceError('validation', 'Links must start with http:// or https://');
@@ -260,6 +279,7 @@ export async function addLibraryDocument(ctx: ServiceContext, input: NewLibraryD
      VALUES ($1, $2, 'client', $3, $4, $5, $6, $7, $8, $9, $10, $10) RETURNING id`,
   [code, input.kind, input.issuer ?? null, input.version ?? null, input.issuedOn ?? null, input.titleAr.trim(), input.titleEn.trim(), input.externalUrl ?? null, ctx.actor.userId, ctx.now]);
   if (input.standardCodes?.length) {
+    if (input.standardCodes.length > MAX_LINKED_STANDARD_CODES) throw new ComplianceError('validation', `Link at most ${MAX_LINKED_STANDARD_CODES} standards at once`);
     if (!input.frameworkVersionId) throw new ComplianceError('validation', 'Choose the framework version of the standard codes');
     const { rows } = await ctx.db.query(`SELECT s.id, s.code FROM qiyas.standards s JOIN qiyas.axes a ON a.id = s.axis_id
        JOIN qiyas.perspectives p ON p.id = a.perspective_id WHERE p.framework_version_id = $1 AND s.code = ANY($2)`, [input.frameworkVersionId, input.standardCodes]);

@@ -60,6 +60,7 @@ All escalation records are immutable and shown on the task timeline and on dashb
 | `task.escalated` | Manual or automatic escalation of an employee's task | DM ✱, previous owner, QC | in-app, email |
 | `task.escalated_to_self` | DM-owned task passed its deadline (D2) | DM ✱ | in-app, email |
 | `task.overdue_reminder` | DM-owned task still overdue | DM ✱ | in-app, email |
+| `task.escalation_blocked` | Automatic escalation due, but the department has no active manager (the task is skipped) | QC ✱, ADM ✱ | in-app, email |
 | `task.deadline_reminder` | Reminder offsets reached | Current owner | in-app, email |
 | `task.overdue` | Deadline passed | Current owner ✱, DM | in-app, email |
 | `task.returned_for_rework` | Link rejected | DM ✱, executor who submitted | in-app, email |

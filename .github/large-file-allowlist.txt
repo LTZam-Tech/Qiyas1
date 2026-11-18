@@ -1,0 +1,4 @@
+# CI-9: tracked files allowed to exceed 1 MB or to be PE/ELF binaries.
+# One repository-relative path per line; '#' starts a comment. Add a path only after review.
+# The shipped DGA framework data files (backend/src/compliance/framework/data/*.json, about
+# 730 KB each) are under the limit and need no entry.

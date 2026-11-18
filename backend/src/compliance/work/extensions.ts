@@ -5,6 +5,7 @@
  * The original deadline never changes; approval sets the task's extension date.
  */
 import { ComplianceError, ServiceContext, audit, fromTransition, mustOne, requirePermission } from '../core/context';
+import { assertCycleWritable } from '../core/cycleGuard';
 import { addBusinessDays } from '../domain/calendar';
 import { actorsFor } from '../domain/permissions';
 import { extensionAskMachine, extensionMachine } from '../domain/stateMachines';
@@ -15,6 +16,7 @@ const OPEN = ['awaiting_assignment', 'assigned', 'in_progress', 'rework_required
 
 async function assertLaterThanCurrent(ctx: ServiceContext, taskId: string, requestedDueAt: Date) {
   const task = await getTask(ctx.db, taskId);
+  await assertCycleWritable(ctx.db, { cycleId: task.cycle_id }); // C5, D-C5-3
   if (!OPEN.includes(task.execution_status)) throw new ComplianceError('conflict', `A ${task.execution_status} task cannot be extended`);
   const deadline = await taskDeadline(ctx, task);
   if (requestedDueAt <= deadline.currentDueAt) throw new ComplianceError('validation', 'The requested date must be after the current deadline');
@@ -66,9 +68,12 @@ export async function requestExtension(ctx: ServiceContext, taskId: string, requ
   return insertFormal(ctx, taskId, requestedDueAt, justification, null);
 }
 
+/** Every caller writes, so a closed cycle refuses here (C5, D-C5-3). */
 async function loadAsk(ctx: ServiceContext, id: string) {
-  return mustOne(ctx.db, 'request', `SELECT e.*, t.department_id FROM qiyas.extension_requests e JOIN qiyas.tasks t ON t.id = e.task_id
+  const ask = await mustOne(ctx.db, 'request', `SELECT e.*, t.department_id, t.cycle_id FROM qiyas.extension_requests e JOIN qiyas.tasks t ON t.id = e.task_id
      WHERE e.id = $1 AND e.level = 'employee_ask' FOR UPDATE OF e`, [id]);
+  await assertCycleWritable(ctx.db, { cycleId: ask.cycle_id });
+  return ask;
 }
 
 /** The manager turns the employee's ask into a formal request, optionally adjusting date and reason. */
@@ -99,8 +104,13 @@ export async function declineAsk(ctx: ServiceContext, askId: string, reason: str
   await audit(ctx, { action: 'extension.ask_declined', entityType: 'extension_request', entityId: askId, reason });
 }
 
+/** Every caller writes, so a closed cycle refuses here (C5, D-C5-3). */
 async function loadFormal(ctx: ServiceContext, id: string) {
-  return mustOne(ctx.db, 'request', `SELECT * FROM qiyas.extension_requests WHERE id = $1 AND level = 'formal' FOR UPDATE`, [id]);
+  // C11: joins the task so callers can check current grants against its department
+  const r = await mustOne(ctx.db, 'request', `SELECT e.*, t.department_id, t.cycle_id FROM qiyas.extension_requests e JOIN qiyas.tasks t ON t.id = e.task_id
+     WHERE e.id = $1 AND e.level = 'formal' FOR UPDATE OF e`, [id]);
+  await assertCycleWritable(ctx.db, { taskId: r.task_id });
+  return r;
 }
 
 export async function approveExtension(ctx: ServiceContext, requestId: string, approvedDueAt?: Date): Promise<Date> {
@@ -118,7 +128,8 @@ export async function approveExtension(ctx: ServiceContext, requestId: string, a
   await ctx.db.query('UPDATE qiyas.extension_requests SET status = $2, decided_by = $3, decided_at = $4, approved_due_at = $5 WHERE id = $1',
     [requestId, next, ctx.actor.userId, ctx.now, due]);
   const task = await getTask(ctx.db, r.task_id, true);
-  await ctx.db.query('UPDATE qiyas.tasks SET approved_extension_due_at = $2 WHERE id = $1', [r.task_id, due]);
+  // C12: the approval time is recorded so only later pauses move the approved date (BR-EXT-03)
+  await ctx.db.query('UPDATE qiyas.tasks SET approved_extension_due_at = $2, approved_extension_at = $3 WHERE id = $1', [r.task_id, due, ctx.now]);
   await audit(ctx, { action: 'extension.approved', entityType: 'task', entityId: r.task_id,
     before: { extensionDueAt: task.approved_extension_due_at }, after: { extensionDueAt: due, requestId } });
   return due;
@@ -142,8 +153,12 @@ export async function rejectExtension(ctx: ServiceContext, requestId: string, re
 export async function withdrawExtension(ctx: ServiceContext, requestId: string): Promise<void> {
   const r = await loadFormal(ctx, requestId);
   if (r.requested_by !== ctx.actor.userId) throw new ComplianceError('forbidden', 'Only the manager who asked can withdraw it');
+  // C11, D-C11-2: the requester may withdraw only while still holding DM for the task's department
+  const actors = taskActors(ctx, r);
+  if (!actors.includes('DM')) throw new ComplianceError('forbidden', 'Only the current department manager who asked can withdraw it');
+  requirePermission(ctx, 'extension.request', { departmentId: r.department_id });
   try {
-    const next = extensionMachine.next(r.status, 'withdraw', ['DM']);
+    const next = extensionMachine.next(r.status, 'withdraw', actors);
     await ctx.db.query('UPDATE qiyas.extension_requests SET status = $2 WHERE id = $1', [requestId, next]);
   } catch (e) {
     return fromTransition(e);

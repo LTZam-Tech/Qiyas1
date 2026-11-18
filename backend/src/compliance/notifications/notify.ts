@@ -3,7 +3,7 @@
  * - Mandatory notifications (✱ in the catalogue) ignore the recipient's mutes.
  * - Every notification has a dedupe key, so producers can safely run twice.
  */
-import { Db, one } from '../core/context';
+import { Db, activeUserSql, one } from '../core/context';
 import { RoleCode } from '../domain/permissions';
 import { EVENTS, EventCode } from './catalogue';
 
@@ -32,6 +32,12 @@ export async function notify(db: Db, input: NotifyInput): Promise<number> {
     if (r.userId === input.actorId && !r.mandatory) continue;
     merged.set(r.userId, (merged.get(r.userId) ?? false) || Boolean(r.mandatory));
   }
+  // C17: deactivated or soft-deleted accounts get nothing, mandatory or not (single choke point)
+  if (merged.size > 0) {
+    const { rows } = await db.query(`SELECT id FROM public.users WHERE id = ANY($1::uuid[]) AND is_active AND deleted_at IS NULL`, [[...merged.keys()]]);
+    const active = new Set(rows.map((r) => r.id as string));
+    for (const id of [...merged.keys()]) if (!active.has(id)) merged.delete(id);
+  }
   let created = 0;
   for (const [userId, mandatory] of merged) {
     const { rows } = await db.query('SELECT channel FROM qiyas.notification_mutes WHERE user_id = $1 AND event_code = $2', [userId, input.event]);
@@ -55,13 +61,14 @@ export async function usersWithRole(db: Db, role: RoleCode): Promise<string[]> {
   const { rows } = await db.query(`SELECT DISTINCT COALESCE(g.user_id, gm.user_id) AS user_id
      FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id
      LEFT JOIN qiyas.group_members gm ON gm.group_id = g.group_id
-    WHERE r.code = $1 AND g.revoked_at IS NULL AND COALESCE(g.user_id, gm.user_id) IS NOT NULL`, [role]);
+    WHERE r.code = $1 AND g.revoked_at IS NULL AND COALESCE(g.user_id, gm.user_id) IS NOT NULL
+      AND ${activeUserSql('COALESCE(g.user_id, gm.user_id)')}`, [role]);
   return rows.map((r) => r.user_id);
 }
 
 export async function groupMembers(db: Db, groupCode: string | null | undefined): Promise<string[]> {
   if (!groupCode) return [];
-  const { rows } = await db.query(`SELECT gm.user_id FROM qiyas.group_members gm JOIN qiyas.groups g ON g.id = gm.group_id WHERE g.code = $1`, [groupCode]);
+  const { rows } = await db.query(`SELECT gm.user_id FROM qiyas.group_members gm JOIN qiyas.groups g ON g.id = gm.group_id WHERE g.code = $1 AND ${activeUserSql('gm.user_id')}`, [groupCode]);
   return rows.map((r) => r.user_id);
 }
 
@@ -78,7 +85,8 @@ export interface TaskInfo {
 
 export async function taskInfo(db: Db, taskId: string): Promise<TaskInfo | undefined> {
   const t = await one(db, `SELECT t.id, t.title, t.department_id, t.current_owner_id, t.original_assignee_id, a.assigned_by,
-      (SELECT user_id FROM qiyas.department_members m WHERE m.department_id = t.department_id AND m.membership = 'manager' AND m.valid_to IS NULL) AS manager_id
+      (SELECT user_id FROM qiyas.department_members m WHERE m.department_id = t.department_id AND m.membership = 'manager' AND m.valid_to IS NULL
+        AND ${activeUserSql('m.user_id')}) AS manager_id
      FROM qiyas.tasks t JOIN qiyas.assignments a ON a.id = t.assignment_id WHERE t.id = $1`, [taskId]);
   if (!t) return undefined;
   return {

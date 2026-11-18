@@ -4,7 +4,7 @@ import { randomBytes, createHash } from 'crypto';
 import nodemailer from 'nodemailer';
 import db from '@/db';
 import config from '@/config';
-import { UnauthorizedError, ConflictError, BusinessLogicError } from '@/utils/errors';
+import { AppError, UnauthorizedError, ConflictError } from '@/utils/errors';
 import logger from '@/utils/logger';
 import { Algorithm } from 'jsonwebtoken';
 import { SignOptions } from 'jsonwebtoken';
@@ -14,7 +14,13 @@ interface TokenPair {
   refreshToken: string;
 }
 
+/** One response for every failed sign-in before the password is proven (C7). */
+const INVALID_CREDENTIALS = 'Invalid credentials';
+
 class AuthService {
+  // Compared against when the email is unknown, so an unknown email costs the same bcrypt work as a
+  // known one (C7). Computed once with the configured rounds; the random input is never stored.
+  private readonly dummyHash: string = bcrypt.hashSync(randomBytes(16).toString('hex'), config.security.bcryptRounds);
   private readonly passwordChangeAttempts = new Map<string, number[]>();
   private static readonly PASSWORD_CHANGE_WINDOW_MS = 15 * 60 * 1000;
   private static readonly PASSWORD_CHANGE_MAX_ATTEMPTS = 5;
@@ -51,7 +57,7 @@ class AuthService {
     const host = process.env.SMTP_HOST;
     const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined;
     const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
+    const pass = process.env.SMTP_PASSWORD ?? process.env.SMTP_PASS;
     const from = process.env.SMTP_FROM || 'no-reply@qiyas.local';
 
     if (!host || !port || !user || !pass) {
@@ -122,36 +128,33 @@ class AuthService {
       [email]
     );
 
-    if (result.rows.length === 0) {
-      throw new UnauthorizedError('Invalid credentials');
+    const row = result.rows[0];
+
+    // Always verify the password first, against a dummy hash for an unknown email, so the response and
+    // its timing do not depend on whether the account exists, is locked or is inactive (C7).
+    const isPasswordValid = await bcrypt.compare(password, row?.password_hash ?? this.dummyHash);
+    const isLocked = Boolean(row?.locked_until && new Date(row.locked_until) > new Date());
+
+    if (!row || !isPasswordValid) {
+      // Count only failures against an existing account outside an active lock, so attempts during a
+      // lock never extend it (C6).
+      if (row && !isLocked) await this.handleFailedLogin(row.id);
+      throw new UnauthorizedError(INVALID_CREDENTIALS);
     }
 
     const user = {
-      ...result.rows[0],
-      name: result.rows[0].user_name
+      ...row,
+      name: row.user_name
     };
 
-    // Check if account is locked
-    if (user.locked_until && new Date(user.locked_until) > new Date()) {
+    // Account state is reported only after a correct password (D-C7-2); a lock is a 401 (D-C7-3).
+    if (isLocked) {
       const remainingMinutes = Math.ceil((new Date(user.locked_until).getTime() - Date.now()) / 60000);
-      throw new BusinessLogicError(
-        `Account is locked. Try again in ${remainingMinutes} minutes`,
-        'ACCOUNT_LOCKED'
-      );
+      throw new AppError(`Account is locked. Try again in ${remainingMinutes} minutes`, 401, 'ACCOUNT_LOCKED');
     }
 
-    // Check account status
     if (!user.is_active) {
-      throw new UnauthorizedError('Account is not active');
-    }
-
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-
-    if (!isPasswordValid) {
-      // Increment failed login attempts
-      await this.handleFailedLogin(user.id);
-      throw new UnauthorizedError('Invalid credentials');
+      throw new AppError('Account is not active', 401, 'ACCOUNT_INACTIVE');
     }
 
     // Reset failed login attempts on successful login
@@ -188,33 +191,31 @@ class AuthService {
     };
   }
 
-  // Handle failed login attempts
+  // Handle failed login attempts (C6). One atomic update: a lock that has expired starts a fresh count
+  // (D-C6-1), and reaching the threshold sets the lock and resets the counter. The caller never counts
+  // attempts made during an active lock.
   private async handleFailedLogin(userId: string): Promise<void> {
     const result = await db.query(
-      `UPDATE users 
-       SET failed_login_attempts = failed_login_attempts + 1 
-       WHERE id = $1 AND deleted_at IS NULL
-       RETURNING failed_login_attempts`,
-      [userId]
+      `UPDATE users SET
+         failed_login_attempts = CASE
+           WHEN (CASE WHEN locked_until IS NOT NULL AND locked_until <= NOW() THEN 1 ELSE failed_login_attempts + 1 END) >= $2 THEN 0
+           WHEN locked_until IS NOT NULL AND locked_until <= NOW() THEN 1
+           ELSE failed_login_attempts + 1
+         END,
+         locked_until = CASE
+           WHEN (CASE WHEN locked_until IS NOT NULL AND locked_until <= NOW() THEN 1 ELSE failed_login_attempts + 1 END) >= $2
+             THEN NOW() + make_interval(mins => $3::int)
+           WHEN locked_until IS NOT NULL AND locked_until <= NOW() THEN NULL
+           ELSE locked_until
+         END
+       WHERE id = $1 AND deleted_at IS NULL AND (locked_until IS NULL OR locked_until <= NOW())
+       RETURNING failed_login_attempts, locked_until`,
+      [userId, config.security.maxLoginAttempts, config.security.lockoutDurationMinutes]
     );
 
-    if (result.rows.length === 0) {
-      throw new UnauthorizedError('User not found');
-    }
-
-    const attempts = result.rows[0].failed_login_attempts;
-
-    // Lock account after max attempts
-    if (attempts >= config.security.maxLoginAttempts) {
-      const lockUntil = new Date();
-      lockUntil.setMinutes(lockUntil.getMinutes() + config.security.lockoutDurationMinutes);
-
-      await db.query(
-        `UPDATE users SET locked_until = $1 WHERE id = $2`,
-        [lockUntil, userId]
-      );
-
-      logger.warn('Account locked due to failed login attempts', { userId, attempts });
+    const row = result.rows[0];
+    if (row?.locked_until) {
+      logger.warn('Account locked due to failed login attempts', { userId, attempts: config.security.maxLoginAttempts });
     }
   }
 

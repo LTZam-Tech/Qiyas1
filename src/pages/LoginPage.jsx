@@ -53,6 +53,11 @@ const LoginPage = ({ onLogin, isLoading, lang = 'ar', onChangeLanguage }) => {
           `Can't reach the server. Make sure it is running on port ${getBackendPortLabel()}.`,
           `سرور تک رسائی نہیں ہو سکی۔ یقینی بنائیں کہ یہ پورٹ ${getBackendPortLabel()} پر چل رہا ہے۔`,
         );
+      } else if (err.status === 401 && String(err.body?.error?.type || '').endsWith('/account-locked')) {
+        // Sent only after a correct password (security B2, C7)
+        userMessage = t('الحساب مقفل مؤقتًا بسبب محاولات دخول خاطئة. حاول لاحقًا.', 'This account is temporarily locked after failed sign-in attempts. Try again later.', 'غلط کوششوں کی وجہ سے اکاؤنٹ عارضی طور پر مقفل ہے۔ بعد میں کوشش کریں۔');
+      } else if (err.status === 401 && String(err.body?.error?.type || '').endsWith('/account-inactive')) {
+        userMessage = t('هذا الحساب غير مفعّل. تواصل مع مسؤول النظام.', 'This account is not active. Contact your administrator.', 'یہ اکاؤنٹ فعال نہیں ہے۔ اپنے منتظم سے رابطہ کریں۔');
       } else if (err.status === 401) {
         userMessage = t('البريد الإلكتروني أو كلمة المرور غير صحيحة.', 'Incorrect email or password.');
       } else if (err.status === 404) {

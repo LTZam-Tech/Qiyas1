@@ -1,0 +1,13 @@
+{
+  "_comment": "CI-5 exceptions for npm audit (high/critical, production dependencies). Each entry needs id (GHSA id), package, scope (root, backend or *), reason, owner and expires (YYYY-MM-DD). Add an entry only after review, in a reviewed PR; expired entries stop applying.",
+  "exceptions": [
+    {
+      "id": "GHSA-qr28-fpjm-wq7f",
+      "package": "decode-uri-component",
+      "scope": "backend",
+      "reason": "Pulled in only by minio@8 -> query-string@7, which requires ^0.2.2; the fixed 0.5.1 is ESM-only and cannot be loaded by query-string under Node 20. minio decodes only its own S3 protocol strings exchanged with the internal MinIO service on the private data network, not user input. Remove when minio ships a query-string/decode-uri-component upgrade or the runtime moves to Node 22+ with an override.",
+      "expires": "2027-02-18",
+      "owner": "Product owner (sign-off pending); proposed in security remediation PR #9"
+    }
+  ]
+}

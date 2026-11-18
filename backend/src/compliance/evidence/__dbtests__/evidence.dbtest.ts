@@ -1,13 +1,18 @@
 import { Client } from 'pg';
+import { toHttpError } from '../../api/http';
 import { ComplianceError } from '../../core/context';
 import { connectTestDb, resetSchema } from '../../db/__dbtests__/testDb';
-import { createCycle, transitionCycle } from '../../framework/frameworkService';
+import { createCycle, setApplicability, transitionCycle } from '../../framework/frameworkService';
 import { assignTask, getTask, taskDeadline } from '../../work/tasks';
 import { World, at, buildWorld } from '../../work/__dbtests__/world';
+import { canSee, versionResource } from '../access';
 import { EvidenceDeps, linkEvidence, submitEvidence, uploadEvidence, withdrawEvidence } from '../evidence';
 import { acceptEvidence, claimEvidence, rejectEvidence, releaseEvidence, revokeEvidence } from '../review';
 import { DevScanner, EICAR_TEST_STRING, InMemoryStorage } from '../storage';
 import { createPackage, markNotPosted, markPosted, reuseEvidence, searchBank } from '../submission';
+import { addSuggestions, carryOver, useSuggestion } from '../suggestions';
+import { grantRole, revokeGrant } from '../../admin/admin';
+import { submissionQueue } from '../../api/queries';
 
 let db: Client;
 let w: World;
@@ -213,6 +218,35 @@ describe('review (D9, BR-REV)', () => {
     await revokeEvidence(ahmad, linkId, 'Plan expired');
     expect((await readiness()).readiness).toBe('in_progress');
   });
+
+  // ---- security remediation B5 (C11, D-C11-3)
+  const qcGrantOf = async (user: keyof World['users']) =>
+    (await db.query(`SELECT g.id FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id WHERE g.user_id = $1 AND r.code = 'QC' AND g.revoked_at IS NULL`, [w.users[user]])).rows[0].id as string;
+
+  it('a consultant whose QC role was revoked cannot release a claim', async () => {
+    const taskId = await aliTask();
+    const { linkId } = await aliSubmits(taskId);
+    await claimEvidence(await w.ctx('ahmad'), linkId);
+    // the grant ends outside revokeGrant (no automatic release), so the stale claim remains
+    await db.query('UPDATE qiyas.role_grants SET revoked_at = NOW() WHERE id = $1', [await qcGrantOf('ahmad')]);
+    expect(await fails('forbidden', async () => releaseEvidence(await w.ctx('ahmad'), linkId))).toContain('review.decide');
+    expect([(await link(linkId)).review_status, (await link(linkId)).claimed_by]).toEqual(['under_review', w.users.ahmad]);
+  });
+
+  it('revoking QC returns that consultant\'s claims to the shared queue and another consultant can claim them', async () => {
+    const mine = (await aliSubmits(await aliTask(), 'plan A')).linkId;
+    const other = (await aliSubmits(await aliTask(), 'plan B')).linkId;
+    await claimEvidence(await w.ctx('ahmad'), mine);
+    await claimEvidence(await w.ctx('alaa'), other);
+    await revokeGrant(await w.ctx('tariq'), await qcGrantOf('ahmad'), 'Left the programme');
+    expect([(await link(mine)).review_status, (await link(mine)).claimed_by]).toEqual(['submitted', null]);
+    const { rows } = await db.query(`SELECT actor_id, reason FROM qiyas.audit_log WHERE action = 'review.released' AND entity_id = $1`, [mine]);
+    expect(rows).toEqual([{ actor_id: w.users.tariq, reason: 'role revoked' }]);
+    // positive controls: another consultant's claim is untouched, and the released item can be claimed
+    expect([(await link(other)).review_status, (await link(other)).claimed_by]).toEqual(['under_review', w.users.alaa]);
+    await claimEvidence(await w.ctx('alaa'), mine);
+    expect((await link(mine)).claimed_by).toBe(w.users.alaa);
+  });
 });
 
 describe('DGA submission (two statuses)', () => {
@@ -251,6 +285,56 @@ describe('DGA submission (two statuses)', () => {
     const { rows } = await db.query('SELECT sort_order FROM qiyas.submission_package_items WHERE package_id = $1', [id]);
     expect(rows).toEqual([{ sort_order: 1 }]);
   });
+
+  // ---- security remediation B5 (C10, D-C10-1)
+  /** Ahmad accepted the link as a consultant, then moved to submission officer (legal: foundation.dbtest.ts). */
+  async function ahmadBecomesOfficer() {
+    const tariq = await w.ctx('tariq');
+    const grant = (await db.query(`SELECT g.id FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id WHERE g.user_id = $1 AND r.code = 'QC'`, [w.users.ahmad])).rows[0].id;
+    await revokeGrant(tariq, grant, 'Moved to the submission office');
+    await grantRole(tariq, w.users.ahmad, 'DSO');
+    return w.ctx('ahmad');
+  }
+
+  it('a consultant moved to submission officer cannot post evidence he accepted', async () => {
+    const linkId = await accepted();
+    const ahmad = await ahmadBecomesOfficer();
+    expect(await fails('forbidden', () => markPosted(ahmad, [linkId], { dgaReference: 'X-1' }))).toContain('another submission officer must post it');
+    expect((await link(linkId)).submission_status).toBe('not_posted');
+    // the queue tells him why
+    const queue = await submissionQueue(ahmad, w.cycleId);
+    expect(queue.map((l: any) => [l.id, l.reviewed_by_me])).toEqual([[linkId, true]]);
+    // positive control: another officer posts the same link
+    const yousef = await w.ctx('yousef');
+    expect((await submissionQueue(yousef, w.cycleId)).map((l: any) => l.reviewed_by_me)).toEqual([false]);
+    await markPosted(yousef, [linkId], { dgaReference: 'X-1' });
+    expect([(await link(linkId)).submission_status, (await link(linkId)).posted_by]).toEqual(['posted', w.users.yousef]);
+  });
+
+  it('the database refuses posted_by = accepting reviewer when the service is bypassed', async () => {
+    const linkId = await accepted();
+    const post = `UPDATE qiyas.evidence_links SET submission_status = 'posted', posted_at = NOW(), posted_by = $2 WHERE id = $1`;
+    await db.query('SAVEPOINT s');
+    await expect(db.query(post, [linkId, w.users.ahmad])).rejects.toThrow('cannot post it or revert its posting');
+    await db.query('ROLLBACK TO SAVEPOINT s');
+    await expect(db.query(`INSERT INTO qiyas.submission_events (evidence_link_id, from_status, to_status, actor_id) VALUES ($1, 'posted', 'not_posted', $2)`, [linkId, w.users.ahmad]))
+      .rejects.toThrow('cannot post it or revert its posting');
+    await db.query('ROLLBACK TO SAVEPOINT s');
+    // positive control: the same direct update by another officer is accepted
+    await db.query(post, [linkId, w.users.yousef]);
+    expect((await link(linkId)).posted_by).toBe(w.users.yousef);
+  });
+
+  it('a former reviewer cannot revert a posting he did not make', async () => {
+    const linkId = await accepted();
+    await markPosted(await w.ctx('yousef'), [linkId], { dgaReference: 'X-2' });
+    const ahmad = await ahmadBecomesOfficer();
+    expect(await fails('forbidden', () => markNotPosted(ahmad, linkId, 'Posted under the wrong standard'))).toContain('SoD-5');
+    expect((await link(linkId)).submission_status).toBe('posted');
+    // positive control: the officer who did not review it reverts it
+    await markNotPosted(await w.ctx('yousef'), linkId, 'Posted under the wrong standard');
+    expect((await link(linkId)).submission_status).toBe('not_posted');
+  });
 });
 
 describe('evidence banks (BR-BNK)', () => {
@@ -282,5 +366,305 @@ describe('evidence banks (BR-BNK)', () => {
     const links = await db.query('SELECT count(*)::int AS n FROM qiyas.evidence_links WHERE artifact_version_id = $1', [reused.versionId]);
     expect(links.rows[0].n).toBe(0); // starts unlinked: must be linked and reviewed in 2027
     await fails('forbidden', async () => reuseEvidence(await w.ctx('ali'), versionId, next.cycleId));
+  });
+
+  // ---- security remediation B4 (C5): a closed cycle is read-only until an administrator reopens it
+  const close = async () => transitionCycle(await w.ctx('alaa'), w.cycleId, 'close', 'Submitted to DGA');
+  const reopen = async () => transitionCycle(await w.ctx('tariq'), w.cycleId, 'reopen', 'Late DGA correction');
+  const countOf = async (table: string) => (await db.query(`SELECT count(*)::int AS n FROM qiyas.${table}`)).rows[0].n;
+  /** Runs a statement in a savepoint; returns the database error, or undefined when it succeeds. */
+  async function dbError(text: string, params: unknown[] = []): Promise<{ code?: string } | undefined> {
+    await db.query('SAVEPOINT s');
+    try {
+      await db.query(text, params);
+      await db.query('RELEASE SAVEPOINT s');
+      return undefined;
+    } catch (e) {
+      await db.query('ROLLBACK TO SAVEPOINT s');
+      return e as { code?: string };
+    }
+  }
+  const acceptedLink = async (text: string) => {
+    const ahmad = await w.ctx('ahmad');
+    const { linkId } = await aliSubmits(await aliTask(), text);
+    await claimEvidence(ahmad, linkId);
+    await acceptEvidence(ahmad, linkId);
+    return linkId;
+  };
+
+  it('a closed cycle refuses new links and submissions', async () => {
+    const taskId = await aliTask();
+    const ali = await w.ctx('ali');
+    const a = await uploadEvidence(ali, deps, { taskId, title: 'Strategy', file: pdf('strategy C5') });
+    const draft = await linkEvidence(ali, a.versionId, { taskId, cycleRequirementId: w.requirementId, proofItemId });
+    const b = await uploadEvidence(ali, deps, { taskId, title: 'Annex', file: pdf('annex C5') });
+    await addSuggestions(await w.ctx('alaa'), b.versionId, [w.requirementId], 'folder_import', { note: 'test' });
+    const sg = (await db.query(`SELECT id FROM qiyas.link_suggestions WHERE artifact_version_id = $1 AND status = 'open'`, [b.versionId])).rows[0];
+    const before = await readiness();
+    await close();
+
+    await fails('conflict', () => linkEvidence(ali, b.versionId, { taskId, cycleRequirementId: w.requirementId }));
+    await fails('conflict', async () => linkEvidence(await w.ctx('alaa'), b.versionId, { taskId, cycleRequirementId: w.requirementId })); // a consultant too
+    await fails('conflict', () => useSuggestion(ali, sg.id, taskId));
+    await fails('conflict', () => submitEvidence(ali, taskId));
+    await fails('conflict', () => withdrawEvidence(ali, draft));
+    expect(await linksOf(b.versionId)).toBe(0);
+    expect((await link(draft)).review_status).toBe('draft');
+    expect(await readiness()).toEqual(before);
+  });
+
+  it('a closed cycle refuses claim, accept, reject and revoke, and readiness is unchanged', async () => {
+    const ahmad = await w.ctx('ahmad');
+    const accepted = await acceptedLink('plan A');
+    const waiting = (await aliSubmits(await aliTask(), 'plan B')).linkId;
+    const claimed = (await aliSubmits(await aliTask(), 'plan C')).linkId;
+    await claimEvidence(ahmad, claimed);
+    const before = await readiness();
+    const decisions = await countOf('review_decisions');
+    await close();
+
+    await fails('conflict', () => claimEvidence(ahmad, waiting));
+    await fails('conflict', () => acceptEvidence(ahmad, claimed, 'ok'));
+    await fails('conflict', () => rejectEvidence(ahmad, claimed, 'Not the signed version'));
+    await fails('conflict', () => releaseEvidence(ahmad, claimed));
+    await fails('conflict', () => revokeEvidence(ahmad, accepted, 'Changed my mind'));
+    // D-C5-2 (b): links in flight are frozen as they were at closing
+    expect([(await link(accepted)).review_status, (await link(waiting)).review_status, (await link(claimed)).review_status])
+      .toEqual(['accepted', 'submitted', 'under_review']);
+    expect(await readiness()).toEqual(before);
+    expect(await countOf('review_decisions')).toBe(decisions);
+  });
+
+  it('a closed cycle refuses posting, unposting and packages', async () => {
+    const yousef = await w.ctx('yousef');
+    const notPosted = await acceptedLink('plan A');
+    const posted = await acceptedLink('plan B');
+    await markPosted(yousef, [posted], { dgaReference: 'DGA-1' });
+    const before = await readiness();
+    const events = await countOf('submission_events');
+    await close();
+
+    await fails('conflict', () => markPosted(yousef, [notPosted], { dgaReference: 'DGA-2' }));
+    await fails('conflict', () => markNotPosted(yousef, posted, 'Posted by mistake'));
+    await fails('conflict', () => createPackage(yousef, w.cycleId, 'Standard 5.1.1', [notPosted]));
+    expect([(await link(notPosted)).submission_status, (await link(posted)).submission_status]).toEqual(['not_posted', 'posted']);
+    expect(await countOf('submission_events')).toBe(events);
+    expect(await countOf('submission_packages')).toBe(0);
+    expect(await readiness()).toEqual(before);
+  });
+
+  it('the database refuses a direct evidence_links insert or update on a closed cycle (SQLSTATE 55000)', async () => {
+    const taskId = await aliTask();
+    const ali = await w.ctx('ali');
+    const a = await uploadEvidence(ali, deps, { taskId, title: 'Strategy', file: pdf('strategy C5') });
+    const b = await uploadEvidence(ali, deps, { taskId, title: 'Annex', file: pdf('annex C5') });
+    const draft = await linkEvidence(ali, a.versionId, { taskId, cycleRequirementId: w.requirementId, proofItemId });
+    const pkg = (await db.query(`INSERT INTO qiyas.submission_packages (cycle_id, prepared_by, title) VALUES ($1, $2, 'open package') RETURNING id`,
+      [w.cycleId, w.users.yousef])).rows[0].id; // allowed while the cycle is active
+    await close();
+
+    const insertLink = await dbError(`INSERT INTO qiyas.evidence_links (artifact_version_id, cycle_requirement_id, task_id, created_by) VALUES ($1, $2, $3, $4)`,
+      [b.versionId, w.requirementId, taskId, w.users.ali]);
+    expect(insertLink?.code).toBe('55000');
+    expect(toHttpError(insertLink).status).toBe(409);
+    expect((await dbError(`UPDATE qiyas.evidence_links SET review_status = 'accepted' WHERE id = $1`, [draft]))?.code).toBe('55000');
+    expect((await dbError(`UPDATE qiyas.cycle_requirements SET readiness = 'ready', readiness_pct = 100 WHERE id = $1`, [w.requirementId]))?.code).toBe('55000');
+    expect((await dbError(`INSERT INTO qiyas.review_decisions (evidence_link_id, reviewer_id, decision) VALUES ($1, $2, 'accept')`, [draft, w.users.ahmad]))?.code).toBe('55000');
+    expect((await dbError(`INSERT INTO qiyas.submission_events (evidence_link_id, from_status, to_status, actor_id) VALUES ($1, 'not_posted', 'posted', $2)`,
+      [draft, w.users.yousef]))?.code).toBe('55000');
+    expect((await dbError(`INSERT INTO qiyas.submission_packages (cycle_id, prepared_by, title) VALUES ($1, $2, 'late')`, [w.cycleId, w.users.yousef]))?.code).toBe('55000');
+    expect((await dbError(`INSERT INTO qiyas.submission_package_items (package_id, evidence_link_id, sort_order) VALUES ($1, $2, 1)`, [pkg, draft]))?.code).toBe('55000');
+    expect((await link(draft)).review_status).toBe('draft');
+
+    // positive control: the same writes pass once an administrator reopens the cycle
+    await reopen();
+    expect(await dbError(`UPDATE qiyas.cycle_requirements SET readiness = readiness WHERE id = $1`, [w.requirementId])).toBeUndefined();
+    expect(await dbError(`UPDATE qiyas.evidence_links SET proof_item_id = proof_item_id WHERE id = $1`, [draft])).toBeUndefined();
+    // an archived cycle stays read-only for good
+    await close();
+    await transitionCycle(await w.ctx('tariq'), w.cycleId, 'archive');
+    expect((await dbError(`UPDATE qiyas.cycle_requirements SET readiness = readiness WHERE id = $1`, [w.requirementId]))?.code).toBe('55000');
+    expect(await fails('conflict', () => linkEvidence(ali, b.versionId, { taskId, cycleRequirementId: w.requirementId }))).toContain('archived');
+  });
+
+  it('closing, reopening and archiving work with links in flight; carry-over from the closed cycle and readiness of an open cycle still work', async () => {
+    await acceptedLink('plan A');
+    const inFlight = (await aliSubmits(await aliTask(), 'plan B')).linkId;
+    await close();
+    await reopen();
+    await close();
+    expect((await link(inFlight)).review_status).toBe('submitted');
+
+    const alaa = await w.ctx('alaa');
+    const next = await createCycle(alaa, { frameworkVersionId: w.frameworkVersionId, year: 2027, name: 'Qiyas 2027', startsOn: '2027-01-01', endsOn: '2027-12-31' });
+    expect(await carryOver(alaa, next.cycleId, w.cycleId)).toMatchObject({ carried: 1, suggestions: 1 });
+    const nextReq = (await db.query('SELECT id FROM qiyas.cycle_requirements WHERE cycle_id = $1', [next.cycleId])).rows[0].id;
+    await setApplicability(alaa, nextReq, false, 'Exempted by decree 123'); // readiness recompute in an open cycle
+    expect((await db.query('SELECT readiness FROM qiyas.cycle_requirements WHERE id = $1', [nextReq])).rows[0].readiness).toBe('not_applicable');
+    await fails('conflict', () => setApplicability(alaa, w.requirementId, false, 'Exempted by decree 123')); // the closed cycle stays frozen
+
+    await transitionCycle(await w.ctx('tariq'), w.cycleId, 'archive');
+    expect((await db.query('SELECT status FROM qiyas.measurement_cycles WHERE id = $1', [w.cycleId])).rows[0].status).toBe('archived');
+  });
+
+  it('after an administrator reopens with a reason, linking and review work again', async () => {
+    const taskId = await aliTask();
+    const { linkId } = await aliSubmits(taskId, 'plan A');
+    const ali = await w.ctx('ali');
+    const ahmad = await w.ctx('ahmad');
+    const annex = await uploadEvidence(ali, deps, { taskId, title: 'Annex', file: pdf('annex C5') });
+    await close();
+    await fails('conflict', () => linkEvidence(ali, annex.versionId, { taskId, cycleRequirementId: w.requirementId }));
+    await fails('conflict', () => claimEvidence(ahmad, linkId));
+    await fails('forbidden', async () => transitionCycle(await w.ctx('alaa'), w.cycleId, 'reopen', 'Late DGA correction'));
+    await fails('validation', async () => transitionCycle(await w.ctx('tariq'), w.cycleId, 'reopen'));
+
+    await reopen();
+    const annexLink = await linkEvidence(ali, annex.versionId, { taskId, cycleRequirementId: w.requirementId });
+    expect((await link(annexLink)).review_status).toBe('draft');
+    const before = await readiness();
+    await claimEvidence(ahmad, linkId);
+    await acceptEvidence(ahmad, linkId);
+    expect((await link(linkId)).review_status).toBe('accepted');
+    expect(await readiness()).not.toEqual(before);
+    await markPosted(await w.ctx('yousef'), [linkId], { dgaReference: 'DGA-1' });
+    expect((await link(linkId)).submission_status).toBe('posted');
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B3
+
+/** Khalid (DM HR) assigns an HR task to Huda; Huda uploads a confidential HR file to it. */
+async function hudaUploads(text = 'HR confidential salaries') {
+  const hrTask = await w.publishedTask('hr');
+  await assignTask(await w.ctx('khalid'), hrTask, w.users.huda);
+  const up = await uploadEvidence(await w.ctx('huda'), deps, { taskId: hrTask, title: 'HR-CONFIDENTIAL disciplinary case file', file: pdf(text) });
+  return { hrTask, ...up };
+}
+const linksOf = async (versionId: string) => (await db.query('SELECT count(*)::int AS n FROM qiyas.evidence_links WHERE artifact_version_id = $1', [versionId])).rows[0].n;
+const versionsOf = async (artifactId: string) => (await db.query('SELECT count(*)::int AS n FROM qiyas.artifact_versions WHERE artifact_id = $1', [artifactId])).rows[0].n;
+
+describe('evidence object binding (C3)', () => {
+  it('an IT employee cannot link an HR version to his own task', async () => {
+    const hr = await hudaUploads();
+    const taskId = await aliTask();
+    await fails('forbidden', async () => linkEvidence(await w.ctx('ali'), hr.versionId, { taskId, cycleRequirementId: w.requirementId, proofItemId }));
+    expect(await linksOf(hr.versionId)).toBe(0);
+    expect(canSee(await w.ctx('ali'), 'evidence.download', await versionResource(db, hr.versionId))).toBe(false);
+  });
+
+  it('an IT employee cannot add a version to an HR artifact', async () => {
+    const hr = await hudaUploads();
+    const taskId = await aliTask();
+    const ali = await w.ctx('ali');
+    const notVisible = await fails('not_found', () => uploadEvidence(ali, deps, { taskId, artifactId: hr.artifactId, file: pdf('replaced') }));
+    expect(await versionsOf(hr.artifactId)).toBe(1);
+    // "another cycle" gives the very same answer, so the ID cannot be probed
+    const own = await uploadEvidence(ali, deps, { taskId, title: 'Strategy', file: pdf('own') });
+    const alaa = await w.ctx('alaa');
+    const next = await createCycle(alaa, { frameworkVersionId: w.frameworkVersionId, year: 2027, name: 'Qiyas 2027', startsOn: '2027-01-01', endsOn: '2027-12-31' });
+    const copy = await reuseEvidence(alaa, own.versionId, next.cycleId);
+    const otherCycle = await fails('not_found', () => uploadEvidence(ali, deps, { taskId, artifactId: copy.artifactId, file: pdf('other cycle') }));
+    expect(otherCycle).toBe(notVisible);
+  });
+
+  it('a withdrawn link no longer grants download ownership', async () => {
+    const hr = await hudaUploads();
+    const taskId = await aliTask();
+    // a consultant links the HR file to Ali's task: Ali may open it while the link is active
+    const linkId = await linkEvidence(await w.ctx('alaa'), hr.versionId, { taskId, cycleRequirementId: w.requirementId, proofItemId });
+    const ali = await w.ctx('ali');
+    expect(canSee(ali, 'evidence.download', await versionResource(db, hr.versionId))).toBe(true);
+    await withdrawEvidence(ali, linkId);
+    expect((await link(linkId)).review_status).toBe('withdrawn');
+    expect(canSee(ali, 'evidence.download', await versionResource(db, hr.versionId))).toBe(false);
+  });
+
+  it('D-C3-2: an employee cannot link a colleague draft; the department manager can', async () => {
+    const taskId = await aliTask();
+    const up = await uploadEvidence(await w.ctx('ali'), deps, { taskId, title: 'Strategy', file: pdf('ali draft') });
+    const saraTask = await w.publishedTask();
+    await assignTask(await w.ctx('mona'), saraTask, w.users.sara);
+    await fails('forbidden', async () => linkEvidence(await w.ctx('sara'), up.versionId, { taskId: saraTask, cycleRequirementId: w.requirementId }));
+    const monaTask = await w.publishedTask();
+    const mona = await w.ctx('mona');
+    await assignTask(mona, monaTask, w.users.mona);
+    expect(await linkEvidence(mona, up.versionId, { taskId: monaTask, cycleRequirementId: w.requirementId })).toBeTruthy();
+  });
+
+  // ---- positive controls
+  it('a suggested carry-over or imported version can still be used on the owner task', async () => {
+    const hr = await hudaUploads('carried-over HR policy');
+    const taskId = await aliTask();
+    await addSuggestions(await w.ctx('alaa'), hr.versionId, [w.requirementId], 'carry_over', { note: 'test' });
+    const sg = (await db.query(`SELECT id FROM qiyas.link_suggestions WHERE artifact_version_id = $1 AND status = 'open'`, [hr.versionId])).rows[0];
+    const linkId = await useSuggestion(await w.ctx('ali'), sg.id, taskId);
+    expect((await link(linkId)).task_id).toBe(taskId);
+    expect((await db.query('SELECT status FROM qiyas.link_suggestions WHERE id = $1', [sg.id])).rows[0].status).toBe('linked');
+  });
+
+  it('a consultant may link any department version', async () => {
+    const hr = await hudaUploads();
+    const taskId = await aliTask();
+    expect(await linkEvidence(await w.ctx('ahmad'), hr.versionId, { taskId, cycleRequirementId: w.requirementId, proofItemId })).toBeTruthy();
+    expect(await linksOf(hr.versionId)).toBe(1);
+  });
+
+  it('the owner links his own upload, and adds a version to his own artifact', async () => {
+    const taskId = await aliTask();
+    const ali = await w.ctx('ali');
+    const up = await uploadEvidence(ali, deps, { taskId, title: 'Strategy', file: pdf('own v1') });
+    expect(await linkEvidence(ali, up.versionId, { taskId, cycleRequirementId: w.requirementId, proofItemId })).toBeTruthy();
+    expect((await uploadEvidence(ali, deps, { taskId, artifactId: up.artifactId, file: pdf('own v2') })).versionNo).toBe(2);
+  });
+});
+
+describe('duplicate message (C16)', () => {
+  it('a duplicate from another department is refused without naming it', async () => {
+    const hr = await hudaUploads('same bytes');
+    const taskId = await aliTask();
+    const msg = await fails('conflict', async () => uploadEvidence(await w.ctx('ali'), deps, { taskId, title: 'Copy', file: pdf('same bytes') }));
+    expect(msg).toContain('already in the evidence bank');
+    expect(msg).not.toContain('HR-CONFIDENTIAL');
+    expect(msg).not.toContain(hr.artifactId);
+  });
+
+  it('a colleague duplicate in the same department is not named to an employee (own scope)', async () => {
+    const taskId = await aliTask();
+    const up = await uploadEvidence(await w.ctx('ali'), deps, { taskId, title: 'Ali strategy', file: pdf('colleague bytes') });
+    const saraTask = await w.publishedTask();
+    await assignTask(await w.ctx('mona'), saraTask, w.users.sara);
+    const msg = await fails('conflict', async () => uploadEvidence(await w.ctx('sara'), deps, { taskId: saraTask, title: 'Copy', file: pdf('colleague bytes') }));
+    expect(msg).not.toContain('Ali strategy');
+    expect(msg).not.toContain(up.artifactId);
+  });
+
+  // ---- positive controls
+  it('the user own duplicate still names his own artifact', async () => {
+    const taskId = await aliTask();
+    const ali = await w.ctx('ali');
+    const up = await uploadEvidence(ali, deps, { taskId, title: 'Strategy', file: pdf('mine') });
+    const msg = await fails('conflict', () => uploadEvidence(ali, deps, { taskId, title: 'Copy', file: pdf('mine') }));
+    expect(msg).toContain('"Strategy"');
+    expect(msg).toContain(up.artifactId);
+  });
+
+  it('a consultant sees the detailed duplicate message', async () => {
+    const hr = await hudaUploads('central bytes');
+    const taskId = await aliTask();
+    const msg = await fails('conflict', async () => uploadEvidence(await w.ctx('alaa'), deps, { taskId, title: 'Copy', file: pdf('central bytes') }));
+    expect(msg).toContain('HR-CONFIDENTIAL disciplinary case file');
+    expect(msg).toContain(hr.artifactId);
+  });
+
+  it('D-C16-2: a department manager sees same-department duplicate titles', async () => {
+    const taskId = await aliTask();
+    const up = await uploadEvidence(await w.ctx('ali'), deps, { taskId, title: 'Ali strategy', file: pdf('dept bytes') });
+    const monaTask = await w.publishedTask();
+    const mona = await w.ctx('mona');
+    await assignTask(mona, monaTask, w.users.mona);
+    const msg = await fails('conflict', () => uploadEvidence(mona, deps, { taskId: monaTask, title: 'Copy', file: pdf('dept bytes') }));
+    expect(msg).toContain('"Ali strategy"');
+    expect(msg).toContain(up.artifactId);
   });
 });

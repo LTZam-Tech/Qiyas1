@@ -52,7 +52,9 @@ export default function ReviewQueuePage({ lang, onNavigate }) {
                       {l.task_id && <button type="button" className="q-btn q-btn-ghost q-btn-sm" onClick={() => onNavigate('task', l.task_id)}>{t('المهمة', 'Task', 'کام')}</button>}
                     </div>
                   </div>
-                  {!l.can_review ? (
+                  {l.cycleOpen === false ? (
+                    <span className={s.sub}>{t('الدورة مغلقة وللقراءة فقط؛ يمكن لمدير النظام إعادة فتحها.', 'The cycle is closed and read-only; an administrator can reopen it.', 'یہ دور بند ہے اور صرف پڑھنے کے لیے ہے؛ سسٹم ایڈمنسٹریٹر اسے دوبارہ کھول سکتا ہے۔')}</span>
+                  ) : !l.can_review ? (
                     <span className={s.sub}>{t('رفعتَ هذا الدليل بنفسك؛ يراجعه مستشار آخر.', 'You uploaded this evidence; another consultant reviews it.', 'یہ ثبوت آپ نے اپ لوڈ کیا؛ دوسرا کنسلٹنٹ اس کا جائزہ لے گا۔')}</span>
                   ) : l.review_status === 'submitted' ? (
                     <div><button type="button" className="q-btn q-btn-primary q-btn-sm" disabled={act.busy} onClick={() => act.run(() => api.post(`/evidence-links/${l.id}/claim`), done(t('استلمتَ الدليل للمراجعة', 'You claimed it for review', 'آپ نے جائزے کے لیے لے لیا')))}>{t('استلام للمراجعة', 'Claim for review', 'جائزے کے لیے لیں')}</button></div>

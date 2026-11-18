@@ -44,10 +44,10 @@ export default function NotificationBell({ lang = 'ar', onNavigate }) {
   }, []);
 
   useEffect(() => {
-    fetchNotifications();
-    // Poll every 30 seconds for new notifications
+    // first load right after mount, then poll every 30 seconds for new notifications
+    const first = setTimeout(fetchNotifications, 0);
     const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    return () => { clearTimeout(first); clearInterval(interval); };
   }, [fetchNotifications]);
 
   useEffect(() => {

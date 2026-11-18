@@ -10,13 +10,16 @@ import s from './p1.module.css';
 export default function SubmissionPage({ lang }) {
   const t = makeT(lang);
   const q = useQiyas();
-  const officer = q.can('submission.mark_posted');
+  const canPost = q.can('submission.mark_posted');
   const [tab, setTab] = useState('not_posted');
   const [selected, setSelected] = useState(() => new Set());
   const [reference, setReference] = useState('');
   const list = usePagedApi((page, pageSize) => (q.cycleId ? api.get(`/cycles/${q.cycleId}/submission-queue`, { status: tab, page, pageSize }) : Promise.resolve({ items: [], total: 0 })), [q.cycleId, tab]);
   const { error, loading, reload } = list;
   const data = list.items;
+  // C5: a closed cycle is read-only, so posting and unposting are not offered
+  const cycleClosed = (data ?? []).some((l) => l.cycleOpen === false);
+  const officer = canPost && !cycleClosed;
   const act = useAction();
   const { toast, showToast } = useToast();
 
@@ -54,6 +57,7 @@ export default function SubmissionPage({ lang }) {
         <button type="button" role="tab" className={s.tab} aria-selected={tab === 'posted'} onClick={() => { setTab('posted'); setSelected(new Set()); }}>{t('مرفوع', 'Posted', 'پوسٹ شدہ')}</button>
       </div>
       <ErrorNote error={error ?? act.error} lang={lang} />
+      {cycleClosed && <p className={s.sub} role="note">{t('الدورة مغلقة وللقراءة فقط؛ يمكن لمدير النظام إعادة فتحها.', 'The cycle is closed and read-only; an administrator can reopen it.', 'یہ دور بند ہے اور صرف پڑھنے کے لیے ہے؛ سسٹم ایڈمنسٹریٹر اسے دوبارہ کھول سکتا ہے۔')}</p>}
       {officer && tab === 'not_posted' && selected.size > 0 && (
         <div className="q-card q-card-pad">
           <div className={s.row}>
@@ -74,6 +78,7 @@ export default function SubmissionPage({ lang }) {
                     <span className={s.title}>{l.title}</span>
                     <span className={s.sub}>{l.original_filename ?? l.external_url} · {l.requirement_code} · {t('قُبل في', 'Accepted on', 'منظوری کی تاریخ')} {fmtDate(l.accepted_at, lang)}</span>
                     {l.posted_at && <span className={s.sub}>{l.posted_by_name} · {fmtDate(l.posted_at, lang)}{l.dga_reference ? ` · ${l.dga_reference}` : ''}</span>}
+                    {officer && l.reviewed_by_me && <span className={s.sub} role="note">{t('راجعتَ هذا الدليل؛ يسجّل رفعه مسؤول رفع آخر.', 'You reviewed this evidence; another submission officer must post it.', 'آپ نے اس ثبوت کا جائزہ لیا تھا؛ اسے کوئی دوسرا سبمیشن آفیسر پوسٹ کرے گا۔')}</span>}
                   </div>
                 </div>
                 <div className={s.row}>

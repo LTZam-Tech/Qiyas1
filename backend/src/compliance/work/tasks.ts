@@ -7,6 +7,7 @@
 import {
   ComplianceError, Db, ServiceContext, audit, departmentManager, fromTransition, isDepartmentMember, mustOne, requirePermission,
 } from '../core/context';
+import { assertCycleWritable } from '../core/cycleGuard';
 import { DeadlinePause, DeadlineState, computeDeadline } from '../domain/deadline';
 import { actorsFor } from '../domain/permissions';
 import { TaskEvent, TaskStatus, assignmentMachine, taskMachine } from '../domain/stateMachines';
@@ -23,6 +24,8 @@ export interface TaskRow {
   manager_due_at: Date;
   original_due_at: Date;
   approved_extension_due_at: Date | null;
+  /** When the current extension was approved (C12, migration 010); NULL for approvals before it. */
+  approved_extension_at?: Date | null;
   is_escalated: boolean;
 }
 
@@ -71,8 +74,7 @@ export async function createAssignment(ctx: ServiceContext, input: NewAssignment
   if (input.cycleRequirementIds.length === 0) throw new ComplianceError('validation', 'Choose at least one requirement');
   if (input.implementationDueAt <= ctx.now) throw new ComplianceError('validation', 'The deadline must be in the future');
   if (input.managerDueAt > input.implementationDueAt) throw new ComplianceError('validation', 'The manager action deadline must come before the implementation deadline');
-  const cycle = await mustOne(db, 'cycle', 'SELECT status FROM qiyas.measurement_cycles WHERE id = $1', [input.cycleId]);
-  if (cycle.status !== 'planning' && cycle.status !== 'active') throw new ComplianceError('conflict', `The cycle is ${cycle.status}`);
+  await assertCycleWritable(db, { cycleId: input.cycleId }); // C5
   await mustOne(db, 'department', 'SELECT id FROM qiyas.departments WHERE id = $1 AND is_active', [input.departmentId]);
   const { rows } = await db.query(`SELECT id, is_applicable FROM qiyas.cycle_requirements WHERE cycle_id = $1 AND id = ANY($2::uuid[])`,
     [input.cycleId, input.cycleRequirementIds]);
@@ -94,6 +96,7 @@ export async function createAssignment(ctx: ServiceContext, input: NewAssignment
 export async function publishAssignment(ctx: ServiceContext, assignmentId: string): Promise<string> {
   const { db } = ctx;
   const a = await mustOne(db, 'assignment', 'SELECT * FROM qiyas.assignments WHERE id = $1 FOR UPDATE', [assignmentId]);
+  await assertCycleWritable(db, { cycleId: a.cycle_id }); // C5: no new task in a closed cycle
   let next;
   try {
     next = assignmentMachine.next(a.status, 'publish', actorsFor(ctx.actor.grants, null));
@@ -120,6 +123,7 @@ export async function publishAssignment(ctx: ServiceContext, assignmentId: strin
 export async function cancelAssignment(ctx: ServiceContext, assignmentId: string, reason: string): Promise<void> {
   const { db } = ctx;
   const a = await mustOne(db, 'assignment', 'SELECT status FROM qiyas.assignments WHERE id = $1 FOR UPDATE', [assignmentId]);
+  await assertCycleWritable(db, { assignmentId }); // C5, D-C5-3
   let next;
   try {
     next = assignmentMachine.next(a.status, 'cancel', actorsFor(ctx.actor.grants, null), reason);
@@ -144,11 +148,12 @@ export async function cancelAssignment(ctx: ServiceContext, assignmentId: string
 export async function assignTask(ctx: ServiceContext, taskId: string, assigneeId: string, note?: string): Promise<TaskRow> {
   const { db } = ctx;
   const task = await getTask(db, taskId, true);
+  await assertCycleWritable(db, { cycleId: task.cycle_id }); // C5, D-C5-3
   const actors = taskActors(ctx, task);
   if (!actors.includes('DM')) throw new ComplianceError('forbidden', 'Only the department manager can assign this task');
   const self = assigneeId === ctx.actor.userId;
   requirePermission(ctx, self ? 'task.self_assign' : 'task.assign', { departmentId: task.department_id });
-  if (!self && !(await isDepartmentMember(db, task.department_id, assigneeId))) {
+  if (!self && !(await isDepartmentMember(db, task.department_id, assigneeId, { lock: true }))) {
     throw new ComplianceError('validation', 'The assignee is not a member of this department'); // SoD-3
   }
   if (task.execution_status === 'completed' || task.execution_status === 'cancelled' || task.execution_status === 'submitted') {
@@ -173,6 +178,7 @@ export async function assignTask(ctx: ServiceContext, taskId: string, assigneeId
 export async function startTask(ctx: ServiceContext, taskId: string): Promise<void> {
   const task = await getTask(ctx.db, taskId, true);
   if (task.current_owner_id !== ctx.actor.userId) throw new ComplianceError('forbidden', 'Only the current owner can start the task');
+  await assertCycleWritable(ctx.db, { cycleId: task.cycle_id }); // C5, D-C5-3
   await moveTask(ctx, task, 'start');
 }
 
@@ -188,6 +194,7 @@ export async function taskDeadline(ctx: Pick<ServiceContext, 'db' | 'now' | 'cal
   return computeDeadline({
     originalDueAt: new Date(task.original_due_at),
     approvedExtensionDueAt: task.approved_extension_due_at ? new Date(task.approved_extension_due_at) : null,
+    approvedAt: task.approved_extension_at ? new Date(task.approved_extension_at) : null, // C12
     pauses,
     now: ctx.now,
     calendar: ctx.calendar,

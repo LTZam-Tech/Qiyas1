@@ -1,11 +1,40 @@
 // Local dummy API for the Qiyas frontend. No database, no real auth.
 // Any email/password logs in. Role comes from the email:
 //   admin@... -> admin, dean@... -> dean, consultant@... -> consultant, anything else -> employee
-// Run: node mock-api/server.mjs   (listens on 8082, where Vite proxies /api)
+// Run (listens on 8082, where Vite proxies /api), never in production:
+//   macOS/Linux:  QIYAS_DEV_SERVER=1 node mock-api/server.mjs
+//   PowerShell:   $env:QIYAS_DEV_SERVER='1'; node mock-api/server.mjs
+// Guarded (N4): refuses NODE_ENV=production or a missing QIYAS_DEV_SERVER=1, and answers only
+// direct loopback requests with a localhost Host header and no proxy headers.
 import http from 'node:http';
 import { randomUUID } from 'node:crypto';
 
 const PORT = Number(process.env.MOCK_PORT || 8082);
+
+// ---------- dev-only guard (same rules as backend/src/compliance/dev/devServerGuard.ts) ----------
+if (process.env.NODE_ENV === 'production') {
+  console.error('Qiyas mock API refusing to start: NODE_ENV=production (any login works here)');
+  process.exit(1);
+}
+if (process.env.QIYAS_DEV_SERVER !== '1') {
+  console.error('Qiyas mock API refusing to start: set QIYAS_DEV_SERVER=1 to run the local mock API');
+  process.exit(1);
+}
+const LOOPBACK_ADDRESSES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
+const hostName = (host) => {
+  const h = host.trim().toLowerCase();
+  if (h.startsWith('[')) return h.slice(0, h.indexOf(']') + 1);
+  const colon = h.indexOf(':');
+  return colon === -1 ? h : h.slice(0, colon);
+};
+const requestRejection = (req) => {
+  if (!LOOPBACK_ADDRESSES.has(req.socket.remoteAddress)) return 'not a loopback peer';
+  const h = req.headers;
+  if (h['x-forwarded-for'] !== undefined || h['forwarded'] !== undefined || h['x-real-ip'] !== undefined) return 'proxied request';
+  if (typeof h.host !== 'string' || !LOCAL_HOSTNAMES.has(hostName(h.host))) return 'non-localhost Host header';
+  return null;
+};
 
 // ---------- dummy data ----------
 const perspectives = [
@@ -203,6 +232,8 @@ const json = (buf) => {
 };
 
 const server = http.createServer(async (req, res) => {
+  const rejected = requestRejection(req);
+  if (rejected) return send(res, 403, { success: false, message: `Mock API: ${rejected}` });
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const path = url.pathname.replace(/^\/api\/v1/, '').replace(/\/$/, '') || '/';
   const method = req.method;

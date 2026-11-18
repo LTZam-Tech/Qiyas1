@@ -3,12 +3,15 @@ import { ComplianceError } from '../../core/context';
 import { localDateKey } from '../../domain/calendar';
 import sample from '../../framework/samples/dga-v5.0-sample.json';
 import { importFramework, setApplicability, transitionCycle } from '../../framework/frameworkService';
-import { connectTestDb, resetSchema } from '../../db/__dbtests__/testDb';
-import { answerClarification, cancelClarification, followUpClarification, requestClarification } from '../clarifications';
+import { backendPid, connectTestDb, deactivateUser, pause, resetSchema, track, waitUntilBlocked } from '../../db/__dbtests__/testDb';
+import { buildContext } from '../../core/context';
+import { removeDepartmentMember } from '../../admin/admin';
+import { runScheduler } from '../../notifications/scheduler';
+import { answerClarification, cancelClarification, closeClarification, followUpClarification, requestClarification } from '../clarifications';
 import { escalateManually, runAutomaticEscalations } from '../escalations';
-import { approveExtension, askForMoreTime, declineAsk, forwardAsk, rejectExtension, requestExtension } from '../extensions';
+import { approveExtension, askForMoreTime, declineAsk, forwardAsk, rejectExtension, requestExtension, withdrawExtension } from '../extensions';
 import { assignTask, cancelAssignment, createAssignment, getTask, publishAssignment, startTask, taskDeadline } from '../tasks';
-import { T0, World, at, buildWorld } from './world';
+import { T0, World, at, buildWorld, endOfLocalDay } from './world';
 
 let db: Client;
 let w: World;
@@ -181,6 +184,38 @@ describe('clarification (D1, D4)', () => {
     expect((await taskDeadline(await w.ctx('ali'), await getTask(db, taskId))).isPaused).toBe(false);
     await fails('conflict', async () => cancelClarification(await w.ctx('ali'), id));
   });
+
+  // ---- security remediation B5 (C11, D-C11-1)
+  const openPauses = async (taskId: string) =>
+    (await db.query(`SELECT count(*)::int AS n FROM qiyas.deadline_pauses WHERE task_id = $1 AND resumed_at IS NULL`, [taskId])).rows[0].n;
+
+  it('a former owner moved off the task cannot follow up, and no new pause is opened on the new owner\'s deadline', async () => {
+    const taskId = await workingTask();
+    const id = await requestClarification(await w.ctx('ali'), taskId, { question: 'Which edition?' });
+    await answerClarification(await w.ctx('alaa'), id, 'The 2025 edition.');
+    await assignTask(await w.ctx('mona'), taskId, w.users.sara, 'Ali moved to another project');
+    expect(await fails('forbidden', async () => followUpClarification(await w.ctx('ali'), id, 'And the annex?'))).toContain('current owner');
+    expect(await openPauses(taskId)).toBe(0);
+    expect((await db.query('SELECT status FROM qiyas.clarifications WHERE id = $1', [id])).rows[0].status).toBe('answered');
+    // positive control (D-C11-1): Ali is still an IT employee, so he may close his own question
+    await closeClarification(await w.ctx('ali'), id);
+  });
+
+  it('a requester whose roles were all revoked cannot follow up, close or cancel', async () => {
+    const taskId = await workingTask();
+    const answered = await requestClarification(await w.ctx('ali'), taskId, { question: 'First question' });
+    await answerClarification(await w.ctx('alaa'), answered, 'Answer one');
+    const open = await requestClarification(await w.ctx('ali'), taskId, { question: 'Second question' });
+    await db.query('UPDATE qiyas.role_grants SET revoked_at = NOW() WHERE user_id = $1', [w.users.ali]);
+    const ali = await w.ctx('ali');
+    const pausesBefore = await openPauses(taskId);
+    await fails('forbidden', () => followUpClarification(ali, answered, 'And the annex?'));
+    await fails('forbidden', () => closeClarification(ali, answered));
+    await fails('forbidden', () => cancelClarification(ali, open));
+    expect(await openPauses(taskId)).toBe(pausesBefore); // the open question still pauses; nothing was resumed or added
+    const { rows } = await db.query('SELECT id, status FROM qiyas.clarifications WHERE task_id = $1 ORDER BY created_at, id', [taskId]);
+    expect(Object.fromEntries(rows.map((r) => [r.id, r.status]))).toEqual({ [answered]: 'answered', [open]: 'open' });
+  });
 });
 
 describe('extensions (D7)', () => {
@@ -219,6 +254,23 @@ describe('extensions (D7)', () => {
     await fails('validation', async () => rejectExtension(await w.ctx('alaa'), id, ''));
     await rejectExtension(await w.ctx('alaa'), id, 'The board date is not a valid reason');
     expect((await getTask(db, taskId)).approved_extension_due_at).toBeNull();
+  });
+
+  // ---- security remediation B5 (C11, D-C11-2)
+  it('a manager whose DM grant was revoked cannot withdraw the pending request', async () => {
+    const taskId = await aliTask();
+    const id = await requestExtension(await w.ctx('mona'), taskId, at(2026, 11, 26), 'Board meets on the 25th');
+    await db.query(`UPDATE qiyas.role_grants SET revoked_at = NOW() WHERE user_id = $1 AND role_id = (SELECT id FROM qiyas.roles WHERE code = 'DM')`, [w.users.mona]);
+    await fails('forbidden', async () => withdrawExtension(await w.ctx('mona'), id));
+    expect((await db.query('SELECT status FROM qiyas.extension_requests WHERE id = $1', [id])).rows[0].status).toBe('pending');
+  });
+
+  it('the current manager who asked can withdraw', async () => {
+    const taskId = await aliTask();
+    const id = await requestExtension(await w.ctx('mona'), taskId, at(2026, 11, 26), 'Board meets on the 25th');
+    await fails('forbidden', async () => withdrawExtension(await w.ctx('khalid'), id)); // another department's manager
+    await withdrawExtension(await w.ctx('mona'), id);
+    expect((await db.query('SELECT status FROM qiyas.extension_requests WHERE id = $1', [id])).rows[0].status).toBe('withdrawn');
   });
 });
 
@@ -280,4 +332,295 @@ it('every change leaves an audit record', async () => {
   const { rows } = await db.query(`SELECT action FROM qiyas.audit_log WHERE entity_id = $1 ORDER BY id`, [taskId]);
   expect(rows.map((r) => r.action)).toEqual(['task.publish', 'task.assign', 'task.assign']);
   expect(T0.toISOString()).toBe('2026-11-15T06:00:00.000Z');
+});
+
+// ------------------------------------------------------------------ security remediation B4 (C5, D-C5-3)
+describe('a closed cycle is read-only for work items (C5)', () => {
+  const close = async (now?: Date) => transitionCycle(await w.ctx('alaa', now), w.cycleId, 'close', 'Submitted to DGA');
+  const reopen = async (now?: Date) => transitionCycle(await w.ctx('tariq', now), w.cycleId, 'reopen', 'Late DGA correction');
+  const notifications = async (user: keyof World['users'], event: string) =>
+    (await db.query('SELECT count(*)::int AS n FROM qiyas.notifications WHERE user_id = $1 AND event_code = $2', [w.users[user], event])).rows[0].n;
+  async function aliTask() {
+    const taskId = await w.publishedTask();
+    await assignTask(await w.ctx('mona'), taskId, w.users.ali);
+    return taskId;
+  }
+
+  it('no automatic escalation or reminders for tasks in a closed cycle', async () => {
+    const taskId = await aliTask(); // due end of Sunday 22 Nov
+    await requestClarification(await w.ctx('ali'), (await aliTask()), { question: 'Which template?' }); // an open clarification on a second task
+    await close();
+    const calendar = (await w.ctx('alaa')).calendar;
+    const tick = (now: Date) => runScheduler({ db, now, calendar });
+
+    await tick(at(2026, 11, 16, 9)); // the 5-day reminder would be due
+    expect(await notifications('ali', 'task.deadline_reminder')).toBe(0);
+    const late = at(2026, 11, 23, 9);
+    expect(await runAutomaticEscalations({ db, now: late, calendar })).toEqual([]);
+    const report = await tick(late);
+    expect(report).toMatchObject({ escalations: 0, reminders: 0, overdue: 0 });
+    await tick(at(2026, 12, 10, 9)); // the clarification answer is long overdue
+    expect(await notifications('alaa', 'task.overdue')).toBe(0);
+    expect(await notifications('alaa', 'clarification.overdue')).toBe(0);
+    const t = await getTask(db, taskId);
+    expect([t.current_owner_id, t.is_escalated]).toEqual([w.users.ali, false]);
+
+    // positive control: once an administrator reopens the cycle, the overdue task escalates
+    await reopen(late);
+    const after = await runAutomaticEscalations({ db, now: late, calendar });
+    expect(after).toHaveLength(1);
+    expect(after[0]).toMatchObject({ kind: 'automatic', from: w.users.ali, to: w.users.mona });
+  });
+
+  it('publishAssignment refuses a closed cycle', async () => {
+    const alaa = await w.ctx('alaa');
+    const draft = await createAssignment(alaa, {
+      cycleId: w.cycleId, departmentId: w.depts.it, cycleRequirementIds: [w.requirementId], title: 'Late plan',
+      implementationDueAt: at(2026, 11, 25), managerDueAt: at(2026, 11, 17),
+    });
+    await close();
+    await fails('conflict', () => publishAssignment(alaa, draft));
+    await fails('conflict', () => createAssignment(alaa, {
+      cycleId: w.cycleId, departmentId: w.depts.it, cycleRequirementIds: [w.requirementId], title: 'Another',
+      implementationDueAt: at(2026, 11, 25), managerDueAt: at(2026, 11, 17),
+    }));
+    expect((await db.query('SELECT count(*)::int AS n FROM qiyas.tasks WHERE assignment_id = $1', [draft])).rows[0].n).toBe(0);
+
+    // positive control
+    await reopen();
+    const taskId = await publishAssignment(alaa, draft);
+    expect((await getTask(db, taskId)).execution_status).toBe('awaiting_assignment');
+  });
+
+  it('assignment, start, clarification, extension and manual escalation are refused on a closed cycle (D-C5-3)', async () => {
+    const waiting = await w.publishedTask(); // awaiting assignment
+    const taskId = await aliTask();
+    const clarificationId = await requestClarification(await w.ctx('ali'), taskId, { question: 'Which template?' });
+    const askId = await askForMoreTime(await w.ctx('ali'), taskId, at(2026, 11, 26), 'Waiting for the signed copy');
+    const formalId = await requestExtension(await w.ctx('khalid'), await (async () => {
+      const hr = await w.publishedTask('hr');
+      await assignTask(await w.ctx('khalid'), hr, w.users.huda);
+      return hr;
+    })(), at(2026, 11, 26), 'Board meets on the 25th');
+    const assignmentId = (await getTask(db, taskId)).assignment_id;
+    await close();
+
+    await fails('conflict', async () => assignTask(await w.ctx('mona'), waiting, w.users.sara));
+    await fails('conflict', async () => startTask(await w.ctx('ali'), taskId));
+    await fails('conflict', async () => requestClarification(await w.ctx('ali'), taskId, { question: 'Another question?' }));
+    await fails('conflict', async () => answerClarification(await w.ctx('ahmad'), clarificationId, 'Use template B'));
+    await fails('conflict', async () => cancelClarification(await w.ctx('ali'), clarificationId));
+    await fails('conflict', async () => forwardAsk(await w.ctx('mona'), askId));
+    await fails('conflict', async () => declineAsk(await w.ctx('mona'), askId, 'The plan already exists'));
+    await fails('conflict', async () => requestExtension(await w.ctx('mona'), taskId, at(2026, 11, 30), 'More time'));
+    await fails('conflict', async () => approveExtension(await w.ctx('ahmad'), formalId));
+    await fails('conflict', async () => rejectExtension(await w.ctx('ahmad'), formalId, 'Not a valid reason'));
+    await fails('conflict', async () => escalateManually(await w.ctx('alaa'), taskId, 'No progress after two reminders'));
+    await fails('conflict', async () => cancelAssignment(await w.ctx('alaa'), assignmentId, 'Moved to another department'));
+    await fails('conflict', async () => setApplicability(await w.ctx('alaa'), w.requirementId, false, 'Exempted by decree 123'));
+    const t = await getTask(db, taskId);
+    expect([t.execution_status, t.current_owner_id]).toEqual(['assigned', w.users.ali]);
+
+    // positive control: after the administrator's reopen the same actions work
+    await reopen();
+    await answerClarification(await w.ctx('ahmad'), clarificationId, 'Use template B');
+    await forwardAsk(await w.ctx('mona'), askId);
+    await approveExtension(await w.ctx('ahmad'), formalId);
+    await startTask(await w.ctx('ali'), taskId);
+    await assignTask(await w.ctx('mona'), waiting, w.users.sara);
+    expect((await getTask(db, taskId)).execution_status).toBe('in_progress');
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B6 (C12, D-C12-1/2)
+describe('an approved extension date is final at approval (C12, BR-EXT-03)', () => {
+  /**
+   * The audit reproduction: task due 22 Nov; Ali's clarification 15 Nov 09:00, answered by Ahmad
+   * 17 Nov 09:00 (2 working days paused, current due 24 Nov); Mona asks for 29 Nov end of day;
+   * Alaa approves that date on 17 Nov 11:00.
+   */
+  async function extendedAfterPause() {
+    const taskId = await w.publishedTask();
+    await assignTask(await w.ctx('mona'), taskId, w.users.ali);
+    const c = await requestClarification(await w.ctx('ali', at(2026, 11, 15, 9)), taskId, { question: 'Which edition?' });
+    await answerClarification(await w.ctx('ahmad', at(2026, 11, 17, 9)), c, 'The 2025 edition.');
+    const calendar = (await w.ctx('alaa')).calendar;
+    const before = await taskDeadline(await w.ctx('ali', at(2026, 11, 17, 10)), await getTask(db, taskId));
+    const requested = endOfLocalDay('2026-11-29', calendar);
+    const req = await requestExtension(await w.ctx('mona', at(2026, 11, 17, 10)), taskId, requested, 'Waiting for the board');
+    const approved = await approveExtension(await w.ctx('alaa', at(2026, 11, 17, 11)), req);
+    return { taskId, before, requested, approved, calendar };
+  }
+
+  it('BR-EXT-03: approved date is the deadline after an earlier clarification pause', async () => {
+    const { taskId, before, requested, approved } = await extendedAfterPause();
+    expect(dateKey(before.currentDueAt)).toBe('2026-11-24');
+    expect(approved.getTime()).toBe(requested.getTime());
+    const t = await getTask(db, taskId);
+    expect(new Date(t.approved_extension_at!).getTime()).toBe(at(2026, 11, 17, 11).getTime());
+    const d = await taskDeadline(await w.ctx('ali', at(2026, 11, 18)), t);
+    expect(d.currentDueAt.getTime()).toBe(approved.getTime()); // 1 Dec at 80ae855
+  });
+
+  it('D-C12-2: an approval without a recorded approval time (before migration 010) keeps the old rule', async () => {
+    const { taskId } = await extendedAfterPause();
+    await db.query('UPDATE qiyas.tasks SET approved_extension_at = NULL WHERE id = $1', [taskId]);
+    const d = await taskDeadline(await w.ctx('ali', at(2026, 11, 18)), await getTask(db, taskId));
+    expect(dateKey(d.currentDueAt)).toBe('2026-12-01');
+  });
+
+  it('a clarification after approval moves the approved date later', async () => {
+    const { taskId } = await extendedAfterPause();
+    const c = await requestClarification(await w.ctx('ali', at(2026, 11, 22, 9)), taskId, { question: 'And the annex?' });
+    await answerClarification(await w.ctx('alaa', at(2026, 11, 23, 9)), c, 'Annex B.');
+    const d = await taskDeadline(await w.ctx('ali', at(2026, 11, 23, 10)), await getTask(db, taskId));
+    expect(dateKey(d.currentDueAt)).toBe('2026-11-30');
+  });
+
+  it('automatic escalation fires at the approved date when pauses preceded approval', async () => {
+    const { taskId, approved, calendar } = await extendedAfterPause();
+    expect(await runAutomaticEscalations({ db, now: at(2026, 11, 29, 12), calendar })).toEqual([]);
+    const fired = await runAutomaticEscalations({ db, now: at(2026, 11, 30, 9), calendar }); // nothing at 80ae855 (due 1 Dec)
+    expect(fired).toHaveLength(1);
+    expect(fired[0]).toMatchObject({ taskId, kind: 'automatic', from: w.users.ali, to: w.users.mona });
+    const { rows } = await db.query('SELECT due_at_snapshot FROM qiyas.escalations WHERE id = $1', [fired[0].escalationId]);
+    expect(new Date(rows[0].due_at_snapshot).getTime()).toBe(approved.getTime());
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B6 (C17, D-C17-2)
+describe('deactivated accounts in work assignment and escalation (C17)', () => {
+  const blockedAudits = async (taskId: string) =>
+    (await db.query(`SELECT count(*)::int AS n FROM qiyas.audit_log WHERE action = 'task.escalation_blocked' AND entity_id = $1`, [taskId])).rows[0].n;
+  const received = async (user: keyof World['users'], event?: string) =>
+    (await db.query(`SELECT count(*)::int AS n FROM qiyas.notifications WHERE user_id = $1 AND ($2::text IS NULL OR event_code = $2)`,
+      [w.users[user], event ?? null])).rows[0].n;
+
+  async function twoOverdueTasks() {
+    const itTask = await w.publishedTask('it');
+    await assignTask(await w.ctx('mona'), itTask, w.users.ali);
+    const hrTask = await w.publishedTask('hr');
+    await assignTask(await w.ctx('khalid'), hrTask, w.users.huda);
+    return { itTask, hrTask }; // both due end of Sunday 22 Nov
+  }
+
+  it('automatic escalation never moves a task to a deactivated manager, and the tick does not abort', async () => {
+    const { itTask, hrTask } = await twoOverdueTasks();
+    await deactivateUser(db, w.users.mona, 'deleted');
+    const calendar = (await w.ctx('alaa')).calendar;
+    const report = await runScheduler({ db, now: at(2026, 11, 23, 9), calendar });
+    expect(report.escalations).toBe(1); // the HR task is still processed
+    const hr = await getTask(db, hrTask);
+    expect([hr.current_owner_id, hr.is_escalated]).toEqual([w.users.khalid, true]);
+    const itRow = await getTask(db, itTask);
+    expect([itRow.current_owner_id, itRow.is_escalated]).toEqual([w.users.ali, false]);
+    expect(await blockedAudits(itTask)).toBe(1);
+    await runScheduler({ db, now: at(2026, 11, 24, 9), calendar });
+    expect(await blockedAudits(itTask)).toBe(1); // once per deadline
+    for (const u of ['alaa', 'ahmad', 'tariq'] as const) expect(await received(u, 'task.escalation_blocked')).toBe(1);
+    expect(await received('mona')).toBe(0); // nothing at all reaches the deleted manager
+  });
+
+  it('a department without any manager no longer aborts the automatic escalation run', async () => {
+    const { itTask, hrTask } = await twoOverdueTasks();
+    await db.query(`UPDATE qiyas.department_members SET valid_to = valid_from WHERE user_id = $1 AND membership = 'manager'`, [w.users.mona]);
+    const calendar = (await w.ctx('alaa')).calendar;
+    const fired = await runAutomaticEscalations({ db, now: at(2026, 11, 23, 9), calendar }); // threw 'no manager' at 80ae855
+    expect(fired.map((e) => e.taskId)).toEqual([hrTask]);
+    expect(await blockedAudits(itTask)).toBe(1);
+  });
+
+  it('the manager cannot assign a task to a deactivated member', async () => {
+    const taskId = await w.publishedTask();
+    // deactivated before migration 011: membership and EMP grant still in place
+    await deactivateUser(db, w.users.sara, 'inactive', { cascade: false });
+    expect(await fails('validation', async () => assignTask(await w.ctx('mona'), taskId, w.users.sara))).toContain('not a member');
+    expect((await getTask(db, taskId)).current_owner_id).toBe(w.users.mona);
+    // positive control: an active member is assigned
+    await assignTask(await w.ctx('mona'), taskId, w.users.ali);
+    expect((await getTask(db, taskId)).current_owner_id).toBe(w.users.ali);
+  });
+
+  it('a task cannot be published to a deactivated manager', async () => {
+    await deactivateUser(db, w.users.mona, 'inactive', { cascade: false });
+    expect(await fails('conflict', () => w.publishedTask('it'))).toContain('no manager');
+    // positive control: the HR manager is active
+    expect((await getTask(db, await w.publishedTask('hr'))).current_owner_id).toBe(w.users.khalid);
+  });
+});
+
+// ------------------------------------------------------------------ security remediation B5 (C9, SoD-3)
+// Two connections and a committed world; the other tests run inside one BEGIN/ROLLBACK, where a
+// race cannot happen. Runs last; the schema is reset afterwards. Keep it a single test: the
+// file's beforeEach builds the world again, which the committed world would collide with.
+describe('SoD-3 under concurrency', () => {
+  let c1: Client;
+  let c2: Client;
+  let cw: World;
+  let pid1: number;
+  let pid2: number;
+
+  beforeAll(async () => {
+    c1 = await connectTestDb();
+    c2 = await connectTestDb();
+    // read the backend pids now: a pg client queues queries, so asking a client for its pid while
+    // its own statement is blocked would wait forever
+    pid1 = await backendPid(c1);
+    pid2 = await backendPid(c2);
+  });
+  beforeEach(async () => {
+    await db.query('ROLLBACK'); // drop the uncommitted world of the file's beforeEach
+    await c1.query('BEGIN');
+    cw = await buildWorld(c1);
+    await c1.query('COMMIT'); // visible to both connections
+  });
+  afterEach(async () => {
+    await c1.query('ROLLBACK');
+    await c2.query('ROLLBACK');
+    await db.query('BEGIN'); // balances the file's afterEach ROLLBACK
+  });
+  afterAll(async () => {
+    await c1?.end();
+    await c2?.end();
+    await resetSchema(db); // cleanup of the committed fixtures (audit_log is append-only)
+  });
+
+  it('SoD-3 race: removing a member while the manager assigns to them, one of the two fails', async () => {
+    const mona = await cw.ctx('mona'); // on c1
+    const tariq = await buildContext(c2, cw.users.tariq, T0);
+    const member = async (u: string) => Boolean((await c1.query(`SELECT 1 FROM qiyas.department_members
+       WHERE department_id = $1 AND user_id = $2 AND valid_to IS NULL`, [cw.depts.it, u])).rows[0]);
+
+    // 1. the assignment goes first: the removal waits, then sees Ali owns an open task
+    const task1 = await cw.publishedTask();
+    await c1.query('BEGIN');
+    await assignTask(mona, task1, cw.users.ali); // not committed
+    await c2.query('BEGIN');
+    const removal = track(removeDepartmentMember(tariq, cw.depts.it, cw.users.ali));
+    await waitUntilBlocked(db, pid2); // fails on baseline 80ae855: the membership read takes no lock
+    await pause(200);
+    expect(removal.state).toBe('pending');
+    await c1.query('COMMIT');
+    await removal.done;
+    expect(removal.state).toBe('rejected');
+    expect(removal.error).toMatchObject({ code: 'conflict' });
+    await c2.query('ROLLBACK');
+    expect([await member(cw.users.ali), (await getTask(c1, task1)).current_owner_id]).toEqual([true, cw.users.ali]);
+
+    // 2. the removal goes first: the assignment waits, then finds Sara is no longer a member
+    const task2 = await cw.publishedTask();
+    await c2.query('BEGIN');
+    await removeDepartmentMember(tariq, cw.depts.it, cw.users.sara); // not committed
+    await c1.query('BEGIN');
+    const assignment = track(assignTask(mona, task2, cw.users.sara));
+    await waitUntilBlocked(db, pid1);
+    await pause(200);
+    expect(assignment.state).toBe('pending');
+    await c2.query('COMMIT');
+    await assignment.done;
+    expect(assignment.state).toBe('rejected');
+    expect(assignment.error).toMatchObject({ code: 'validation' });
+    await c1.query('ROLLBACK');
+    expect([await member(cw.users.sara), (await getTask(c1, task2)).current_owner_id]).toEqual([false, cw.users.mona]);
+  });
 });

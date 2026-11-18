@@ -95,7 +95,7 @@ function People({ lang, notify }) {
               <tbody>
                 {table.items.map((u) => (
                   <tr key={u.id}>
-                    <td className="q-cell-strong">{u.name}</td>
+                    <td className="q-cell-strong">{u.name}{u.active === false && <span className={s.chip} style={{ marginInlineStart: 8, color: 'var(--danger)' }}>{t('حساب معطّل', 'Deactivated', 'غیر فعال اکاؤنٹ')}</span>}</td>
                     <td className="q-cell-muted"><bdi>{u.email}</bdi></td>
                     <td>
                       <div className={s.row}>

@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import { assertProductionSecrets } from './secretPolicy';
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '../../.env') });
@@ -174,21 +175,16 @@ const config: Config = {
   },
 };
 
-// Validate required config
+// Validate required config. Secrets are checked separately by the secret policy (C4).
 const requiredEnvVars = [
   'POSTGRES_HOST',
   'POSTGRES_PORT',
   'POSTGRES_DB',
   'POSTGRES_USER',
-  'POSTGRES_PASSWORD',
   'REDIS_HOST',
   'REDIS_PORT',
   'MINIO_ENDPOINT',
   'MINIO_PORT',
-  'MINIO_ROOT_USER',
-  'MINIO_ROOT_PASSWORD',
-  'JWT_ACCESS_SECRET',
-  'JWT_REFRESH_SECRET',
 ];
 
 if (config.env === 'production') {
@@ -197,23 +193,8 @@ if (config.env === 'production') {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 
-  // Prevent use of default secrets in production
-  if (config.jwt.accessSecret === 'change-this-secret-in-production') {
-    throw new Error('JWT_ACCESS_SECRET must be changed from default value in production');
-  }
-  if (config.jwt.refreshSecret === 'change-this-refresh-secret') {
-    throw new Error('JWT_REFRESH_SECRET must be changed from default value in production');
-  }
-  if (config.database.password === 'change_me') {
-    throw new Error('POSTGRES_PASSWORD must be changed from default value in production');
-  }
-
-  // If RS256 algorithm is selected, require key files
-  if (config.jwt.algorithm === 'RS256') {
-    if (!config.jwt.accessPrivateKey || !config.jwt.accessPublicKey) {
-      throw new Error('JWT_ACCESS_PRIVATE_KEY and JWT_ACCESS_PUBLIC_KEY are required when using RS256');
-    }
-  }
+  // Length, entropy, placeholder and uniqueness checks on every secret, and the RS256 key presence check.
+  assertProductionSecrets(process.env, config);
 }
 
 export default config;

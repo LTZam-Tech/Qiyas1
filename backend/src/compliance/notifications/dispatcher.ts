@@ -67,6 +67,12 @@ async function handle(db: Db, a: AuditRow, send: Send): Promise<void> {
       if (a.action === 'task.escalated.automatic') await send('task.overdue', people([t.consultantId]), { title: t.title });
       return;
     }
+    case 'task.escalation_blocked': {
+      // C17, D-C17-2: an overdue task stays where it is because no active manager exists
+      const t = await taskInfo(db, a.entity_id);
+      if (t) await send('task.escalation_blocked', [...(await qcs(true)), ...people(await usersWithRole(db, 'ADM'), true)], { title: t.title, reason });
+      return;
+    }
     case 'task.all_covered': {
       const t = await taskInfo(db, a.entity_id);
       if (t) await send('task.completed', people([t.managerId, t.originalAssigneeId, t.consultantId]), { title: t.title });

@@ -29,9 +29,14 @@ export interface EmailRunReport {
 
 export async function sendPendingEmails(db: Db, mailer: Mailer, now: Date, batchSize = 50): Promise<EmailRunReport> {
   const org = await one(db, 'SELECT default_language FROM qiyas.org_settings LIMIT 1');
+  // C17, D-C17-4: emails still waiting for a deactivated or deleted account are skipped for good,
+  // so they are not flushed if the account is reactivated. The in-app notification is kept.
+  await db.query(`UPDATE qiyas.notifications n SET email_status = 'skipped', email_next_attempt_at = NULL
+     FROM public.users u WHERE u.id = n.user_id AND n.email_status IN ('pending', 'failed')
+       AND (NOT u.is_active OR u.deleted_at IS NOT NULL)`);
   const { rows } = await db.query(
     `SELECT n.id, n.event_code, n.payload, n.email_attempts, u.email, p.language
-       FROM qiyas.notifications n JOIN public.users u ON u.id = n.user_id
+       FROM qiyas.notifications n JOIN public.users u ON u.id = n.user_id AND u.is_active AND u.deleted_at IS NULL
        LEFT JOIN qiyas.user_preferences p ON p.user_id = n.user_id
       WHERE n.email_status IN ('pending', 'failed') AND n.email_next_attempt_at <= $1
       ORDER BY n.email_next_attempt_at LIMIT $2 FOR UPDATE OF n SKIP LOCKED`, [now, batchSize]);
