@@ -66,6 +66,27 @@ async function move(ctx: ServiceContext, c: { id: string; status: ClarificationS
   }
 }
 
+/**
+ * C11, D-C11-1: requester actions are authorized by current grants, not the role stored on the row.
+ * The caller must be the requester and must still hold the stored requester role on the task's
+ * department. A follow-up opens a new deadline pause, so it also needs current ownership of the
+ * task, the clarification.request permission and an askable task status.
+ */
+async function requesterGate(ctx: ServiceContext, c: { task_id: string; requested_by: string; requester_role: string }, action: string, opts: { needsOwnership: boolean }) {
+  if (c.requested_by !== ctx.actor.userId) throw new ComplianceError('forbidden', `Only the person who asked can ${action}`);
+  const task = await getTask(ctx.db, c.task_id, opts.needsOwnership);
+  const actors = taskActors(ctx, task);
+  if (!actors.includes(c.requester_role as (typeof actors)[number])) {
+    throw new ComplianceError('forbidden', `You no longer hold the role you asked with on this task, so you cannot ${action}`);
+  }
+  if (opts.needsOwnership) {
+    if (task.current_owner_id !== ctx.actor.userId) throw new ComplianceError('forbidden', 'Only the current owner of the task can follow up');
+    requirePermission(ctx, 'clarification.request', { departmentId: task.department_id, ownerIds: [task.current_owner_id] });
+    if (!ASKABLE.includes(task.execution_status)) throw new ComplianceError('conflict', `Cannot follow up on a ${task.execution_status} task`);
+  }
+  return actors;
+}
+
 export async function answerClarification(ctx: ServiceContext, id: string, body: string): Promise<'QC' | 'DM'> {
   const c = await loadClarification(ctx, id);
   if (!body?.trim()) throw new ComplianceError('validation', 'The answer is empty');
@@ -88,9 +109,9 @@ export async function answerClarification(ctx: ServiceContext, id: string, body:
 
 export async function followUpClarification(ctx: ServiceContext, id: string, body: string, responseDays = DEFAULT_CLARIFICATION_RESPONSE_DAYS): Promise<void> {
   const c = await loadClarification(ctx, id);
-  if (c.requested_by !== ctx.actor.userId) throw new ComplianceError('forbidden', 'Only the person who asked can follow up');
+  const actors = await requesterGate(ctx, c, 'follow up', { needsOwnership: true });
   if (!body?.trim()) throw new ComplianceError('validation', 'The message is empty');
-  await move(ctx, c, 'follow_up', [c.requester_role]);
+  await move(ctx, c, 'follow_up', actors);
   await ctx.db.query('UPDATE qiyas.clarifications SET response_due_at = $2 WHERE id = $1', [id, addBusinessDays(ctx.now, responseDays, ctx.calendar)]);
   await ctx.db.query(`INSERT INTO qiyas.clarification_messages (clarification_id, author_id, author_role, body, created_at) VALUES ($1, $2, 'requester', $3, $4)`,
     [id, ctx.actor.userId, body.trim(), ctx.now]);
@@ -100,15 +121,15 @@ export async function followUpClarification(ctx: ServiceContext, id: string, bod
 
 export async function closeClarification(ctx: ServiceContext, id: string): Promise<void> {
   const c = await loadClarification(ctx, id);
-  if (c.requested_by !== ctx.actor.userId) throw new ComplianceError('forbidden', 'Only the person who asked can close it');
-  await move(ctx, c, 'close', [c.requester_role]);
+  const actors = await requesterGate(ctx, c, 'close it', { needsOwnership: false });
+  await move(ctx, c, 'close', actors);
   await audit(ctx, { action: 'clarification.closed', entityType: 'clarification', entityId: id });
 }
 
 export async function cancelClarification(ctx: ServiceContext, id: string): Promise<void> {
   const c = await loadClarification(ctx, id);
-  if (c.requested_by !== ctx.actor.userId) throw new ComplianceError('forbidden', 'Only the person who asked can cancel it');
-  await move(ctx, c, 'cancel', [c.requester_role]);
+  const actors = await requesterGate(ctx, c, 'cancel it', { needsOwnership: false });
+  await move(ctx, c, 'cancel', actors);
   await ctx.db.query('UPDATE qiyas.deadline_pauses SET resumed_at = $2 WHERE clarification_id = $1 AND resumed_at IS NULL', [id, ctx.now]);
   await audit(ctx, { action: 'clarification.cancelled', entityType: 'clarification', entityId: id });
 }

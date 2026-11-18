@@ -7,8 +7,9 @@
  *   any rejection → rework required, back to the department manager, deadline resumes
  *   nothing left to review → completed when all its requirements are ready, else back to work
  */
-import { ComplianceError, ServiceContext, audit, departmentManager, fromTransition, mustOne, requirePermission } from '../core/context';
+import { ComplianceError, Db, ServiceContext, audit, departmentManager, fromTransition, mustOne, requirePermission } from '../core/context';
 import { assertCycleWritable } from '../core/cycleGuard';
+import { actorsFor } from '../domain/permissions';
 import { ReviewStatus, reviewMachine } from '../domain/stateMachines';
 import { closeOpenPauses, getTask, moveTask } from '../work/tasks';
 import { hasPendingReview } from './evidence';
@@ -28,7 +29,8 @@ function consultantOnly(ctx: ServiceContext) {
 
 async function transition(ctx: ServiceContext, linkId: string, from: ReviewStatus, event: Parameters<typeof reviewMachine.next>[1], reason?: string): Promise<ReviewStatus> {
   try {
-    const next = reviewMachine.next(from, event, ['QC'], reason);
+    // C11: actors come from the caller's current grants, not a hard-coded consultant role
+    const next = reviewMachine.next(from, event, actorsFor(ctx.actor.grants, null), reason);
     // Accepted evidence always enters the DGA queue as "not posted", in the same statement (BR-REV-06).
     await ctx.db.query(`UPDATE qiyas.evidence_links SET review_status = $2,
         submission_status = CASE WHEN $2 = 'accepted' THEN COALESCE(submission_status, 'not_posted') ELSE submission_status END
@@ -52,11 +54,38 @@ export async function claimEvidence(ctx: ServiceContext, linkId: string): Promis
 }
 
 export async function releaseEvidence(ctx: ServiceContext, linkId: string): Promise<void> {
+  consultantOnly(ctx); // C11: the claimant must still be a consultant; SYSTEM uses releaseClaimsOf
   const link = await loadLink(ctx, linkId);
   if (link.claimed_by !== ctx.actor.userId) throw new ComplianceError('forbidden', 'Only the consultant reviewing it can release it');
   await transition(ctx, linkId, link.review_status, 'release');
   await ctx.db.query('UPDATE qiyas.evidence_links SET claimed_by = NULL, claimed_at = NULL WHERE id = $1', [linkId]);
   await audit(ctx, { action: 'review.released', entityType: 'evidence_link', entityId: linkId });
+}
+
+/**
+ * C11, D-C11-3: returns every claim a person holds back to the shared queue (under_review →
+ * submitted, the SYSTEM 'release' transition), one audit record 'review.released' per link.
+ * Links of a closed or archived cycle stay frozen as they are (D-C5-2 (b)); the guard trigger
+ * would refuse them anyway.
+ *
+ * One statement, so the B6 deactivation trigger can run the same SQL: $1 the person whose claims
+ * are released, $2 the time, $3 the acting user (NULL for the system), $4 the reason.
+ */
+export const RELEASE_CLAIMS_SQL = `WITH released AS (
+    UPDATE qiyas.evidence_links l SET review_status = 'submitted', claimed_by = NULL, claimed_at = NULL
+      FROM qiyas.cycle_requirements cr JOIN qiyas.measurement_cycles mc ON mc.id = cr.cycle_id
+     WHERE l.claimed_by = $1 AND l.review_status = 'under_review' AND cr.id = l.cycle_requirement_id
+       AND mc.status IN ('planning', 'active')
+    RETURNING l.id)
+  INSERT INTO qiyas.audit_log (actor_id, action, entity_type, entity_id, after_value, reason, at)
+  SELECT $3, 'review.released', 'evidence_link', released.id::text, jsonb_build_object('releasedFrom', $1::uuid), $4, $2
+    FROM released
+  RETURNING entity_id`;
+
+export async function releaseClaimsOf(db: Db, userId: string, opts: { at: Date; actorId: string | null; reason?: string }): Promise<string[]> {
+  if (reviewMachine.next('under_review', 'release', ['SYSTEM']) !== 'submitted') throw new Error('review release target changed; update RELEASE_CLAIMS_SQL');
+  const { rows } = await db.query(RELEASE_CLAIMS_SQL, [userId, opts.at, opts.actorId, opts.reason ?? 'role revoked']);
+  return rows.map((r) => r.entity_id as string);
 }
 
 async function decide(ctx: ServiceContext, linkId: string, decision: 'accept' | 'reject', comment?: string, checklist?: unknown) {

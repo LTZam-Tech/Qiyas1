@@ -6,6 +6,7 @@
 import { ComplianceError, ServiceContext, audit, mustOne, one, requirePermission } from '../core/context';
 import { ListOf, PageRequest, listQuery } from '../api/paging';
 import { RoleCode, RoleGrant, validateGrant, GrantError } from '../domain/permissions';
+import { releaseClaimsOf } from '../evidence/review';
 
 export async function createDepartment(ctx: ServiceContext, input: { code: string; nameAr: string; nameEn: string; parentId?: string | null }): Promise<string> {
   requirePermission(ctx, 'admin.departments');
@@ -100,10 +101,29 @@ export async function grantRole(ctx: ServiceContext, userId: string, role: RoleC
 
 export async function revokeGrant(ctx: ServiceContext, grantId: string, reason?: string): Promise<void> {
   requirePermission(ctx, 'admin.roles');
-  const g = await mustOne(ctx.db, 'grant', `SELECT g.user_id, r.code FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id WHERE g.id = $1 AND g.revoked_at IS NULL FOR UPDATE`, [grantId]);
+  const g = await mustOne(ctx.db, 'grant', `SELECT g.user_id, g.group_id, r.code FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id WHERE g.id = $1 AND g.revoked_at IS NULL FOR UPDATE`, [grantId]);
   if (g.user_id === ctx.actor.userId && g.code === 'ADM') throw new ComplianceError('conflict', 'You cannot remove your own administrator role');
   await ctx.db.query('UPDATE qiyas.role_grants SET revoked_at = $2, revoked_by = $3 WHERE id = $1', [grantId, ctx.now, ctx.actor.userId]);
   await audit(ctx, { action: 'admin.role_revoked', entityType: 'user', entityId: g.user_id, before: { role: g.code }, reason });
+  if (g.code === 'QC') await releaseClaimsOfFormerConsultants(ctx, g.user_id ? [g.user_id] : await groupMembers(ctx.db, g.group_id));
+}
+
+async function groupMembers(db: ServiceContext['db'], groupId: string): Promise<string[]> {
+  const { rows } = await db.query('SELECT user_id FROM qiyas.group_members WHERE group_id = $1', [groupId]);
+  return rows.map((r) => r.user_id as string);
+}
+
+/**
+ * C11, D-C11-3: a person who no longer holds QC (directly or through a group) gives their review
+ * claims back to the shared queue, audited as review.released with reason 'role revoked'.
+ */
+async function releaseClaimsOfFormerConsultants(ctx: ServiceContext, userIds: string[]): Promise<void> {
+  for (const userId of userIds) {
+    const stillQc = await one(ctx.db, `SELECT 1 FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id
+       WHERE r.code = 'QC' AND g.revoked_at IS NULL
+         AND (g.user_id = $1 OR g.group_id IN (SELECT group_id FROM qiyas.group_members WHERE user_id = $1))`, [userId]);
+    if (!stillQc) await releaseClaimsOf(ctx.db, userId, { at: ctx.now, actorId: ctx.actor.userId, reason: 'role revoked' });
+  }
 }
 
 export async function setGroupMembers(ctx: ServiceContext, groupCode: string, userIds: string[]): Promise<void> {

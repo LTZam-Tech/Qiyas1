@@ -106,7 +106,9 @@ export async function declineAsk(ctx: ServiceContext, askId: string, reason: str
 
 /** Every caller writes, so a closed cycle refuses here (C5, D-C5-3). */
 async function loadFormal(ctx: ServiceContext, id: string) {
-  const r = await mustOne(ctx.db, 'request', `SELECT * FROM qiyas.extension_requests WHERE id = $1 AND level = 'formal' FOR UPDATE`, [id]);
+  // C11: joins the task so callers can check current grants against its department
+  const r = await mustOne(ctx.db, 'request', `SELECT e.*, t.department_id, t.cycle_id FROM qiyas.extension_requests e JOIN qiyas.tasks t ON t.id = e.task_id
+     WHERE e.id = $1 AND e.level = 'formal' FOR UPDATE OF e`, [id]);
   await assertCycleWritable(ctx.db, { taskId: r.task_id });
   return r;
 }
@@ -150,8 +152,12 @@ export async function rejectExtension(ctx: ServiceContext, requestId: string, re
 export async function withdrawExtension(ctx: ServiceContext, requestId: string): Promise<void> {
   const r = await loadFormal(ctx, requestId);
   if (r.requested_by !== ctx.actor.userId) throw new ComplianceError('forbidden', 'Only the manager who asked can withdraw it');
+  // C11, D-C11-2: the requester may withdraw only while still holding DM for the task's department
+  const actors = taskActors(ctx, r);
+  if (!actors.includes('DM')) throw new ComplianceError('forbidden', 'Only the current department manager who asked can withdraw it');
+  requirePermission(ctx, 'extension.request', { departmentId: r.department_id });
   try {
-    const next = extensionMachine.next(r.status, 'withdraw', ['DM']);
+    const next = extensionMachine.next(r.status, 'withdraw', actors);
     await ctx.db.query('UPDATE qiyas.extension_requests SET status = $2 WHERE id = $1', [requestId, next]);
   } catch (e) {
     return fromTransition(e);
