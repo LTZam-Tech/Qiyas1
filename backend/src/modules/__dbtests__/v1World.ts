@@ -148,8 +148,9 @@ export async function buildV1World(): Promise<V1World> {
   const requirement = await one(
     `INSERT INTO evidence_requirements (standard_id, code, title_en, title_ar) VALUES ($1, 'R1', 'R1', 'R1') RETURNING id`, [standard]);
   const mkTask = (assignee: string, title: string) => one(
-    `INSERT INTO tasks (evidence_requirement_id, standard_id, perspective_id, axis_id, assigned_to, assigned_by, title, due_date)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE + 30) RETURNING id`,
+    // 0006 makes perspective_id/axis_id NOT NULL and replaces the priority values ('normal' is no longer allowed)
+    `INSERT INTO tasks (evidence_requirement_id, standard_id, perspective_id, axis_id, assigned_to, assigned_by, title, due_date, priority)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE + 30, 'medium') RETURNING id`,
     [requirement, standard, perspective, axis, assignee, users.dean.id, title],
   );
   const tasks = { t1: await mkTask(users.e1.id, 'T1'), t2: await mkTask(users.e2.id, 'T2') };
