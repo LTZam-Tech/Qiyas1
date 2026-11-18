@@ -123,7 +123,7 @@ jobs:
           exit $rc
       - name: Upload gitleaks report
         if: always()
-        uses: actions/upload-artifact@v4 # TODO(CI-1): pin to full commit SHA
+        uses: actions/upload-artifact@v7 # TODO(CI-1): pin to full commit SHA
         with:
           name: gitleaks-report
           path: gitleaks.sarif
@@ -194,7 +194,7 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm sbom --sbom-format=cyclonedx --omit=dev > "$RUNNER_TEMP/sbom/qiyas-api.cdx.json"
-      - uses: actions/upload-artifact@v4 # TODO(CI-1): pin to full commit SHA
+      - uses: actions/upload-artifact@v7 # TODO(CI-1): pin to full commit SHA
         with:
           name: sbom-cyclonedx
           path: ${{ runner.temp }}/sbom/
@@ -237,7 +237,7 @@ jobs:
           exit $rc
       - name: Upload scan reports
         if: always()
-        uses: actions/upload-artifact@v4 # TODO(CI-1): pin to full commit SHA
+        uses: actions/upload-artifact@v7 # TODO(CI-1): pin to full commit SHA
         with:
           name: trivy-reports
           path: ${{ runner.temp }}/trivy/
