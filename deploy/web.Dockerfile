@@ -13,7 +13,8 @@ RUN npm run build
 
 # TODO(CI-15): pin nginx:1.27-alpine by digest (nginx:1.27-alpine@sha256:...).
 FROM nginx:1.27-alpine
-RUN apk add --no-cache openssl
+# Pull the latest Alpine security fixes for OS packages; CI-7 trivy gate
+RUN apk upgrade --no-cache && apk add --no-cache openssl
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY deploy/tls-entrypoint.sh /docker-entrypoint.d/05-qiyas-tls.sh
 RUN chmod +x /docker-entrypoint.d/05-qiyas-tls.sh

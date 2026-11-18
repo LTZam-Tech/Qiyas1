@@ -11,7 +11,7 @@ import { randomUUID } from 'crypto';
 import { PASSWORD, V1World, buildV1World } from './v1World';
 
 let w: V1World;
-const SECRET = 'SECRET-EVIDENCE-BYTES-0123456789';
+const SECRET = 'marker-evidence-bytes-for-tests'; // gitleaks:allow (dummy marker, not a credential)
 const storedName = '1700000000000-board-minutes.pdf';
 const multerTemp = '0123456789abcdef0123456789abcdef';
 
