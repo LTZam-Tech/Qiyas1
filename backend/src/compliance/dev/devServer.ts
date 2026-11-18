@@ -198,7 +198,8 @@ async function main() {
   const setup = new Client({ connectionString: url });
   await setup.connect();
   await setup.query(`CREATE TABLE IF NOT EXISTS public.users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT UNIQUE NOT NULL, name TEXT NOT NULL, name_ar TEXT)`);
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT UNIQUE NOT NULL, name TEXT NOT NULL, name_ar TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE, deleted_at TIMESTAMPTZ)`); // C17: the account state columns of the real table
   await migrate(setup);
   await seedRbac(setup);
   await seedDemo(setup);

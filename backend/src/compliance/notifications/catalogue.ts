@@ -21,6 +21,7 @@ export const EVENTS = {
   'task.escalated': { email: true, title: { ar: 'صُعّدت إليك مهمة: {title}', en: 'A task was escalated to you: {title}', ur: 'ایک کام آپ کو بڑھا دیا گیا: {title}' } },
   'task.escalated_from_you': { email: true, title: { ar: 'صُعّدت مهمتك إلى مديرك: {title}', en: 'Your task was escalated to your manager: {title}', ur: 'آپ کا کام آپ کے مینیجر کو بڑھا دیا گیا: {title}' } },
   'task.escalated_to_self': { email: true, title: { ar: 'تجاوزت مهمتك الموعد النهائي: {title}', en: 'Your task passed its deadline: {title}', ur: 'آپ کا کام آخری تاریخ سے گزر گیا: {title}' } },
+  'task.escalation_blocked': { email: true, title: { ar: 'تعذّر تصعيد مهمة متأخرة لعدم وجود مدير نشط للإدارة: {title}', en: 'An overdue task could not be escalated, the department has no active manager: {title}', ur: 'تاخیر شدہ کام آگے نہیں بڑھایا جا سکا، شعبے کا کوئی فعال مینیجر نہیں: {title}' } },
   'task.deadline_reminder': { email: true, title: { ar: 'تذكير: موعد تسليم {title} في {date}', en: 'Reminder: {title} is due on {date}', ur: 'یاد دہانی: {title} کی آخری تاریخ {date} ہے' } },
   'task.overdue': { email: true, title: { ar: 'تأخرت المهمة: {title}', en: 'Task overdue: {title}', ur: 'کام تاخیر کا شکار ہے: {title}' } },
   'task.overdue_reminder': { email: true, title: { ar: 'ما زالت المهمة متأخرة: {title}', en: 'Still overdue: {title}', ur: 'کام ابھی تک تاخیر کا شکار ہے: {title}' } },

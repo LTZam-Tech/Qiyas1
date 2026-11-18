@@ -8,6 +8,16 @@ import { ListOf, PageRequest, listQuery } from '../api/paging';
 import { RoleCode, RoleGrant, validateGrant, GrantError } from '../domain/permissions';
 import { releaseClaimsOf } from '../evidence/review';
 
+/**
+ * C17: role grants, department membership and group membership are only given to an active
+ * account. The row is read FOR SHARE, so a concurrent deactivation waits for this transaction and
+ * its cascade (migration 011) then revokes what was just given.
+ */
+async function assertActiveUser(db: ServiceContext['db'], userId: string): Promise<void> {
+  const u = await mustOne(db, 'user', 'SELECT is_active, deleted_at FROM public.users WHERE id = $1 FOR SHARE', [userId]);
+  if (!u.is_active || u.deleted_at) throw new ComplianceError('validation', 'This account is deactivated; reactivate it before giving it roles or memberships');
+}
+
 export async function createDepartment(ctx: ServiceContext, input: { code: string; nameAr: string; nameEn: string; parentId?: string | null }): Promise<string> {
   requirePermission(ctx, 'admin.departments');
   const d = await mustOne(ctx.db, 'department', `INSERT INTO qiyas.departments (code, name_ar, name_en, parent_id, created_by, updated_by)
@@ -30,6 +40,7 @@ export async function updateDepartment(ctx: ServiceContext, id: string, input: {
 export async function setDepartmentManager(ctx: ServiceContext, departmentId: string, userId: string): Promise<void> {
   requirePermission(ctx, 'admin.departments');
   const db = ctx.db;
+  await assertActiveUser(db, userId); // C17
   const current = await one(db, `SELECT id, user_id FROM qiyas.department_members WHERE department_id = $1 AND membership = 'manager' AND valid_to IS NULL FOR UPDATE`, [departmentId]);
   if (current?.user_id === userId) return;
   if (current) {
@@ -45,6 +56,7 @@ export async function setDepartmentManager(ctx: ServiceContext, departmentId: st
 
 export async function addDepartmentMember(ctx: ServiceContext, departmentId: string, userId: string): Promise<void> {
   requirePermission(ctx, 'admin.departments');
+  await assertActiveUser(ctx.db, userId); // C17
   const exists = await one(ctx.db, 'SELECT 1 FROM qiyas.department_members WHERE department_id = $1 AND user_id = $2 AND valid_to IS NULL', [departmentId, userId]);
   if (exists) throw new ComplianceError('conflict', 'Already a member of this department');
   await ctx.db.query(`INSERT INTO qiyas.department_members (department_id, user_id, membership, created_by) VALUES ($1, $2, 'member', $3)`, [departmentId, userId, ctx.actor.userId]);
@@ -75,6 +87,7 @@ async function lockUserGrants(db: ServiceContext['db'], userId: string): Promise
 /** Grants a role, enforcing separation of duties (D3) before the database does. */
 export async function grantRole(ctx: ServiceContext, userId: string, role: RoleCode, departmentId: string | null = null, internal = false): Promise<string | null> {
   if (!internal) requirePermission(ctx, 'admin.roles');
+  await assertActiveUser(ctx.db, userId); // C17
   // C9: the same per-user lock as the check_role_grant trigger (migration 008), taken before the read,
   // so a concurrent QC/DSO grant for this person waits and then sees the committed row.
   if (SOD_LOCKED_ROLES.includes(role)) await lockUserGrants(ctx.db, userId);
@@ -129,6 +142,7 @@ async function releaseClaimsOfFormerConsultants(ctx: ServiceContext, userIds: st
 export async function setGroupMembers(ctx: ServiceContext, groupCode: string, userIds: string[]): Promise<void> {
   requirePermission(ctx, 'admin.groups');
   const g = await mustOne(ctx.db, 'group', 'SELECT id FROM qiyas.groups WHERE code = $1', [groupCode]);
+  for (const u of new Set(userIds)) await assertActiveUser(ctx.db, u); // C17
   await ctx.db.query('DELETE FROM qiyas.group_members WHERE group_id = $1', [g.id]);
   for (const u of new Set(userIds)) await ctx.db.query('INSERT INTO qiyas.group_members (group_id, user_id) VALUES ($1, $2)', [g.id, u]);
   await audit(ctx, { action: 'admin.group_members', entityType: 'group', entityId: g.id, after: { userIds } });
@@ -158,7 +172,7 @@ export async function saveOrgSettings(ctx: ServiceContext, input: { nameAr: stri
 
 export async function listUsers<P extends PageRequest | null = null>(ctx: ServiceContext, page: P = null as P, text?: string): Promise<ListOf<any, P>> {
   requirePermission(ctx, 'admin.users');
-  return listQuery(ctx.db, `SELECT u.id, u.name, u.email,
+  return listQuery(ctx.db, `SELECT u.id, u.name, u.email, (u.is_active AND u.deleted_at IS NULL) AS active,
       COALESCE((SELECT json_agg(json_build_object('id', g.id, 'role', r.code, 'departmentId', g.department_id))
         FROM qiyas.role_grants g JOIN qiyas.roles r ON r.id = g.role_id WHERE g.user_id = u.id AND g.revoked_at IS NULL), '[]') AS grants
      FROM public.users u

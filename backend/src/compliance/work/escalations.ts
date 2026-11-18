@@ -6,8 +6,10 @@
  * Both move ownership to the department manager, keep the original assignee,
  * and record an immutable escalation. If the manager already owns the task,
  * the escalation is recorded and sent to the manager himself (D2).
+ * When the department has no active manager, the automatic run skips that task and records
+ * task.escalation_blocked once per deadline instead (C17, D-C17-2): QC and ADM are notified.
  */
-import { ComplianceError, Db, ServiceContext, audit, departmentManager, requirePermission } from '../core/context';
+import { ComplianceError, Db, ServiceContext, audit, departmentManager, one, requirePermission } from '../core/context';
 import { WRITABLE_CYCLE_STATUSES, assertCycleWritable } from '../core/cycleGuard';
 import { WorkCalendar } from '../domain/calendar';
 import { isAutoEscalationDue } from '../domain/deadline';
@@ -83,8 +85,27 @@ export async function runAutomaticEscalations(ctx: AutoEscalationContext, thresh
   for (const task of rows as TaskRow[]) {
     const deadline = await taskDeadline(ctx, task);
     if (!isAutoEscalationDue(deadline, ctx.now, thresholdBusinessDays, ctx.calendar)) continue;
+    // C17: no active manager to escalate to. Throwing here would roll back the whole scheduler
+    // tick (every notification and email with it), so this task is skipped and reported instead.
+    if (!(await departmentManager(ctx.db, task.department_id))) {
+      await recordEscalationBlocked(ctx, task, deadline.currentDueAt);
+      continue;
+    }
     const r = await escalate(ctx.db, ctx.now, null, task, 'automatic', 'Deadline passed without submission', deadline.currentDueAt);
     if (r) out.push(r);
   }
   return out;
+}
+
+/** Audits task.escalation_blocked once per task deadline; the dispatcher notifies QC and ADM. */
+async function recordEscalationBlocked(ctx: AutoEscalationContext, task: TaskRow, dueAt: Date): Promise<void> {
+  const dueAtIso = dueAt.toISOString();
+  const already = await one(ctx.db, `SELECT 1 FROM qiyas.audit_log
+     WHERE action = 'task.escalation_blocked' AND entity_type = 'task' AND entity_id = $1 AND after_value->>'dueAt' = $2`, [task.id, dueAtIso]);
+  if (already) return;
+  await audit({ db: ctx.db, now: ctx.now, actor: null }, {
+    action: 'task.escalation_blocked', entityType: 'task', entityId: task.id,
+    after: { dueAt: dueAtIso, owner: task.current_owner_id, departmentId: task.department_id },
+    reason: 'The department has no active manager to escalate to',
+  });
 }

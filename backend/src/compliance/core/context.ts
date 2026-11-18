@@ -110,10 +110,17 @@ export async function audit(ctx: Pick<ServiceContext, 'db' | 'now'> & { actor?: 
   );
 }
 
-/** Current department manager, or undefined when the department has none. */
+/**
+ * C17: SQL predicate, true when the public.users row with id `userIdSql` is an active account
+ * (is_active and not soft-deleted). Background recipients, assignment and escalation targets use it.
+ */
+export const activeUserSql = (userIdSql: string) =>
+  `EXISTS (SELECT 1 FROM public.users au WHERE au.id = ${userIdSql} AND au.is_active AND au.deleted_at IS NULL)`;
+
+/** Current department manager with an active account, or undefined when the department has none (C17). */
 export async function departmentManager(db: Db, departmentId: string): Promise<string | undefined> {
   const row = await one(db, `SELECT user_id FROM qiyas.department_members
-     WHERE department_id = $1 AND membership = 'manager' AND valid_to IS NULL`, [departmentId]);
+     WHERE department_id = $1 AND membership = 'manager' AND valid_to IS NULL AND ${activeUserSql('user_id')}`, [departmentId]);
   return row?.user_id;
 }
 
@@ -121,9 +128,10 @@ export async function departmentManager(db: Db, departmentId: string): Promise<s
  * With `lock`, the current membership row is read FOR SHARE (SoD-3): a concurrent
  * removeDepartmentMember (FOR UPDATE on the same row) waits for this transaction, then sees its
  * result; or this read waits for the removal and then finds no current membership.
+ * A deactivated or deleted account is never a member here (C17).
  */
 export async function isDepartmentMember(db: Db, departmentId: string, userId: string, opts: { lock?: boolean } = {}): Promise<boolean> {
   const row = await one(db, `SELECT 1 FROM qiyas.department_members
-     WHERE department_id = $1 AND user_id = $2 AND valid_to IS NULL${opts.lock ? ' FOR SHARE' : ''}`, [departmentId, userId]);
+     WHERE department_id = $1 AND user_id = $2 AND valid_to IS NULL AND ${activeUserSql('user_id')}${opts.lock ? ' FOR SHARE' : ''}`, [departmentId, userId]);
   return Boolean(row);
 }
